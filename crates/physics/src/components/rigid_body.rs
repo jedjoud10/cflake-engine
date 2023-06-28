@@ -6,7 +6,7 @@ pub use rapier3d::prelude::RigidBodyType;
 // It basically represents any physics object in the world scene that 
 #[derive(Component)]
 pub struct RigidBody {
-    pub _type: RigidBodyType,
+    pub(crate) _type: RigidBodyType,
     pub(crate) interpolated: bool,
     pub(crate) sleeping: bool,
     pub(crate) locked: LockedAxes,
@@ -38,23 +38,6 @@ impl Clone for RigidBody {
 }
 
 impl RigidBody {
-    // Create a new RigidBody with a specific mass in kG
-    pub fn new(_type: RigidBodyType, interpolated: bool, locked: LockedAxes) -> Self {
-        Self { 
-            _type,
-            interpolated,
-            handle: None,
-            locked,
-            sleeping: false,
-            impulses: Default::default(),
-            impulses_at_points: Default::default(),
-            torque_impulses: Default::default(),
-            forces: Default::default(),
-            forces_at_points: Default::default(),
-            torques: Default::default(),
-        }
-    }
-
     // Check if the rigidbody is being interpolated
     pub fn is_interpolated(&self) -> bool {
         self.interpolated
@@ -93,5 +76,49 @@ impl RigidBody {
     // Apply a force at a specific point on the rigid-body
     pub fn apply_force_at_point(&mut self, force: vek::Vec3<f32>, point: vek::Vec3<f32>) {
         self.forces_at_points.push((force, point));
+    }
+}
+
+// Builder that helps us create rigidbodies
+pub struct RigidBodyBuilder(RigidBody);
+impl RigidBodyBuilder {
+    // Create a new rigidbody builder
+    pub fn new(_type: RigidBodyType) -> Self {
+        Self(RigidBody {
+            _type,
+            interpolated: true,
+            sleeping: false,
+            locked: LockedAxes::empty(),
+            handle: None,
+            impulses: Vec::new(),
+            impulses_at_points: Vec::new(),
+            torque_impulses: Vec::new(),
+            forces: Vec::new(),
+            forces_at_points: Vec::new(),
+            torques: Vec::new()
+        })
+    }
+
+    // Toggle the interpolation of the rigidbody
+    pub fn set_interpolated(mut self, interpoalted: bool) -> Self {
+        self.0.interpolated = interpoalted;
+        self
+    }
+
+    // Set the locked axes (translation/rotation) of the rigidbody
+    pub fn set_locked_axes(mut self, locked: LockedAxes) -> Self {
+        self.0.locked = locked;
+        self
+    }
+    
+    // Set the rigidbdoy type
+    pub fn set_type(mut self, _type: RigidBodyType) -> Self {
+        self.0._type = _type;
+        self
+    }
+
+    // Build the rigidbody
+    pub fn build(self) -> RigidBody {
+        self.0
     }
 }

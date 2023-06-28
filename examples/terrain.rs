@@ -4,8 +4,6 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine terrain example")
-        .set_window_fullscreen(true)
-        .set_logging_level(LevelFilter::Error)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -39,7 +37,7 @@ fn init(world: &mut World) {
     let mesher = TerrainMeshSettings {
         size: 64,
         collisions: true,
-        max_octree_depth: 8,
+        max_octree_depth: 9,
         quality: 1.0,
     };
 
@@ -99,7 +97,7 @@ fn init(world: &mut World) {
         Velocity::default(),
         Camera {
             near: 0.3,
-            far: 9000.0,
+            far: 18000.0,
             ..Default::default()
         },
         ChunkViewer::default(),

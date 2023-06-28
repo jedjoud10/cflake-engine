@@ -276,14 +276,10 @@ pub trait Texture: Sized + 'static {
     // Frees the texture from the cached shader data (called when dropped)
     // If the texture is still used this will practically do nothing (it will remove bind group and regenerate it)
     fn uncache(&self) {
-        /*
-        if let Some(views) = self.views() {
-            for view in views {
-                let id = crate::Id::new(view.global_id(), crate::IdVariant::TextureView);
-                self.graphics().drop_cached_bind_group_resource(id);
-            }
+        for (view, _) in self.raw_views() {
+            let id = crate::Id::new(view.global_id(), crate::IdVariant::TextureView);
+            self.graphics().drop_cached_bind_group_resource(id);
         }
-        */
     }
 }
 

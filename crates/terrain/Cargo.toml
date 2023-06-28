@@ -23,3 +23,4 @@ vek = { workspace = true }
 log = { workspace = true }
 ahash = { workspace = true } 
 thiserror = { workspace = true }
+parking_lot = { workspace = true }

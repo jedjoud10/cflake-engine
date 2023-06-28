@@ -74,11 +74,11 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
     // Get all the entities that contain a visible surface
     let mut scene = world.get_mut::<Scene>().unwrap();
     let query = scene.query_mut::<(&mut Surface<M>, &Renderer)>();
-    let iter = query.into_iter().collect::<Vec<_>>();
-    let iter = iter.into_par_iter();
+    //let iter = query.into_iter().collect::<Vec<_>>();
+    //let iter = iter.into_par_iter();
 
     // Iterate over the surfaces of this material and update their culled state
-    iter.for_each(|(surface, renderer)| {
+    for (surface, renderer) in query {
         if !renderer.visible {
             return;
         }
@@ -96,5 +96,8 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
                 false
             }
         }));
-    });
+    }
+    //iter.for_each(|(surface, renderer)| {
+
+    //});
 }

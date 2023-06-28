@@ -91,6 +91,16 @@ float shadow_linear(
 	return texture(sampler2DArrayShadow(shadow_map, shadow_map_sampler), vec4(uvs, layer, compare)).r;
 }
 
+vec2 vogel_disk_sample(int sampleIndex, int samplesCount, float phi)
+{
+  float GoldenAngle = 2.4f;
+
+  float r = sqrt(sampleIndex + 0.5f) / sqrt(samplesCount);
+  float theta = sampleIndex * GoldenAngle + phi;
+  
+  return vec2(r * cos(theta), r * sin(theta));
+}
+
 // Check if a pixel is obscured by the shadow map
 float calculate_shadowed(
     vec3 position,
@@ -143,7 +153,8 @@ float calculate_shadowed(
 	);
 
 	for (int i = 0; i < 16; i++) {
-		vec2 offset = poisson_disk[i] * shadow_parameters.spread;
+		//vec2 offset = poisson_disk[i] * shadow_parameters.spread;
+		vec2 offset = vogel_disk_sample(i, 16, random(gl_FragCoord.xy)) * shadow_parameters.spread;
 		float weight = 1.0 / length(offset);
 		shadowed += shadow_linear(layer, uvs.xy + offset * 0.004 /* * weight */, size, current + bias);
 	}
@@ -249,13 +260,14 @@ vec3 brdf(
 	//float shadowed = 0.0;
 
 	vec3 specular = specular(surface.f0, surface.roughness, camera.view, light.backward, surface.normal, camera.half_view);
-	vec3 brdf = kd * (surface.diffuse) + specular;
+	vec3 brdf = kd * (surface.diffuse) + specular + fresnel(surface.f0, camera.half_view, camera.view);
 	vec3 lighting = vec3(max(dot(light.backward, surface.normal), 0.0)) * (1 - shadowed);
 	brdf *= lighting * light.color;
 
 	// Diffuse Irradiance IBL
 	vec3 irradiance = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), surface.normal).xyz;
 	vec3 ambient = irradiance * surface.diffuse * kd;
+	// + vec3(clamp(dot(reflect(camera.view, surface.normal), camera.view), 0, 1)) * 0.04
 	return brdf + ambient * 1.5;
 }
 
@@ -267,6 +279,20 @@ vec3 from_linear(vec3 linearRGB)
     vec3 higher = vec3(1.055)*pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
     vec3 lower = linearRGB * vec3(12.92);
     return mix(higher, lower, cutoff);
+}
+
+// https://www.shadertoy.com/view/4sc3D7
+// Valid from 1000 to 40000 K (and additionally 0 for pure full white)
+const float PI2 = 6.2831853071;
+vec3 color_temperature_to_RGB(const in float temperature) {
+  // Values from: http://blenderartists.org/forum/showthread.php?270332-OSL-Goodness&p=2268693&viewfull=1#post2268693   
+  mat3 m = (temperature <= 6500.0) ? mat3(vec3(0.0, -2902.1955373783176, -8257.7997278925690),
+	                                      vec3(0.0, 1669.5803561666639, 2575.2827530017594),
+	                                      vec3(1.0, 1.3302673723350029, 1.8993753891711275)) : 
+	 								 mat3(vec3(1745.0425298314172, 1216.6168361476490, -8257.7997278925690),
+   	                                      vec3(-2666.3474220535695, -2173.1012343082230, 2575.2827530017594),
+	                                      vec3(0.55995389139931482, 0.70381203140554553, 1.8993753891711275)); 
+  return mix(clamp(vec3(m[0] / (vec3(clamp(temperature, 1000.0, 40000.0)) + m[1]) + m[2]), vec3(0.0), vec3(1.0)), vec3(1.0), smoothstep(1000.0, 0.0, temperature));
 }
 
 void main() {
@@ -361,15 +387,10 @@ void main() {
 
 	// Color grading
 	color = pow(max(vec3(0.0), color * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
-	vec3 tonemapped = color;
 
-	/*      vec3 outColor = mix(inColor, inColor * colorTemperatureToRGB(temperature), temperatureStrength); 
-#ifdef WithQuickAndDirtyLuminancePreservation        
-      outColor *= mix(1.0, dot(inColor, vec3(0.2126, 0.7152, 0.0722)) / max(dot(outColor, vec3(0.2126, 0.7152, 0.0722)), 1e-5), LuminancePreservationFactor);  
-#endif
-      fragColor = vec4(outColor, 1.0);
-	*/
-
+	// Color temperature mapping from https://www.shadertoy.com/view/4sc3D7
+	color = color * color_temperature_to_RGB(post_processing.cc_wb_temperature); 
+	color *= mix(1.0, dot(color, vec3(0.2126, 0.7152, 0.0722)) / max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5), 1.0);  
 
 	/*
 	Reinhard,
@@ -380,6 +401,7 @@ void main() {
 	*/
 
 	// Handle tonemapping mode
+	vec3 tonemapped = color;
 	switch(post_processing.tonemapping_mode) {
 		case 0:
 			tonemapped = reinhard(color);

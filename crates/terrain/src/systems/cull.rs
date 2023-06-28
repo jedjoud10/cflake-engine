@@ -146,6 +146,6 @@ pub fn system(system: &mut System) {
         .insert_update(update)
         .after(crate::systems::manager::system)
         .after(crate::systems::generation::system)
-        .after(crate::systems::readback::system)
+        .after(crate::systems::readback::readback_begin_system)
         .before(rendering::systems::rendering::system);
 }

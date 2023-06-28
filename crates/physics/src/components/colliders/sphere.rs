@@ -6,9 +6,9 @@ use crate::PhysicsSurface;
 // The position of the sphere will be fetched from it's Position component
 #[derive(Component)]
 pub struct SphereCollider {
-    pub radius: f32,
-    pub mass: f32,
-    pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) radius: f32,
+    pub(crate) mass: f32,
+    pub(crate) material: Option<Handle<PhysicsSurface>>,
     pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
@@ -25,15 +25,45 @@ impl Clone for SphereCollider {
     }
 } 
 
-impl SphereCollider {
-    // Create a new sphere collider with a specific radius and mass
-    pub fn new(radius: f32, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>) -> Self {
+// Builder for creating a cuboid collider
+pub struct SphereColliderBuilder {
+    inner: SphereCollider,
+}
+
+impl SphereColliderBuilder {
+    // Create a new cuboid collider builder
+    pub fn new(mass: f32, radius: f32) -> Self {
         Self {
-            radius,
-            mass,
-            sensor,
-            handle: None,
-            material,
+            inner: SphereCollider {
+                radius,
+                mass,
+                material: None,
+                sensor: false,
+                handle: None,
+            },
         }
+    }
+
+    // Set the mass of the collider
+    pub fn set_mass(mut self, mass: f32) -> Self {
+        self.inner.mass = mass;
+        self
+    }
+
+    // Set the sensor toggle mode of the collider
+    pub fn set_sensor(mut self, sensor: bool) -> Self {
+        self.inner.sensor = sensor;
+        self
+    }
+
+    // Set the physics surface material of the collider 
+    pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
+        self.inner.material = Some(material);
+        self
+    }
+
+    // Build the collider
+    pub fn build(self) -> SphereCollider {
+        self.inner
     }
 }

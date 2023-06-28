@@ -619,7 +619,7 @@ fn update(world: &mut World) {
                 pick_vec4_color("Color Correction Gamma: ", ui, &mut compositor.post_process.cc_gamma);
                 
                 ui.horizontal(|ui| {
-                    ui.label("Color Temperatue (K): ");
+                    ui.label("Color Temperature (K): ");
                     ui.add(egui::Slider::new(
                         &mut compositor.post_process.cc_wb_temperature,
                         1000f32..=12000f32,

@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 
 use ahash::AHashMap;
 use assets::Assets;
@@ -9,6 +9,7 @@ use graphics::{
     DrawCountIndirectBuffer, DrawIndexedIndirect, DrawIndexedIndirectBuffer, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, StorageAccess, Texel, TriangleBuffer, Vertex, XY,
 };
+use parking_lot::Mutex;
 use rendering::{attributes, AttributeBuffer, MultiDrawIndirectCountMesh};
 use utils::{BitSet, Handle, Storage};
 
@@ -62,22 +63,10 @@ pub struct MemoryManager {
     pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectCountMesh>>,
 
     // Keeps track of the offset/counter async data of each chunk
-    pub(crate) readback_offsets_and_counters: AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>,
+    pub(crate) readback_offsets_and_counters: Arc<Mutex<AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>>>,
 
     // Keeps track of the vertices/triangles async data of nearby chunks
-    pub(crate) readback_vertices_and_triangles: AHashMap<Entity, (Option<Vec<vek::Vec2<f32>>>, Option<Vec<[u32; 3]>>)>,
-
-    // Channel to receive the asynchronous readback data (counter + offset)
-    pub(crate) readback_count_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
-    pub(crate) readback_count_sender: Sender<(Entity, vek::Vec2<u32>)>,
-    pub(crate) readback_offset_receiver: Receiver<(Entity, vek::Vec2<u32>)>,
-    pub(crate) readback_offset_sender: Sender<(Entity, vek::Vec2<u32>)>,
-
-    // Channels to receive the asynchronous readback data (mesh verts + mesh tris)
-    pub(crate) readback_vertices_receiver: Receiver<(Entity, Vec<vek::Vec2<f32>>)>,
-    pub(crate) readback_vertices_sender: Sender<(Entity, Vec<vek::Vec2<f32>>)>,
-    pub(crate) readback_triangles_receiver: Receiver<(Entity, Vec<[u32; 3]>)>,
-    pub(crate) readback_triangles_sender: Sender<(Entity, Vec<[u32; 3]>)>,
+    pub(crate) readback_vertices_and_triangles: Arc<Mutex<AHashMap<Entity, (Option<Vec<vek::Vec2<f32>>>, Option<Vec<[u32; 3]>>)>>>,
 }
 
 impl MemoryManager {
@@ -262,16 +251,6 @@ impl MemoryManager {
         let counters = create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE);
         let offsets = create_counters(graphics, 2, BufferUsage::READ | BufferUsage::WRITE);
 
-        // Transmitter and receiver to send/receive async data
-        let (readback_offset_sender, readback_offset_receiver) =
-            std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
-        let (readback_count_sender, readback_count_receiver) =
-            std::sync::mpsc::channel::<(Entity, vek::Vec2<u32>)>();
-        let (readback_vertices_sender, readback_vertices_receiver) =
-            std::sync::mpsc::channel::<(Entity, Vec<vek::Vec2<f32>>)>();
-        let (readback_triangles_sender, readback_triangles_receiver) =
-            std::sync::mpsc::channel::<(Entity, Vec<[u32; 3]>)>();
-
         // Generate multiple multi-draw indirect meshes that will be used by the global terrain renderer
         let allocation_meshes = (0..allocation_count)
             .map(|allocation| {
@@ -299,10 +278,6 @@ impl MemoryManager {
             compute_find,
             sub_allocation_chunk_indices,
             compute_copy,
-            readback_count_receiver,
-            readback_count_sender,
-            readback_offset_receiver,
-            readback_offset_sender,
             offsets,
             counters,
             allocation_meshes,
@@ -313,12 +288,8 @@ impl MemoryManager {
             visibility_buffers,
             visibility_bitsets,
             culled_count_buffer,
-            readback_offsets_and_counters: AHashMap::new(),
-            readback_vertices_and_triangles: AHashMap::new(),
-            readback_vertices_receiver,
-            readback_vertices_sender,
-            readback_triangles_receiver,
-            readback_triangles_sender,
+            readback_offsets_and_counters: Arc::new(Mutex::new(AHashMap::new())),
+            readback_vertices_and_triangles: Arc::new(Mutex::new(AHashMap::new())),
             output_vertex_buffer_length,
             output_triangle_buffer_length,
             vertices_per_sub_allocation,

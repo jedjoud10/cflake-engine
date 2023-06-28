@@ -38,7 +38,6 @@ pub struct ChunkManager {
     // Octree used for chunk generation
     pub(crate) octree: Octree,
     pub lod_multipliers: Rc<RefCell<Vec<f32>>>,
-
     pub(crate) entities: AHashMap<Node, Entity>,
 
     // Single entity that contains multiple meshes that represent the terrain

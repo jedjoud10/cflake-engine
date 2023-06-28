@@ -92,14 +92,14 @@ fn init(world: &mut World) {
     let surface = Surface::new(plane, material.clone(), id.clone());
     let renderer = Renderer::default();
     let scale = Scale::uniform(50.0);
-    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
-    let collider = CuboidCollider::new(vek::Extent3::new(50.0, 0.1, 50.0), 1.0, false, None);
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
+    let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::new(50.0, 0.1, 50.0)).build();
     scene.insert((surface, renderer, scale, rigidbody, collider));
 
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-    let rigidbody = RigidBody::new(RigidBodyType::Fixed, true, LockedAxes::empty());
-    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 1.0, false, None);
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
+    let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::broadcast(1.0)).build();
     scene.insert((surface, renderer, rigidbody, collider));
 
     // Player renderer
@@ -131,8 +131,8 @@ fn init(world: &mut World) {
             grounded: false,
             jumping: false,
         },
-        CapsuleCollider::new(0.5, 1.7, 2.0, false, None),
-        RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::ROTATION_LOCKED),
+        CapsuleColliderBuilder::new(2.0, 0.5, 1.7).build(),
+        RigidBodyBuilder::new(RigidBodyType::Dynamic).set_locked_axes(LockedAxes::ROTATION_LOCKED).build(),
         Rotation::default(),
     ));
 
@@ -144,10 +144,10 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(sphere, material.clone(), id.clone());
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
-    let collider = SphereCollider::new(1.0, 10.0, false, None);
+    let collider = SphereColliderBuilder::new(10.0, 1.0).build();
     scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a prefab that contains the cube entity and it's components
@@ -155,10 +155,10 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBody::new(RigidBodyType::Dynamic, true, LockedAxes::empty());
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
-    let collider = CuboidCollider::new(vek::Extent3::broadcast(1.0), 10.0, false, None);
+    let collider = CuboidColliderBuilder::new(10.0, vek::Extent3::broadcast(1.0)).build();
     scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 
     // Create a directional light

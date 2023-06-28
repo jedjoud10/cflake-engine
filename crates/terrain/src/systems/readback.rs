@@ -33,33 +33,27 @@ fn readback_begin_update(world: &mut World) {
         chunk.state = ChunkState::PendingReadbackData;
         let counters = &memory.counters;
         let offsets = &memory.offsets;
-        let offset_sender = memory.readback_offset_sender.clone();
-        let count_sender = memory.readback_count_sender.clone();
 
         // Readback the counters asynchronously
+        let hashmap = memory.readback_offsets_and_counters.clone();
         counters
             .async_read(.., move |counters| {
-                let _ = count_sender.send((entity, vek::Vec2::from_slice(counters)));
+                let mut locked = hashmap.lock();
+                let (_, out) = locked.entry(entity).or_default();
+                *out = Some(vek::Vec2::from_slice(counters));
             })
             .unwrap();
 
         // Readback the offsets asynchronously
+        let hashmap = memory.readback_offsets_and_counters.clone();
         offsets
             .async_read(.., move |offsets| {
-                let _ = offset_sender.send((entity, vek::Vec2::from_slice(offsets)));
+                let mut locked = hashmap.lock();
+                let (out, _) = locked.entry(entity).or_default();
+                *out = Some(vek::Vec2::from_slice(offsets));
             })
             .unwrap();
     };
-
-    for (entity, offset) in memory.readback_offset_receiver.try_iter() {
-        let (offsets, _) = memory.readback_offsets_and_counters.entry(entity).or_default();
-        *offsets = Some(offset);
-    }
-
-    for (entity, counter) in memory.readback_count_receiver.try_iter() {
-        let (_, counters) = memory.readback_offsets_and_counters.entry(entity).or_default();
-        *counters = Some(counter);
-    }
     
     // Start doing a mesh async readback for the chunk of last frame
     let last_chunk_generated = scene
@@ -78,10 +72,10 @@ fn readback_begin_update(world: &mut World) {
             
             let vertices = &mesher.temp_vertices;
             let triangles = &mesher.temp_triangles;
-            let triangles_sender = memory.readback_triangles_sender.clone();
+            let hashmap = memory.readback_vertices_and_triangles.clone();
+            /*
             let vertices_sender = memory.readback_vertices_sender.clone();
     
-            /*
             // Readback the vertices asynchronously
             triangles
                 .async_read(.., move |triangles| {
@@ -118,14 +112,19 @@ fn readback_end_update(world: &mut World) {
         &terrain.settings,
     );
 
-    let iter = memory.readback_offsets_and_counters.iter().filter(|(_, (a, b))| a.is_some() && b.is_some()).map(|(e, _)| e).cloned().next();
-    let Some(entity) = iter else {
+    // Find the first entity that has both counters and offsets fetched back
+    let mut hashmap = memory.readback_offsets_and_counters.lock();
+    let iter = hashmap
+        .iter()
+        .filter_map(|(e, (a, b))| {
+            let a = a.as_ref()?;
+            let b = b.as_ref()?;
+            Some((*e, *a, *b))
+        }).next();
+    let Some((entity, offset, count)) = iter else {
         return;
     };
-    let val = memory.readback_offsets_and_counters.remove(&entity).unwrap();
-    let (Some(offset), Some(count)) = val else {
-        panic!();
-    };
+    hashmap.remove(&entity).unwrap();
 
     // Fetch the appropriate chunk
     let mut entry = scene.entry_mut(entity).unwrap();
@@ -165,12 +164,11 @@ fn readback_end_update(world: &mut World) {
     // Set visibility if the chunk is actually visible
     if valid {
         manager.new_visibilities.push((chunk.allocation, chunk.local_index));
-        //memory.visibility_bitsets[chunk.allocation].set(chunk.local_index);
     }
 }
 
-// Generates the voxels and appropriate mesh for each of the visible chunks
-pub fn system(system: &mut System) {
+// Reads back the data from the GPU at the start of the frame
+pub fn readback_begin_system(system: &mut System) {
     system
         .insert_update(readback_begin_update)
         .before(crate::systems::manager::system)
@@ -179,8 +177,8 @@ pub fn system(system: &mut System) {
         .before(rendering::systems::rendering::system);
 }
 
-// Generates the voxels and appropriate mesh for each of the visible chunks
-pub fn system2(system: &mut System) {
+// Handles the readback data for *any* given chunk
+pub fn readback_end_system(system: &mut System) {
     system
         .insert_update(readback_end_update)
         .after(crate::systems::manager::system)

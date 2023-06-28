@@ -73,6 +73,7 @@ pub struct Chunk {
     pub(crate) node: Option<Node>,
     pub(crate) generation_priority: f32,
     pub(crate) readback_priority: Option<f32>,
+    pub(crate) collisions: bool,
 }
 
 impl Chunk {

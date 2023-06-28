@@ -45,9 +45,9 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        2048,
-        [0.02, 0.10, 0.50, 1.0],
-        2000.0,
+        1024,
+        [0.10, 0.25, 0.75, 1.0],
+        1000.0,
         &graphics,
     );
 
@@ -142,6 +142,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
+    let i = std::time::Instant::now();
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
@@ -302,7 +303,7 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
-        for i in 0..4 {
+        for i in 0..3 {
             render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
         }
         graphics.submit(false);

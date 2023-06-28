@@ -88,8 +88,6 @@ impl Material for TerrainMaterial {
                     compiler.use_define("flatnormals", "");
                 }
 
-
-
                 // Multi-draw indirect youpieee
                 compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
                     "position_scale_buffer",

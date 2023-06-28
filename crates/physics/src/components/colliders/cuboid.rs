@@ -7,9 +7,9 @@ use crate::PhysicsSurface;
 // The position and rotation of the cuboid will be fetched from it's Position component and Rotation component
 #[derive(Component)]
 pub struct CuboidCollider {
-    pub half_extent: vek::Extent3<f32>,
-    pub mass: f32,
-    pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) half_extent: vek::Extent3<f32>,
+    pub(crate) mass: f32,
+    pub(crate) material: Option<Handle<PhysicsSurface>>,
     pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
@@ -26,15 +26,45 @@ impl Clone for CuboidCollider {
     }
 } 
 
-impl CuboidCollider {
-    // Create a new cuboid collider with a specific half-extent and mass
-    pub fn new(half_extent: vek::Extent3<f32>, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>,) -> Self {
+// Builder for creating a cuboid collider
+pub struct CuboidColliderBuilder {
+    inner: CuboidCollider,
+}
+
+impl CuboidColliderBuilder {
+    // Create a new cuboid collider builder
+    pub fn new(mass: f32, half_extent: vek::Extent3<f32>) -> Self {
         Self {
-            half_extent,
-            mass,
-            material,
-            sensor,
-            handle: None,
+            inner: CuboidCollider {
+                half_extent,
+                mass,
+                material: None,
+                sensor: false,
+                handle: None,
+            },
         }
+    }
+
+    // Set the mass of the collider
+    pub fn set_mass(mut self, mass: f32) -> Self {
+        self.inner.mass = mass;
+        self
+    }
+
+    // Set the sensor toggle mode of the collider
+    pub fn set_sensor(mut self, sensor: bool) -> Self {
+        self.inner.sensor = sensor;
+        self
+    }
+
+    // Set the physics surface material of the collider 
+    pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
+        self.inner.material = Some(material);
+        self
+    }
+
+    // Build the collider
+    pub fn build(self) -> CuboidCollider {
+        self.inner
     }
 }

@@ -60,19 +60,23 @@ pub trait Pass {
 impl Pass for DeferredPass {
     type C = SceneColorLayout;
     type DS = SceneDepthLayout;
-
+    
+    #[inline(always)]
     fn pass_type() -> PassType {
         PassType::Deferred
     }
 
+    #[inline(always)]
     fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
         surface.culled = culled;
     }
 
+    #[inline(always)]
     fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
         !crate::pipeline::intersects_frustum(&defaults.camera_frustum, aabb, mesh)
     }
 
+    #[inline(always)]
     fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
         !surface.culled && surface.visible && renderer.visible
     }
@@ -82,18 +86,22 @@ impl Pass for ShadowPass {
     type C = ();
     type DS = ShadowDepthLayout;
 
+    #[inline(always)]
     fn pass_type() -> PassType {
         PassType::Shadow
     }
 
+    #[inline(always)]
     fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
         surface.shadow_culled = culled;
     }
 
+    #[inline(always)]
     fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
         !crate::pipeline::intersects_lightspace(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
     }
 
+    #[inline(always)]
     fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
         !surface.shadow_culled && surface.visible && renderer.visible
     }

@@ -171,6 +171,7 @@ fn update(world: &mut World) {
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
                         readback_priority: None,
+                        collisions: false,
                         ranges: None,
                         node: None,
                     };
@@ -187,6 +188,7 @@ fn update(world: &mut World) {
             manager.chunks_per_allocation += count;
         }
 
+
         // Get all free chunks in the world and use them
         let mut query = scene
             .query_mut::<(&mut Chunk, &mut Position, &mut Scale, &Entity)>()
@@ -194,11 +196,11 @@ fn update(world: &mut World) {
             .filter(|(x, _, _, _)| x.state == ChunkState::Free)
             .collect::<Vec<_>>();
 
-        // Sort all nodes from closest to furthest
-        //added.sort_by_key(|node| node.position().as_::<f32>().distance(new) as i32);
+        // Sort all nodes from lowed LOD to highest LOD
+        //added.sort_by_key(|node| node.depth());
 
-        // Sort all chunks from closest to furthest
-        //query.sort_by_key(|(_, p, _, _)| p.distance(new) as i32);
+        // Sort all chunks by allocation
+        //query.sort_by_key(|(c, _, _, _)| c.allocation);
 
         // Set the "dirty" state for newly added chunks
         assert!(query.len() >= added.len());

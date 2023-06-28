@@ -20,6 +20,8 @@ void main() {
     // Convert from 4 floats into uints 
     uint packed_cell_position = floatBitsToUint(packed.x);
     uint packed_inner_position = floatBitsToUint(packed.y);
+    uint packed_normals = floatBitsToUint(packed.z);
+    vec4 normals = unpackSnorm4x8(packed_normals);
 
     // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
     vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
@@ -29,6 +31,6 @@ void main() {
 	// Model space -> World space -> Clip space
     vec4 position_scale = position_scale_buffer.data[gl_DrawID];
     vec4 world_pos = vec4(((position.xyz * scaling_factor) * position_scale.w + position_scale.xyz), 1);
-    vec4 projected = constants.lightspace * world_pos; 
+    vec4 projected = constants.lightspace * (world_pos + vec4(normals.xyz, 0) * 10.0); 
     gl_Position = projected;
 }

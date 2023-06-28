@@ -1,44 +1,59 @@
 use ecs::Component;
 use rendering::Mesh;
 use utils::Handle;
-
-use crate::PhysicsSurface;
-
-// Mesh collider variants since we can create =/fetch meshes in different ways
-// You can only use the mesh of a direct mesh, since we do not know the mesh of indirectly rendered entities
-pub(crate) enum InnerMeshCollider {
-    ExplicitOwned {
-        vertices: Vec<vek::Vec3<f32>>,
-        triangles: Vec<[u32; 3]>,
-    },
-
-    /*
-    Fetched {
-        mesh: Handle<Mesh>,
-    }
-    */
-}
-
+use crate::{PhysicsSurface};
 
 // Mesh collider that will represent a mesh using it's triangles and vertices
 #[derive(Component)]
 pub struct MeshCollider {
-    pub(crate) inner: Option<InnerMeshCollider>,
-    pub mass: f32,
-    pub material: Option<Handle<PhysicsSurface>>,
+    pub(crate) vertices: Option<Vec<vek::Vec3<f32>>>,
+    pub(crate) triangles: Option<Vec<[u32; 3]>>,
+    pub(crate) mass: f32,
+    pub(crate) material: Option<Handle<PhysicsSurface>>,
     pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
 }
 
-impl MeshCollider {
-    // Create a new mesh collider with specific vertices and triangles
-    pub fn new(vertices: Vec<vek::Vec3<f32>>, triangles: Vec<[u32; 3]>, mass: f32, sensor: bool, material: Option<Handle<PhysicsSurface>>) -> Self {
+// Builder for creating a mesh collider
+pub struct MeshColliderBuilder {
+    inner: MeshCollider,
+}
+
+impl MeshColliderBuilder {
+    // Create a new mesh collider builder
+    pub fn new(vertices: Vec<vek::Vec3<f32>>, triangles: Vec<[u32; 3]>, mass: f32) -> Self {
         Self {
-            inner: Some(InnerMeshCollider::ExplicitOwned { vertices, triangles }),
-            mass,
-            material,
-            sensor,
-            handle: None,
+            inner: MeshCollider {
+                vertices: None,
+                triangles: None,
+                mass,
+                material: None,
+                sensor: false,
+                handle: None,
+            },
         }
+    }
+
+    // Set the mass of the collider
+    pub fn set_mass(mut self, mass: f32) -> Self {
+        self.inner.mass = mass;
+        self
+    }
+
+    // Set the sensor toggle mode of the collider
+    pub fn set_sensor(mut self, sensor: bool) -> Self {
+        self.inner.sensor = sensor;
+        self
+    }
+
+    // Set the physics surface material of the collider 
+    pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
+        self.inner.material = Some(material);
+        self
+    }
+
+    // Build the collider
+    pub fn build(self) -> MeshCollider {
+        self.inner
     }
 }

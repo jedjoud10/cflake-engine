@@ -26,8 +26,6 @@ members = [
 ]
 
 [features]
-# TODO: Figure out how to handle this
-#two-dim = ["app/two-dim"]
 extended-tuples = ["app/extended-tuples"]
 extended-bitmasks = ["app/extended-bitmasks"]
 headless = ["app/headless"]
@@ -44,3 +42,6 @@ thiserror = "1.0.37"
 
 [profile.release]
 incremental = true
+
+[profile.dev]
+opt-level = 3

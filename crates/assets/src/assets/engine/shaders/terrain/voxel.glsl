@@ -19,12 +19,12 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out vec3 color, out uint material) {
-    position *= 0.8;
+    //position *= 1.8;
 
     // Blend between the two biomes
     float blend = clamp(snoise(position.xz * 0.0001) * 0.5 + 0.5, 0, 1);
     blend = smoothstep(0.0, 1.0, clamp((blend - 0.5) * 6 + 0.5, 0, 1));
-       
+
     // Sand/Dune biome
     float biome1 = 0;
     vec3 color1 = vec3(0);
@@ -38,9 +38,10 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         biome1 += (1 - spikey) * sin(dot(position.xz, vec2(1, 1)) * 0.01 - 1.202) * 30;
         biome1 += (1 - spikey) * cos(dot(position.xz, vec2(0.2, 2)) * 0.001 + 1.2) * 45;
         float spikey2 = pow(abs(snoise(rotated * vec2(2.3, 0.7) * 0.0013 + vec2(snoise(position * 0.0012)) * 0.2)), 1.2);
-        biome1 += spikey * spikey2 * 140;
+        biome1 += spikey * spikey2 * 40;
         biome1 += position.y;
-        color1 = (vec3(1 - spikey2) * 0.3 + 0.5 + snoise(position * 0.1) * 0.1) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
+        color1 = clamp(vec3(pow(1 - (spikey2 * spikey), 1)), vec3(0), vec3(1)) * 0.7 + 0.8;
+        color1 *= (snoise(position * 0.1) * 0.1 + 0.9) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
     }
 
     // Rocky biome
@@ -68,5 +69,13 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     }
     
     // , opUnion(-sdBox(position, vec3(1000)), sdSphere(position, 1200)))
-    return -density;
+    //return ;
+    float pyramide = sdPyramid(position * 0.002 + vec3(0, 0.112, 0), 0.6) * 240;
+    pyramide = pyramide + (floor(position.y / 20) - position.y / 20) * 6;
+
+    if (pyramide < 5.0) {
+        color = (snoise(position * 0.1) * 0.1 + 0.9) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
+    }
+
+    return opIntersection(-density, -pyramide);
 }

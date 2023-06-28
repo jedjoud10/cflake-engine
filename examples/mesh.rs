@@ -52,9 +52,9 @@ fn init(world: &mut World) {
 
     // Create a new material instance
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: None,
-        normal_map: None,
-        mask_map: None,
+        albedo_map: Some(diffuse),
+        normal_map: Some(normal),
+        mask_map: Some(mask),
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
@@ -92,7 +92,7 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight::default();
+    let light = DirectionalLight { intensity: 1.0, color: vek::Rgb::broadcast(255)  };
     let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }

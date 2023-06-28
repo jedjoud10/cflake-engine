@@ -86,12 +86,9 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
             continue;
         };
 
-        let (vertices, triangles) = match collider.inner.take().unwrap() {
-            crate::InnerMeshCollider::ExplicitOwned { vertices, triangles } => {
-                let vertices: Vec<rapier3d::na::Point3<f32>> = vertices.into_iter().map(|x| crate::vek_vec_to_na_point(x)).collect::<_>();
-                (vertices, triangles)
-            },
-        };
+        let vertices = collider.vertices.take().unwrap();
+        let triangles = collider.triangles.take().unwrap();
+        let vertices: Vec<rapier3d::na::Point3<f32>> = vertices.into_iter().map(|x| crate::vek_vec_to_na_point(x)).collect::<_>();
 
         let collider = rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
             .mass(collider.mass)
@@ -242,9 +239,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     for sphere_collider in scene.query_with::<&SphereCollider>(filter) {
         if let Some(handle) = sphere_collider.handle {
             let collider = physics.colliders.get_mut(handle).unwrap();
-            let ball = collider.shape_mut().as_ball_mut().unwrap();
-            ball.radius = sphere_collider.radius;
-
             let physics_surface = sphere_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
             collider.set_friction(physics_surface.friction);
             collider.set_restitution(physics_surface.restitution);
@@ -256,11 +250,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     for cuboid_collider in scene.query_with::<&CuboidCollider>(filter) {
         if let Some(handle) = cuboid_collider.handle {
             let collider = physics.colliders.get_mut(handle).unwrap();
-            let cuboid = collider.shape_mut().as_cuboid_mut().unwrap();
-            cuboid.half_extents.x = cuboid_collider.half_extent.w;
-            cuboid.half_extents.y = cuboid_collider.half_extent.h;
-            cuboid.half_extents.z = cuboid_collider.half_extent.d;
-
             let physics_surface = cuboid_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
             collider.set_friction(physics_surface.friction);
             collider.set_restitution(physics_surface.restitution);
@@ -272,11 +261,6 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
     for capsule_collider in scene.query_with::<&CapsuleCollider>(filter) {
         if let Some(handle) = capsule_collider.handle {
             let collider = physics.colliders.get_mut(handle).unwrap();
-            let capsule = collider.shape_mut().as_capsule_mut().unwrap();
-            capsule.segment.a = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (-capsule_collider.height / 2.0));
-            capsule.segment.b = util::vek_vec_to_na_point(vek::Vec3::unit_y() * (capsule_collider.height / 2.0));
-            capsule.radius = capsule_collider.radius;
-
             let physics_surface = capsule_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
             collider.set_friction(physics_surface.friction);
             collider.set_restitution(physics_surface.restitution);
