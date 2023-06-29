@@ -142,7 +142,6 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 // Clear the window and render the entities to the texture
 fn render(world: &mut World) {
     // Fetch the resources that we will use for rendering the scene
-    let i = std::time::Instant::now();
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
     let renderer = &mut *renderer;
@@ -151,19 +150,6 @@ fn render(world: &mut World) {
     let time = world.get::<Time>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let environment = world.get::<Environment>().unwrap();
-
-    // Store the new timing info
-    renderer
-        .timing_buffer
-        .write(
-            &[TimingUniform {
-                frame_count: time.frame_count().try_into().unwrap(),
-                delta_time: time.delta().as_secs_f32(),
-                time_since_startup: time.startup().elapsed().as_secs_f32(),
-            }],
-            0,
-        )
-        .unwrap();
 
     // Reset the stats
     renderer.deferred_pass_stats = Default::default();
@@ -209,7 +195,7 @@ fn render(world: &mut World) {
     let Some(directional_light)  = renderer.main_directional_light else {
         return;
     };
-
+    
     // Get the directioanl light and rotation of the light
     let directional_light = scene.entry(directional_light).unwrap();
     let (&directional_light, &directional_light_rotation) = directional_light
@@ -229,7 +215,21 @@ fn render(world: &mut World) {
         )
         .unwrap();
 
+    // Store the new timing info
+    renderer
+        .timing_buffer
+        .write(
+            &[TimingUniform {
+                frame_count: time.frame_count().try_into().unwrap(),
+                delta_time: time.delta().as_secs_f32(),
+                time_since_startup: time.startup().elapsed().as_secs_f32(),
+            }],
+            0,
+        )
+        .unwrap();
+
     // Get the camera and it's values
+    let i = std::time::Instant::now();
     let camera = scene.entry(camera).unwrap();
     let (&camera, &camera_position, &camera_rotation) = camera
         .as_query::<(&Camera, &coords::Position, &coords::Rotation)>()
@@ -237,8 +237,7 @@ fn render(world: &mut World) {
     let camera_view = camera.view_matrix(&camera_position, &camera_rotation);
     let camera_projection = camera.projection_matrix();
     let camera_frustum = math::Frustum::<f32>::from_camera_matrices(camera_projection, camera_view);
-    let index = (time.frame_count() % 2) as usize;
-
+    
     // Create the shared material resources
     let mut default = DefaultMaterialResources {
         camera_buffer: &renderer.camera_buffer,
@@ -269,6 +268,7 @@ fn render(world: &mut World) {
         environment_map: &environment.environment_map,
     };
     drop(scene);
+    
 
     // Render into a single cascade of the shadow map    
     fn render_shadows_pipelines(
@@ -306,7 +306,7 @@ fn render(world: &mut World) {
         for i in 0..3 {
             render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
         }
-        graphics.submit(false);
+        //graphics.submit(false);
         drop(_shadowmap);
     }
 
@@ -326,6 +326,7 @@ fn render(world: &mut World) {
     }
 
     drop(render_pass);
+    //dbg!(i.elapsed());
     graphics.submit(false);
 }
 

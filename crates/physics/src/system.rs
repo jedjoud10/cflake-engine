@@ -1,7 +1,9 @@
+use std::cell::Cell;
+
 use rapier3d::prelude::*;
-use utils::{Time, Storage};
+use utils::{Time, Storage, Handle};
 use coords::{Position, Rotation};
-use ecs::{Scene, added, modified, Entity};
+use ecs::{Scene, added, modified, Entity, Component};
 use world::{System, World, post_user, user};
 use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider, PhysicsSurface, CapsuleCollider, CharacterController, util};
 use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
@@ -95,6 +97,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
             .sensor(collider.sensor)
             .user_data(entity.to_raw() as u128)
             .build();
+
         physics.colliders.insert_with_parent(collider, handle, &mut physics.bodies);
     }
 
@@ -234,38 +237,149 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
         }
     }
 
-    // Synchronize the Sphere Collider components
-    let filter = modified::<&SphereCollider>();
-    for sphere_collider in scene.query_with::<&SphereCollider>(filter) {
-        if let Some(handle) = sphere_collider.handle {
-            let collider = physics.colliders.get_mut(handle).unwrap();
-            let physics_surface = sphere_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
-            collider.set_friction(physics_surface.friction);
-            collider.set_restitution(physics_surface.restitution);
+    // Implemented for all types of colliders to fetch common data
+    trait GenericCollider {
+        type RawRapierCollider;
+        fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle>;
+        fn modified(&self) -> &Cell<bool>;
+        fn mass(&self) -> f32;
+        fn material(&self) -> &Option<Handle<PhysicsSurface>>;
+        fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider;
+        fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider);
+    }
+
+    impl GenericCollider for SphereCollider {
+        type RawRapierCollider = rapier3d::geometry::Ball;
+        
+        #[inline(always)]
+        fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+            self.handle
+        }
+
+        #[inline(always)]
+        fn modified(&self) -> &Cell<bool> {
+            &self.modified
+        }
+
+        #[inline(always)]
+        fn mass(&self) -> f32 {
+            self.mass
+        }
+
+        #[inline(always)]
+        fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+            &self.material
+        }
+
+        #[inline(always)]
+        fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+            generic.shape_mut().as_ball_mut().unwrap()
+        }
+
+        #[inline(always)]
+        fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
+            custom.radius = self.radius
         }
     }
 
-    // Synchronize the Cuboid Collider components
-    let filter = modified::<&CuboidCollider>();
-    for cuboid_collider in scene.query_with::<&CuboidCollider>(filter) {
-        if let Some(handle) = cuboid_collider.handle {
-            let collider = physics.colliders.get_mut(handle).unwrap();
-            let physics_surface = cuboid_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
-            collider.set_friction(physics_surface.friction);
-            collider.set_restitution(physics_surface.restitution);
+    
+    impl GenericCollider for CuboidCollider {
+        type RawRapierCollider = rapier3d::geometry::Cuboid;
+        
+        #[inline(always)]
+        fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+            self.handle
+        }
+
+        #[inline(always)]
+        fn modified(&self) -> &Cell<bool> {
+            &self.modified
+        }
+
+        #[inline(always)]
+        fn mass(&self) -> f32 {
+            self.mass
+        }
+
+        #[inline(always)]
+        fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+            &self.material
+        }
+
+        #[inline(always)]
+        fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+            generic.shape_mut().as_cuboid_mut().unwrap()
+        }
+
+        #[inline(always)]
+        fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
+            custom.half_extents = vector![self.half_extent.w, self.half_extent.h, self.half_extent.d];
         }
     }
 
-    // Synchronize the Capsule Collider components
-    let filter: ecs::Wrap<ecs::Modified<&CapsuleCollider>> = modified::<&CapsuleCollider>();
-    for capsule_collider in scene.query_with::<&CapsuleCollider>(filter) {
-        if let Some(handle) = capsule_collider.handle {
-            let collider = physics.colliders.get_mut(handle).unwrap();
-            let physics_surface = capsule_collider.material.as_ref().map(|x| surfaces[x]).unwrap_or_default();
-            collider.set_friction(physics_surface.friction);
-            collider.set_restitution(physics_surface.restitution);
+    impl GenericCollider for CapsuleCollider {
+        type RawRapierCollider = rapier3d::geometry::Capsule;
+        
+        #[inline(always)]
+        fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+            self.handle
+        }
+
+        #[inline(always)]
+        fn modified(&self) -> &Cell<bool> {
+            &self.modified
+        }
+
+        #[inline(always)]
+        fn mass(&self) -> f32 {
+            self.mass
+        }
+
+        #[inline(always)]
+        fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+            &self.material
+        }
+
+        #[inline(always)]
+        fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+            generic.shape_mut().as_capsule_mut().unwrap()
+        }
+
+        #[inline(always)]
+        fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
+            custom.radius = self.radius;
         }
     }
+    
+
+    // Common function that will update the inner rapier data of colliders
+    fn update_rapier_colliders<C: Component + GenericCollider>(
+        scene: &mut Scene, 
+        surfaces: &Storage<PhysicsSurface>,
+        physics: &mut Physics,
+    ) {
+        let filter = modified::<&C>();
+        for component in scene.query_with::<&C>(filter) {
+            if let Some(handle) = C::handle(component) {
+                if C::modified(component).take() {
+                    let physics_surface = C::material(component).as_ref().map(|x| surfaces[x]).unwrap_or_default();
+                    let collider = physics.colliders.get_mut(handle).unwrap();
+                    collider.set_friction(physics_surface.friction);
+                    collider.set_restitution(physics_surface.restitution);
+                    collider.set_mass(C::mass(component));
+                    let custom = C::cast_rapier_collider(collider);
+                    C::set_custom_rapier_collider_settings(component, custom);
+                }
+            }
+        }
+    }
+
+    update_rapier_colliders::<SphereCollider>(scene, surfaces, physics);
+    update_rapier_colliders::<CuboidCollider>(scene, surfaces, physics);
+    update_rapier_colliders::<CapsuleCollider>(scene, surfaces, physics);
+
+    // Mesh colliders are different because they require us to regenerate them in order to update vertex/triangle buffer
+    // TODO: implement
 }
 
 // Checks all the character controllers in the world and updates them

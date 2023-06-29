@@ -83,7 +83,7 @@ impl StagingPool {
             let free = !self.used.get(*i, Ordering::Relaxed);
             cap && mode && free
         }).unwrap_or_else(|| {
-            log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
+            //log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
             
             // Scale up the capacity (so we don't have to allocate a new block anytime soon)
             let capacity = (capacity * 4).next_power_of_two();
@@ -102,7 +102,7 @@ impl StagingPool {
 
             // Create the new buffer
             let buffer = graphics.device().create_buffer(&desc);
-            log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
+            //log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
             let index = self.allocations.push(buffer);
             (index, &self.allocations[index])
         })
@@ -119,7 +119,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> StagingView<'a> {
-        log::trace!("map buffer read: offset: \n{offset}\nsize: {size}");
+        //log::trace!("map buffer read: offset: \n{offset}\nsize: {size}");
 
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
@@ -153,7 +153,7 @@ impl StagingPool {
         size: u64,
         callback: impl FnOnce(&[u8]) + Send + 'static,
     ) {
-        log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
+        //log::trace!("map buffer read sync: offset: \n{offset}\nsize: {size}");
 
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
@@ -185,7 +185,7 @@ impl StagingPool {
         offset: u64,
         size: u64,
     ) -> Option<StagingViewWrite<'a>> {
-        log::trace!("map buffer write: offset: \n{offset}\nsize: {size}");
+        //log::trace!("map buffer write: offset: \n{offset}\nsize: {size}");
         let size = NonZeroU64::new(size);
         let write = graphics
             .queue()
@@ -203,7 +203,7 @@ impl StagingPool {
         size: u64,
         src: &[u8],
     ) {
-        log::trace!("write buffer: offset: \n{offset}\nsize: {size}");
+        //log::trace!("write buffer: offset: \n{offset}\nsize: {size}");
         graphics.queue().write_buffer(buffer, offset, src);
     }
 
@@ -217,7 +217,7 @@ impl StagingPool {
         size: u64,
         dst: &mut [u8],
     ) {
-        log::trace!("read buffer: offset: \n{offset}\nsize: {size}");
+        //log::trace!("read buffer: offset: \n{offset}\nsize: {size}");
         let view = self.map_buffer_read(graphics, buffer, offset, size);
         dst.copy_from_slice(view.as_ref());
     }
@@ -234,7 +234,7 @@ impl StagingPool {
         extent: wgpu::Extent3d,
         size: u64,
     ) -> TextureStagingView<'a> {
-        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+        //log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
 
         // Get a encoder (reused or not to perform a copy)
         let (i, staging) = self.find_or_allocate(graphics, size, MapMode::Read);
@@ -319,7 +319,7 @@ impl StagingPool {
         extent: wgpu::Extent3d,
         dst: &mut [u8],
     ) {
-        log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
+        //log::trace!("map texture read: \nimage copy texture: {image_copy_texture:#?}\ndata layout: {data_layout:#?}\nextent: {extent:#?}");
         let view = self.map_texture_read(
             graphics,
             image_copy_texture,

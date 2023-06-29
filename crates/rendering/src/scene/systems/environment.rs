@@ -94,7 +94,7 @@ fn render(world: &mut World) {
         active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1)).unwrap();
     }
 
-    graphics.submit(false);
+    //graphics.submit(false);
 }
 
 // The environment system is responsible for creatin the HDRi environment map to use for specular and diffuse IBL

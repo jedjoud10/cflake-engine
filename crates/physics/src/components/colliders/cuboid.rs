@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use ecs::Component;
 use utils::Handle;
 
@@ -12,6 +14,33 @@ pub struct CuboidCollider {
     pub(crate) material: Option<Handle<PhysicsSurface>>,
     pub(crate) sensor: bool,
     pub(crate) handle: Option<rapier3d::geometry::ColliderHandle>,
+    pub(crate) modified: Cell<bool>,
+}
+
+impl CuboidCollider {
+    // Update the half-extent of the cuboid collider
+    pub fn set_half_extent(&mut self, half_extent: vek::Extent3<f32>) {
+        self.half_extent = half_extent;
+        self.modified.set(true);
+    }
+
+    // Update the mass of the sphere collider
+    pub fn set_mass(&mut self, mass: f32) {
+        self.mass = mass;
+        self.modified.set(true);
+    }
+    
+    // Update the material used by the collider
+    pub fn set_material(&mut self, material: Option<Handle<PhysicsSurface>>) {
+        self.material = material;
+        self.modified.set(true);
+    }
+    
+    // Update the sensor state of the collider
+    pub fn set_sensor(&mut self, sensor: bool) {
+        self.sensor = sensor;
+        self.modified.set(true);
+    }
 }
 
 impl Clone for CuboidCollider {
@@ -21,6 +50,7 @@ impl Clone for CuboidCollider {
             mass: self.mass,
             handle: None,
             sensor: self.sensor,
+            modified: Cell::new(false),
             material: self.material.clone()
         }
     }
@@ -40,6 +70,7 @@ impl CuboidColliderBuilder {
                 mass,
                 material: None,
                 sensor: false,
+                modified: Cell::new(false),
                 handle: None,
             },
         }

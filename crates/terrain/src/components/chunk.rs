@@ -9,8 +9,13 @@ pub struct ChunkViewer;
 // State of the mesh that we are reading back to the CPU for collisions
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MeshReadbackState {
+    // The mesh data transfer has yet to begin
     PendingReadbackStart,
+
+    // The mesh data transfer begun, we are waiting for results
     PendingReadbackData,
+    
+    // Mesh was completed readback to the CPU
     Complete,
 }
 
@@ -35,7 +40,6 @@ pub enum ChunkState {
     // The chunk's mesh has been generated successfully
     Generated {
         empty: bool,
-        mesh_readback_state: Option<MeshReadbackState>,
     },
 
     // The chunk needs to be removed
@@ -66,14 +70,20 @@ impl ChunkState {
 // Each chunk has a specific state associated with it that represents what stage it's in for terrain generation
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Chunk {
+    // Chunk memory settings and its index within our memory
     pub(crate) allocation: usize,
     pub(crate) local_index: usize,
     pub(crate) ranges: Option<vek::Vec2<u32>>,
+
+    // Chunk states
     pub(crate) state: ChunkState,
     pub(crate) node: Option<Node>,
+
+    // Higher values mean that the chunk must generate before other chunks
     pub(crate) generation_priority: f32,
-    pub(crate) readback_priority: Option<f32>,
-    pub(crate) collisions: bool,
+
+    // If this is Some, then the chunk will generate collisions with the readback mesh
+    pub(crate) mesh_readback_state: Option<MeshReadbackState>,
 }
 
 impl Chunk {

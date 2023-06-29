@@ -1,6 +1,7 @@
 use ahash::AHashMap;
 use ecs::{Entity, Scene};
 
+use physics::{RigidBody, MeshCollider};
 use utils::Time;
 use world::{System, World};
 
@@ -17,7 +18,7 @@ fn readback_begin_update(world: &mut World) {
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (_manager, _voxelizer, mesher, memory, _settings) = (
+    let (_manager, _voxelizer, mesher, memory, settings) = (
         &mut terrain.manager,
         &terrain.voxelizer,
         &terrain.mesher,
@@ -55,34 +56,35 @@ fn readback_begin_update(world: &mut World) {
             .unwrap();
     };
     
-    // Start doing a mesh async readback for the chunk of last frame
-    let last_chunk_generated = scene
-        .query_mut::<(&mut Chunk, &Entity)>()
-        .into_iter()
-        .filter(|(chunk, _)| 
-            chunk.readback_priority.is_some()
-            && chunk.state == ChunkState::Generated {
-                empty: false,
-                mesh_readback_state: Some(MeshReadbackState::PendingReadbackStart)
-            })
-        .next();
-    if let Some((chunk, &entity)) = last_chunk_generated {
-        if let ChunkState::Generated { mesh_readback_state: Some(mesh_readback_state), .. } = &mut chunk.state {
-            *mesh_readback_state = MeshReadbackState::PendingReadbackData;
-            
+    
+    // Fetch any given chunk that we can readback a mesh for (collisions only)
+    if settings.mesher.collisions {
+        let mesh_readback_chunk = scene
+            .query_mut::<(&mut Chunk, &Entity, &RigidBody, &MeshCollider)>()
+            .into_iter()
+            .filter(|(chunk, _, _, _)| 
+                chunk.mesh_readback_state == Some(MeshReadbackState::PendingReadbackStart)
+                && chunk.state == ChunkState::Generated {
+                    empty: false,
+                })
+            .next();
+
+
+        if let Some((chunk, &entity, _, _)) = mesh_readback_chunk {
+            chunk.mesh_readback_state = Some(MeshReadbackState::PendingReadbackData);
             let vertices = &mesher.temp_vertices;
             let triangles = &mesher.temp_triangles;
             let hashmap = memory.readback_vertices_and_triangles.clone();
             /*
             let vertices_sender = memory.readback_vertices_sender.clone();
-    
+        
             // Readback the vertices asynchronously
             triangles
                 .async_read(.., move |triangles| {
                     let _ = triangles_sender.send((entity, triangles.to_vec()));
                 })
                 .unwrap();
-    
+            
             // Readback the triangles asynchronously
             vertices
                 .async_read(.., move |vertices| {
@@ -90,8 +92,8 @@ fn readback_begin_update(world: &mut World) {
                 })
                 .unwrap();
             */
-        }
-    };
+        };
+    }
 }
 
 // At the end of the frame, right before culling
@@ -148,22 +150,15 @@ fn readback_end_update(world: &mut World) {
     let offset = offset.x / vertices_per_sub_allocation;
 
     // Update chunk range (if valid) and set visibility
-    let valid = count > 0;
+    let solid = count > 0;
+    chunk.state = ChunkState::Generated { empty: !solid };
 
-    // Create the mesh readback state based on our readback priority
-    let mesh_readback_state = valid.then_some(MeshReadbackState::PendingReadbackStart);
-    chunk.state = ChunkState::Generated { empty: !valid, mesh_readback_state };
-
-    // Disable the range if the mesh is not valid
-    if valid {
+    // Disable the range and visibility if the mesh is not valid
+    if solid {
+        manager.new_visibilities.push((chunk.allocation, chunk.local_index));
         chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
     } else {
         chunk.ranges = None;
-    }
-
-    // Set visibility if the chunk is actually visible
-    if valid {
-        manager.new_visibilities.push((chunk.allocation, chunk.local_index));
     }
 }
 

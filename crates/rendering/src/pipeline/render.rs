@@ -77,6 +77,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     stats: &mut PassStats,
     render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
+    let i = std::time::Instant::now();
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes::<P>();

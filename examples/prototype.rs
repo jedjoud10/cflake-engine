@@ -6,6 +6,7 @@ fn main() {
         .set_app_name("cflake engine prototype example")
         .insert_init(init)
         .set_window_fullscreen(true)
+        .set_frame_rate_limit(FrameRateLimit::Limited(60))
         .insert_update(update)
         .execute();
 }

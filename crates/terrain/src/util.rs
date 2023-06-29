@@ -62,6 +62,24 @@ pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Text
     .unwrap()
 }
 
+// Generation priority heauristic for chunks
+pub(crate) fn generation_priority_heuristic(
+    node_center: vek::Vec3<f32>,
+    viewer_position: vek::Vec3<f32>,
+    viewer_forward: vek::Vec3<f32>,
+) -> f32 {
+    // Favors chunks that are near the viewer
+    let mut priority =
+        (1.0 / viewer_position.distance(node_center).max(1.0)) * 10.0;
+
+    // Favors chunks that are in front of the viewer
+    priority *= viewer_forward
+        .dot((node_center - viewer_position).normalized())
+        * 5.0;
+
+    return priority.clamp(0.0f32, 1000.0f32);
+}
+
 // Gets the direction in which we must generate the skirts
 // Bit 1 = Start X
 // Bit 2 = Start Y

@@ -1,7 +1,7 @@
 use std::time::{Instant, Duration};
 
 use crate::{
-    Chunk, ChunkState, ChunkViewer, Terrain,
+    Chunk, ChunkState, ChunkViewer, Terrain, generation_priority_heuristic,
 };
 
 
@@ -170,10 +170,9 @@ fn update(world: &mut World) {
                         allocation,
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
-                        readback_priority: None,
-                        collisions: false,
                         ranges: None,
                         node: None,
+                        mesh_readback_state: None,
                     };
                     global_index += 1;
 
@@ -197,10 +196,12 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
 
         // Sort all nodes from lowed LOD to highest LOD
-        //added.sort_by_key(|node| node.depth());
+        added.sort_by_key(|node| -(node.depth() as i32));
 
-        // Sort all chunks by allocation
-        //query.sort_by_key(|(c, _, _, _)| c.allocation);
+        // Chunks with low allocation index should be closer to the camera
+        // (to eliminate overdraw since they are generated first)
+        // (doesn't really matter since we will implement occlusion culling anyways)
+        query.sort_by_key(|(c, _, _, _)| c.allocation);
 
         // Set the "dirty" state for newly added chunks
         assert!(query.len() >= added.len());
@@ -217,21 +218,16 @@ fn update(world: &mut World) {
             memory.visibility_bitsets[chunk.allocation].remove(chunk.local_index);
 
             // Update generation priority for EACH chunk, even if the viewer did not move
-            chunk.generation_priority =
-                (1.0 / viewer_position.distance(**position).max(1.0)) * 10.0;
-            chunk.generation_priority *= viewer_rotation
-                .forward()
-                .dot((**position - viewer_position).normalized())
-                * 5.0;
-            chunk.generation_priority = chunk.generation_priority.clamp(0.0f32, 1000.0f32);
-
-            // Update readback priority for each chunk *around* the user (needed for collisions)
-            if node.size() == settings.mesher.size {
-                chunk.readback_priority = Some(1.0 / viewer_position.distance(**position).max(1.0));
-            }
-
+            chunk.generation_priority = generation_priority_heuristic(
+                node.center().as_::<f32>(),
+                **viewer_position,
+                viewer_rotation.forward(),
+            );
+            
             assert!(res.is_none());
         }
+
+        // Handle creating the collision objec
     }
 }
 

@@ -112,7 +112,7 @@ pub fn acquire(system: &mut System) {
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
                 // Set the Window's texture view
-                log::trace!("acquire current texture");
+                //log::trace!("acquire current texture");
                 window.presentable_texture = Some(texture);
                 window.presentable_texture_view = Some(view);
             } else {
@@ -135,9 +135,9 @@ pub fn present(system: &mut System) {
 
             if let Some(texture) = window.presentable_texture.take() {
                 texture.present();
-                log::trace!("present acquired texture");
+                //log::trace!("present acquired texture");
             } else {
-                log::trace!("could not present acquired texture")
+                //log::trace!("could not present acquired texture")
             }
         })
         .after(post_user)

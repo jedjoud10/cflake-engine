@@ -47,12 +47,12 @@ pub(super) fn write_staging_buffer_view_mut<'a>(
     // Map synchronously
     let slice = buffer.slice(offset..size);
     slice.map_async(wgpu::MapMode::Write, move |res| tx.send(res).unwrap());
-    log::trace!("map buffer write: map called");
+    //log::trace!("map buffer write: map called");
     graphics.device().poll(wgpu::Maintain::Wait);
 
     // Wait until the buffer is mapped, then read from the buffer
     if let Ok(Ok(_)) = rx.recv() {
-        log::trace!("map buffer write");
+        //log::trace!("map buffer write");
         slice.get_mapped_range_mut()
     } else {
         panic!("could not map buffer for reading")
