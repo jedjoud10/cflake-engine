@@ -31,7 +31,6 @@ fn update(world: &mut World) {
     compositor.post_process_buffer.write(&[value], 0).unwrap();
 
     // Get G-Buffer sampled textures 
-    let gbuffer_position_map = &renderer.gbuffer_position_texture;
     let gbuffer_albedo_map = &renderer.gbuffer_albedo_texture;
     let gbuffer_normal_map = &renderer.gbuffer_normal_texture;
     let gbuffer_mask_map = &renderer.gbuffer_mask_texture;
@@ -90,11 +89,10 @@ fn update(world: &mut World) {
     // Set the maps that we will sample
     active
         .set_bind_group(1, |group| {
-            group.set_sampled_texture("gbuffer_position_map", gbuffer_position_map).unwrap();
             group.set_sampled_texture("gbuffer_albedo_map", gbuffer_albedo_map).unwrap();
             group.set_sampled_texture("gbuffer_normal_map", gbuffer_normal_map).unwrap();
             group.set_sampled_texture("gbuffer_mask_map", gbuffer_mask_map).unwrap();
-            //group.set_sampled_texture("depth_map", depth_map).unwrap();
+            group.set_sampled_texture("depth_map", depth_map).unwrap();
         })
         .unwrap();
 

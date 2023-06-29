@@ -109,14 +109,12 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 
             // Create new textures with the new size
             renderer.window_size = size;
-            let new_gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, size);
             let new_gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
-            let new_gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, size);
+            let new_gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, size);
             let new_gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, size);
             let new_depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, size);
 
             // Set the new as the old textures
-            renderer.gbuffer_position_texture = new_gbuffer_position_texture;
             renderer.gbuffer_albedo_texture = new_gbuffer_albedo_texture;
             renderer.gbuffer_normal_texture = new_gbuffer_normal_texture;
             renderer.gbuffer_mask_texture = new_gbuffer_mask_texture;
@@ -229,7 +227,6 @@ fn render(world: &mut World) {
         .unwrap();
 
     // Get the camera and it's values
-    let i = std::time::Instant::now();
     let camera = scene.entry(camera).unwrap();
     let (&camera, &camera_position, &camera_rotation) = camera
         .as_query::<(&Camera, &coords::Position, &coords::Rotation)>()
@@ -303,7 +300,7 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
-        for i in 0..3 {
+        for i in 0..4 {
             render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
         }
         //graphics.submit(false);
@@ -311,11 +308,10 @@ fn render(world: &mut World) {
     }
 
     // Begin the scene color render pass
-    let gbuffer_position = renderer.gbuffer_position_texture.as_render_target().unwrap();
     let gbuffer_albedo = renderer.gbuffer_albedo_texture.as_render_target().unwrap();
     let gbuffer_normal = renderer.gbuffer_normal_texture.as_render_target().unwrap();
     let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();
-    let gbuffer = (gbuffer_position, gbuffer_albedo, gbuffer_normal, gbuffer_mask);
+    let gbuffer = (gbuffer_albedo, gbuffer_normal, gbuffer_mask);
     let depth = renderer.depth_texture.as_render_target().unwrap();
     let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
 
@@ -327,7 +323,7 @@ fn render(world: &mut World) {
 
     drop(render_pass);
     //dbg!(i.elapsed());
-    graphics.submit(false);
+    //graphics.submit(false);
 }
 
 // The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture

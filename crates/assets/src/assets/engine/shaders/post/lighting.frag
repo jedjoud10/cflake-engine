@@ -2,12 +2,10 @@
 layout(location = 0) out vec4 frag;
 
 // Fetch the G-Buffer data
-layout(set = 1, binding = 1) uniform texture2D gbuffer_position_map;
-layout(set = 1, binding = 2) uniform texture2D gbuffer_albedo_map;
-layout(set = 1, binding = 3) uniform texture2D gbuffer_normal_map;
-layout(set = 1, binding = 4) uniform texture2D gbuffer_mask_map;
-
-//layout(set = 1, binding = 5) uniform texture2D depth_map;
+layout(set = 1, binding = 1) uniform texture2D gbuffer_albedo_map;
+layout(set = 1, binding = 2) uniform texture2D gbuffer_normal_map;
+layout(set = 1, binding = 3) uniform texture2D gbuffer_mask_map;
+layout(set = 1, binding = 4) uniform texture2D depth_map;
 
 // UBO that contains the current scene information
 #include <engine/shaders/common/conversions.glsl>
@@ -248,8 +246,6 @@ vec3 brdf(
 	CameraData camera,
 	SunData light
 ) {
-	//return vec3(clamp(dot(surface.normal, light.backward), 0, 1));
-
 	// Calculate kS and kD
 	vec3 ks = fresnelRoughness(surface.f0, camera.half_view, camera.view, surface.roughness);
 	vec3 kd = (1 - ks) * (1 - surface.metallic);
@@ -297,20 +293,34 @@ vec3 color_temperature_to_RGB(const in float temperature) {
 
 void main() {
     // Fetch G-Buffer values
-	vec3 position = texelFetch(gbuffer_position_map, ivec2(gl_FragCoord.xy), 0).rgb;
+	vec3 position = vec3(0);
 	vec4 albedo_alpha = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0);
 	vec3 albedo = albedo_alpha.rgb;
 	float alpha = albedo_alpha.a;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
 	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
-	
+
+	// Get the scaled down coordinates
+	float x = gl_FragCoord.x / float(window.width);
+	float y = gl_FragCoord.y / float(window.height);
+
 	// Fetch depth ngl
-	/*
 	float non_linear_depth = texelFetch(depth_map, ivec2(gl_FragCoord.xy), 0).r;
 	float linear_depth = linearize_depth(non_linear_depth, camera.near_far_vfov_.x, camera.near_far_vfov_.y);
-	*/
-	
+
+	// Fetch position from depth
+	vec4 clip_space_location = vec4(x * 2 - 1, -(y * 2 - 1), non_linear_depth, 1.0);
+	vec4 p2 = inverse(camera.projection) * clip_space_location;
+	//p2.xyz /= p2.w;
+	vec4 p3 = inverse(camera.view) * p2;
+	//vec4 world_space_location = inverse(camera.projection) * vec4(clip_space_location.xyz, 1); 
+	//position = world_space_location.xyz;
+	position = p3.xyz;
+
+	frag = vec4(position, 1);
+	return;
+
     // Optional G-Buffer debug
     switch(post_processing.gbuffer_debug) {
 		case 0:
@@ -336,9 +346,7 @@ void main() {
 	        return;
 	}
 
-	// Get the scaled down coordinates
-	float x = gl_FragCoord.x / float(window.width);
-	float y = gl_FragCoord.y / float(window.height);
+
 
 	// Fetch the color data
 	vec2 coords = vec2(x, y);
@@ -378,8 +386,7 @@ void main() {
 	}
 
 	// Add fog
-	//color = mix(color, vec3(1), clamp(linear_depth / 1000.0, 0, 1));
-    
+	color = mix(color, vec3(1), clamp(linear_depth / 1000.0, 0, 1));
     
     // Increase exposure
 	color *= post_processing.exposure;

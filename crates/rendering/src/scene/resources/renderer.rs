@@ -14,7 +14,7 @@ use graphics::{
 use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
-pub type SceneColorLayout = (RGBA<f32>, RGBA<Normalized<u8>>, RGBA<Normalized<i16>>, RGBA<Normalized<u8>>);
+pub type SceneColorLayout = (RGBA<Normalized<u8>>, RGBA<Normalized<i8>>, RGBA<Normalized<u8>>);
 pub type SceneDepthLayout = Depth<f32>;
 
 // Create a texture that we will use for the G-Buffer
@@ -59,9 +59,8 @@ pub struct DeferredRenderer {
     pub(crate) deferred_render_pass: RenderPass<SceneColorLayout, SceneDepthLayout>,
 
     // G-Buffer and Depth Texture
-    pub(crate) gbuffer_position_texture: Texture2D<RGBA<f32>>,
     pub(crate) gbuffer_albedo_texture: Texture2D<RGBA<Normalized<u8>>>,
-    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i16>>>,
+    pub(crate) gbuffer_normal_texture: Texture2D<RGBA<Normalized<i8>>>,
     pub(crate) gbuffer_mask_texture: Texture2D<RGBA<Normalized<u8>>>,
     pub(crate) depth_texture: Texture2D<SceneDepthLayout>,
     pub(crate) window_size: vek::Extent2<u32>,
@@ -107,23 +106,18 @@ impl DeferredRenderer {
         mask_maps: &mut Storage<MaskMap>,
     ) -> Self {
         // Create the G-Buffer textures and depth texture
-        let gbuffer_position_texture = create_gbuffer_texture::<RGBA<f32>>(graphics, extent);
         let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
-        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i16>>>(graphics, extent);
+        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, extent);
         let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
         let depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, extent);
 
         // Tuple that contains the clear operations of the G-Buffer textures
         let color_operations = (
-            Operation::<RGBA<f32>> {
-                load: LoadOp::Clear(vek::Vec4::zero()),
-                store: StoreOp::Store,
-            },
             Operation::<RGBA<Normalized<u8>>> {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
-            Operation::<RGBA<Normalized<i16>>> {
+            Operation::<RGBA<Normalized<i8>>> {
                 load: LoadOp::Clear(vek::Vec4::zero()),
                 store: StoreOp::Store,
             },
@@ -167,7 +161,6 @@ impl DeferredRenderer {
         Self {
             // Render pass, G-Buffer textures, and depth texture
             deferred_render_pass: render_pass,
-            gbuffer_position_texture,
             
             gbuffer_albedo_texture,
             gbuffer_normal_texture,

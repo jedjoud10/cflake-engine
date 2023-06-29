@@ -1,10 +1,9 @@
 #version 460 core
 
 // G-Buffer data write
-layout(location = 0) out vec4 gbuffer_position;
-layout(location = 1) out vec4 gbuffer_albedo;
-layout(location = 2) out vec4 gbuffer_normal;
-layout(location = 3) out vec4 gbuffer_mask;
+layout(location = 0) out vec4 gbuffer_albedo;
+layout(location = 1) out vec4 gbuffer_normal;
+layout(location = 2) out vec4 gbuffer_mask;
 
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
@@ -58,7 +57,6 @@ void main() {
 	vec3 normal = normalize(tbn * normalize(bumps));
 
 	// Set the G-buffer values
-	gbuffer_position = vec4(m_position, 0);
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);
 	gbuffer_mask = vec4(mask, 0);

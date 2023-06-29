@@ -51,7 +51,7 @@ fn update(world: &mut World) {
     let mut pass = ComputePass::begin(&graphics);
     let mut active = pass.bind_shader(&culler.compute_cull);
 
-    for allocation in 0..terrain.settings.memory.allocation_count {
+    for allocation in 0..1 {
         let chunks = memory.visibility_bitsets[allocation].chunks();
         memory.visibility_buffers[allocation]
             .write(chunks, 0)
@@ -137,7 +137,6 @@ fn update(world: &mut World) {
 
     drop(active);
     drop(pass);
-    graphics.submit(false);
 }
 
 // Generates the voxels and appropriate mesh for each of the visible chunks

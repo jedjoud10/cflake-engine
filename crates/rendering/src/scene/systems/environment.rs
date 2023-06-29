@@ -15,7 +15,7 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
     
     // Create the environment resource that contains the cubemaps
-    let environment = Environment::new(&graphics, &assets, 512);
+    let environment = Environment::new(&graphics, &assets, 256);
 
     // Drop fetched resources
     drop(graphics);
@@ -77,7 +77,7 @@ fn render(world: &mut World) {
 
     // Generate the diffuse IBL map (not every frame though)
     // TODO: Smooth interpolation using next sun dir
-    if time.frame_count() as usize % 12 >= 6 {
+    if time.frame_count() as usize % 24 >= 6 {
         let resolution = environment.resolution / 16;
         let src_cubemap = &environment.environment_map;
         let dst_cubemap = &mut environment.diffuse_ibl_map;
