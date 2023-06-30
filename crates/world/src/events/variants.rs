@@ -8,6 +8,10 @@ impl Caller for DeviceEvent {
     type DynFn = dyn FnMut(&mut World, &DeviceEvent);
     type Args<'a, 'p> = (&'p mut World, &'p DeviceEvent) where 'a: 'p;
 
+    fn persistent() -> bool {
+        true
+    }
+
     fn call<'a, 'p>(boxed: &mut Box<<DeviceEvent as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>)
     where
         'a: 'p,
@@ -38,6 +42,10 @@ impl<F: FnMut() + 'static> Event<DeviceEvent, ()> for F {
 impl Caller for WindowEvent<'static> {
     type DynFn = dyn FnMut(&mut World, &mut WindowEvent<'_>);
     type Args<'a, 'p> = (&'p mut World, &'p mut WindowEvent<'a>) where 'a: 'p;
+
+    fn persistent() -> bool {
+        true
+    }
 
     fn call<'a, 'p>(
         boxed: &mut Box<<WindowEvent<'static> as Caller>::DynFn>,
@@ -73,6 +81,10 @@ pub struct Init(());
 impl Caller for Init {
     type DynFn = dyn FnOnce(&mut World, &EventLoop<()>);
     type Args<'a, 'p> = (&'p mut World, &'p EventLoop<()>) where 'a: 'p;
+
+    fn persistent() -> bool {
+        false
+    }
 
     fn call<'a, 'p>(boxed: &mut Box<<Init as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>)
     where
@@ -118,6 +130,10 @@ impl Caller for Update {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
 
+    fn persistent() -> bool {
+        true
+    }
+
     fn call<'a, 'p>(boxed: &mut Box<<Update as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>)
     where
         'a: 'p,
@@ -148,6 +164,10 @@ pub struct Shutdown(());
 impl Caller for Shutdown {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
+    
+    fn persistent() -> bool {
+        false
+    }
 
     fn call<'a, 'p>(boxed: &mut Box<<Shutdown as Caller>::DynFn>, args: &mut Self::Args<'a, 'p>)
     where
@@ -179,6 +199,10 @@ pub struct Tick(());
 impl Caller for Tick {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
+
+    fn persistent() -> bool {
+        true
+    }
 
     fn call<'a, 'p>(boxed: &mut Box<Self::DynFn>, args: &mut Self::Args<'a, 'p>)
     where

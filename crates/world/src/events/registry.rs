@@ -1,6 +1,6 @@
 use std::{any::TypeId, cmp::Ordering, time::Duration};
 
-use crate::{Caller, CallerId, Event, RegistrySortingError, Rule, StageError, StageId, SystemId};
+use crate::{Caller, CallerId, Event, RegistrySortingError, Rule, StageError, StageId, SystemId, EventTimings};
 use ahash::{AHashMap, AHashSet};
 
 use lazy_static::lazy_static;
@@ -71,7 +71,7 @@ pub struct Registry<C: Caller + 'static> {
     pub(super) events: Vec<(StageId, Box<C::DynFn>)>,
 
     // Keep last timings and total timings
-    pub(super) timings_per_event: Vec<(StageId, Duration)>,
+    pub(super) timings_per_event: Vec<EventTimings<C>>,
     pub(super) timings_total: Duration,
 
     // Cached caller ID
@@ -117,6 +117,8 @@ impl<C: Caller> Registry<C> {
 
             // Then insert the event
             self.events.push((stage, boxed));
+            self.timings_per_event.push(EventTimings::new(stage, C::persistent()));
+
             Ok(rules)
         }
     }
@@ -126,8 +128,8 @@ impl<C: Caller> Registry<C> {
         let indices = sort(&mut self.map, self.caller)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.events
-            .sort_by(|(a, _), (b, _)| usize::cmp(&indices[a], &indices[b]));
+        self.events.sort_by_key(|(x, _)| &indices[x]);
+        self.timings_per_event.sort_by_key(|x| &indices[&x.id()]);
 
         log::debug!(
             "Sorted {} events for {} registry",
@@ -149,20 +151,19 @@ impl<C: Caller> Registry<C> {
 
     // Execute all the events that are stored in this registry using specific arguments
     pub fn execute(&mut self, mut args: C::Args<'_, '_>) {
-        let i = std::time::Instant::now();
-        self.timings_per_event.clear();
+        let total = std::time::Instant::now();
 
-        for (stage, event) in self.events.iter_mut() {
-            let j = std::time::Instant::now();
+        for (i, (_, event)) in self.events.iter_mut().enumerate() {
+            let recorder = std::time::Instant::now();
             C::call(event, &mut args);
-            self.timings_per_event.push((*stage, j.elapsed()));
+            self.timings_per_event[i].record(recorder.elapsed());
         }
 
-        self.timings_total = i.elapsed();
+        self.timings_total = total.elapsed();
     }
 
     // Get the per event timings and total timings
-    pub fn timings(&self) -> (&[(StageId, Duration)], Duration) {
+    pub fn timings(&self) -> (&[EventTimings<C>], Duration) {
         (&self.timings_per_event, self.timings_total)
     }
 }

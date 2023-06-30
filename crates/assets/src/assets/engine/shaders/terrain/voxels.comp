@@ -1,10 +1,10 @@
 #version 460 core
-//#pragma optionNV(fastmath on)
-//#pragma optionNV(fastprecision on)
-//#pragma optionNV(ifcvt all)
+#pragma optionNV(fastmath on)
+#pragma optionNV(fastprecision on)
+#pragma optionNV(ifcvt all)
 //#pragma optionNV(inline all)
-//#pragma optionNV(strict on)
-//#pragma optionNV(unroll all)
+#pragma optionNV(strict on)
+#pragma optionNV(unroll all)
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(set = 0, binding = 0, rg32f) writeonly uniform image3D voxels;

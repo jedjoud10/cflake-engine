@@ -19,7 +19,7 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out vec3 color, out uint material) {
-    //position *= 1.8;
+    position *= 2.0;
 
     // Blend between the two biomes
     float blend = clamp(snoise(position.xz * 0.0001) * 0.5 + 0.5, 0, 1);

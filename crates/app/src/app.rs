@@ -253,15 +253,8 @@ impl App {
 
         // Update the EventStatsDurations
         let mut durations = self.world.get_mut::<EventStatsDurations>().unwrap();
-        durations.init = self
-            .systems
-            .init
-            .timings()
-            .0
-            .iter()
-            .map(|(stage, duration)| (*stage, duration.as_secs_f32() * 1000.0f32))
-            .collect();
-        durations.init_total = self.systems.init.timings().1.as_secs_f32() * 1000.0f32;
+        durations.init = self.systems.init.timings().0.to_vec();
+        durations.init_total = self.systems.init.timings().1;
         drop(durations);
 
         // Decompose the app
@@ -310,28 +303,14 @@ impl App {
                 // Execute the tick event 120 times per second
                 let time = world.get::<utils::Time>().unwrap();
 
-                if time.frame_count() % 30 == 0 {
+                // Update "update" and "tick" timings
+                if time.frame_count() % 2 == 0 {
                     let mut durations = world.get_mut::<EventStatsDurations>().unwrap();
-                    durations.update = systems
-                        .update
-                        .timings()
-                        .0
-                        .iter()
-                        .map(|(stage, duration)| {
-                            (*stage, duration.as_secs_f32() * 1000.0f32)
-                        })
-                        .collect();
-                    durations.update_total = systems.update.timings().1.as_secs_f32() * 1000.0f32;
-                    durations.tick = systems
-                        .tick
-                        .timings()
-                        .0
-                        .iter()
-                        .map(|(stage, duration)| {
-                            (*stage, duration.as_secs_f32() * 1000.0f32)
-                        })
-                        .collect();
-                    durations.tick_total = systems.tick.timings().1.as_secs_f32() * 1000.0f32;
+                    durations.update = systems.update.timings().0.to_vec();
+                    durations.update_total = systems.update.timings().1;
+
+                    durations.tick = systems.tick.timings().0.to_vec();
+                    durations.tick_total = systems.tick.timings().1;
                     drop(durations);
                 }
 
@@ -383,7 +362,7 @@ impl App {
     fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
         // Create the rayon global thread pool
         rayon::ThreadPoolBuilder::new()
-            .num_threads(0)
+            .num_threads(16)
             .thread_name(|i| format!("worker-thread-{i}"))
             .build_global()
             .unwrap();

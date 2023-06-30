@@ -11,7 +11,8 @@ graphics = { path = "../graphics" }
 rendering = { path = "../rendering" }
 assets = { path = "../assets" }
 math = { path = "../math" }
-egui = "0.21.0"
-egui-winit = "0.21.1"
+egui = "0.22.0"
+egui_extras = "0.22.0"
+egui-winit = "0.22.0"
 bytemuck = "1.12.3"
 vek = { workspace = true }

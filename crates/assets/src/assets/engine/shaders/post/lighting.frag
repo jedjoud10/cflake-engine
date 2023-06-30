@@ -311,15 +311,8 @@ void main() {
 
 	// Fetch position from depth
 	vec4 clip_space_location = vec4(x * 2 - 1, -(y * 2 - 1), non_linear_depth, 1.0);
-	vec4 p2 = inverse(camera.projection) * clip_space_location;
-	//p2.xyz /= p2.w;
-	vec4 p3 = inverse(camera.view) * p2;
-	//vec4 world_space_location = inverse(camera.projection) * vec4(clip_space_location.xyz, 1); 
-	//position = world_space_location.xyz;
-	position = p3.xyz;
-
-	frag = vec4(position, 1);
-	return;
+	vec4 world_pos = inverse(camera.projection * camera.view) * clip_space_location;
+	position = world_pos.xyz / world_pos.w;
 
     // Optional G-Buffer debug
     switch(post_processing.gbuffer_debug) {
@@ -367,13 +360,8 @@ void main() {
 
 		// Check if the fragment is shadowed
 		color = brdf(surface, camera, sun);
-	} else {
-		// Note: This took me too much fucking time to figure out 
-		vec3 dir = vec3(x * 2 - 1, -(y * 2 - 1), 1.0);
-		dir = (inverse(camera.projection) * vec4(dir, 0)).xyz;
-		dir.z = -1;
-		dir = (inverse(camera.view) * vec4(dir, 0)).xyz;
-		dir = normalize(dir);
+	} else { 
+		vec3 dir = normalize(position);
 
 		color = texture(samplerCube(environment_map, environment_map_sampler), dir).xyz;
 		//color = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), dir).xyz;
@@ -386,18 +374,18 @@ void main() {
 	}
 
 	// Add fog
-	color = mix(color, vec3(1), clamp(linear_depth / 1000.0, 0, 1));
+	//color = mix(color, vec3(1), clamp(linear_depth / 1000.0, 0, 1));
     
     // Increase exposure
 	color *= post_processing.exposure;
 	color = max(color, vec3(0));
 
 	// Color grading
-	color = pow(max(vec3(0.0), color * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
+	//color = pow(max(vec3(0.0), color * (1.0 + post_processing.cc_gain.rgb - post_processing.cc_lift.rgb) + post_processing.cc_lift.rgb), max(vec3(0.0), 1.0 - post_processing.cc_gamma.rgb));
 
 	// Color temperature mapping from https://www.shadertoy.com/view/4sc3D7
-	color = color * color_temperature_to_RGB(post_processing.cc_wb_temperature); 
-	color *= mix(1.0, dot(color, vec3(0.2126, 0.7152, 0.0722)) / max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5), 1.0);  
+	//color = color * color_temperature_to_RGB(post_processing.cc_wb_temperature); 
+	//color *= mix(1.0, dot(color, vec3(0.2126, 0.7152, 0.0722)) / max(dot(color, vec3(0.2126, 0.7152, 0.0722)), 1e-5), 1.0);  
 
 	/*
 	Reinhard,

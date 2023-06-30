@@ -45,8 +45,8 @@ fn init(world: &mut World) {
 
     // Create a nice shadow map
     let shadowmap = ShadowMapping::new(
-        1024,
-        [0.10, 0.25, 0.75, 1.0],
+        4096,
+        [0.05, 0.15, 0.75, 1.0],
         1000.0,
         &graphics,
     );
@@ -300,9 +300,13 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
-        for i in 0..4 {
+        let i = time.frame_count() as usize % 6;
+
+        if i < 4 {
             render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
         }
+
+
         //graphics.submit(false);
         drop(_shadowmap);
     }

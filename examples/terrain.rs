@@ -6,6 +6,7 @@ fn main() {
         .set_app_name("cflake engine terrain example")
         .insert_init(init)
         .insert_update(update)
+        .set_window_fullscreen(true)
         .execute();
 }
 
