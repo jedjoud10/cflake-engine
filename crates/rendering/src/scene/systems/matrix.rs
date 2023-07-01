@@ -17,6 +17,7 @@ fn update(world: &mut World) {
     let f3 = modified::<&Scale>();
     let f4 = added::<&Renderer>();
     let filter = f1 | f2 | f3 | f4;
+    //let filter = contains::<&(Renderer)>();
     let query = scene.query_mut_with::<(
         &mut Renderer,
         Option<&Position>,
@@ -38,6 +39,10 @@ fn update(world: &mut World) {
         }
 
         if let Some(scale) = scale {
+            if **scale <= 0.0 {
+                log::error!("Invalid scale! Scale must be positive and greater than 0.0");
+            }
+
             matrix *= vek::Mat4::from(scale);
         }
         renderer.matrix = matrix;
@@ -50,5 +55,6 @@ pub fn system(system: &mut System) {
         .insert_update(update)
         .before(super::rendering::system)
         .before(ecs::post_frame_or_tick)
+        .after(coords::hierarchy)
         .after(post_user);
 }

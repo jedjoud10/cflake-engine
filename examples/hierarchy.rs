@@ -1,17 +1,17 @@
 
 use cflake_engine::prelude::*;
 
-// Mesh example game window
+// Hierarchy example game window
 fn main() {
     App::default()
-        .set_app_name("cflake engine physics example")
+        .set_app_name("cflake engine hierarchy example")
         .insert_init(init)
         .insert_update(update)
         .set_window_fullscreen(true)
         .execute();
 }
 
-// Creates a movable camera, and sky entity
+// Creates a movable camera and a few interconnected entities
 fn init(world: &mut World) {
     let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
@@ -27,8 +27,8 @@ fn init(world: &mut World) {
         mask_map: None,
         bumpiness_factor: 0.9,
         roughness_factor: 1.0,
-        metallic_factor: 1.0,
-        ambient_occlusion_factor:14.0,
+        metallic_factor: 0.0,
+        ambient_occlusion_factor: 0.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
@@ -56,7 +56,7 @@ fn init(world: &mut World) {
     ));
     scene.attach(child1, parent).unwrap();
 
-    // Create another childr entity that we will attach to the other child
+    // Create another child entity that we will attach to the other child
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
     let child2 = scene.insert((
@@ -89,9 +89,11 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let mut time = world.get::<Time>().unwrap();
 
+    let (_, pos) = scene.find::<(&Child, &Position)>().unwrap();
+
     for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut LocalRotation>)>() {
         if let Some(relative_rotation) = relative_rotation {
-            relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+            //relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
         } else {
             rotation.rotate_x(0.15 * time.delta().as_secs_f32());
         }

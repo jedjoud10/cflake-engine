@@ -14,8 +14,9 @@ use base64::{
     engine::{GeneralPurpose, GeneralPurposeConfig},
     Engine,
 };
+use coords::HierarchyManager;
 use dashmap::DashMap;
-use ecs::Scene;
+use ecs::{Scene, Entity};
 use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
@@ -181,10 +182,12 @@ impl Asset for GltfScene {
             .map(|buffer| {
                 // Handle reading buffers from URI or raw bytes directly
                 let bytes = if let Some(uri) = buffer.uri.as_ref() {
-                    if uri.starts_with("data:application/octet-stream;base64,") {
+                    const PREFIX: &'static str = "data:application/octet-stream;base64,";
+                    
+                    if uri.starts_with(PREFIX) {
                         // Data is contained within the URI itself
                         let data = uri
-                            .strip_prefix("data:application/octet-stream;base64,")
+                            .strip_prefix(PREFIX)
                             .unwrap();
 
                         // Decode the raw base64 data
@@ -523,40 +526,53 @@ impl Asset for GltfScene {
             .or(scene.as_ref().map(|i| scenes[i.value()].clone()))
             .unwrap();
 
-        // Keep track of the renderable entities that we will add
-        let mut entities: Vec<(
-            coords::Position,
-            coords::Rotation,
-            coords::Scale,
-            Surface<PbrMaterial>,
-            crate::Renderer,
-        )> = Vec::new();
-
         // Add a "default" PBR material
         let default = context.pbr_materials.insert(settings.fallback);
 
-        // Iterate over the nodes now (or objects in the scene)
-        for index in scene.nodes {
-            let node = &nodes[index.value()];
+        // Keep track of the nodes we must evaluate
+        let mut eval = scene
+            .nodes
+            .iter()
+            .map(|node| (&nodes[node.value()], None))
+            .collect::<Vec<(&gltf::json::Node, Option<Entity>)>>();
 
+        // Number of entities we will add
+        let mut count = 0;
+
+        // Iterate until there are no more nodes to pass through
+        while let Some((node, parent)) = {
+            if eval.len() > 0 {
+                Some(eval.remove(0))
+            } else {
+                None
+            }
+        } {
             // Convert translation, rotation, and scale to proper components
             let position = node
                 .translation
-                .map(coords::Position::at_xyz_array)
-                .unwrap_or_default();
+                .map(vek::Vec3::from)
+                .unwrap_or(vek::Vec3::zero());
             let rotation = node
                 .rotation
-                .map(|quat| coords::Rotation::new_xyzw_array(quat.0))
-                .unwrap_or_default();
+                .map(|quat| vek::Quaternion::from_vec4(vek::Vec4::from(quat.0)))
+                .unwrap_or(vek::Quaternion::identity());
             let scale = node
                 .scale
                 .map(|scale| {
-                    coords::Scale::uniform(vek::Vec3::from_slice(&scale).reduce_partial_max())
-                })
-                .unwrap_or_default();
+                    // Biggest scalar in the vector
+                    let uniform = vek::Vec3::from_slice(&scale).reduce_partial_max();
+                    
+                    // Non-uniform scale isn't supported in the engine
+                    if scale.iter().any(|&x| x != uniform) {
+                        log::warn!("Non-uniform scale is not supported in the engine. Given scale: {:?}", scale);
+                    }
 
-            // Handle renderable entities
-            if let Some(mesh_index) = node.mesh {
+                    uniform
+                })
+                .unwrap_or(1.0f32);
+            
+            // For now, we only handle mesh entities and empty entities
+            let entity = if let Some(mesh_index) = node.mesh {
                 let mesh = &meshes[mesh_index.value()];
                 let meshes = &mapped_meshes[mesh_index.value()];
 
@@ -587,20 +603,75 @@ impl Asset for GltfScene {
                     id: context.pipelines.get::<PbrMaterial>().unwrap(),
                 };
 
-                // TODO: Handle hierarchy PLEASE
-                entities.push((
-                    position,
-                    rotation,
-                    scale,
-                    surface,
-                    crate::Renderer::default(),
-                ));
-            }
-        }
+                match parent {
+                    // Local coordinates if we have a parent
+                    Some(_) => {
+                        // Add the renderable entity 
+                        context.scene.insert((
+                            coords::LocalPosition::from(position),
+                            coords::LocalRotation::from(rotation),
+                            coords::LocalScale::from(scale),
+                            coords::Position::default(),
+                            coords::Rotation::default(),
+                            coords::Scale::default(),
+                            surface,
+                            crate::Renderer::default(),
+                        ))
+                        
+                    },
 
-        // Add the entities into the world
-        let count = entities.len();
-        context.scene.extend_from_iter(entities);
+                    // Global coordinates if we do not have a parent
+                    None => {
+                        // Add the renderable entity 
+                        context.scene.insert((
+                            coords::Position::from(position),
+                            coords::Rotation::from(rotation),
+                            coords::Scale::from(scale),
+                            surface,
+                            crate::Renderer::default(),
+                        ))
+                    },
+                }
+
+            } else {
+                match parent {
+                    // Local coordinates if we have a parent
+                    Some(_) => {
+                        // Add the renderable entity 
+                        context.scene.insert((
+                            coords::LocalPosition::from(position),
+                            coords::LocalRotation::from(rotation),
+                            coords::LocalScale::from(scale),
+                            coords::Position::default(),
+                            coords::Rotation::default(),
+                            coords::Scale::default(),
+                        ))
+                    },
+
+                    // Global coordinates if we do not have a parent
+                    None => {
+                        // Add the renderable entity 
+                        context.scene.insert((
+                            coords::Position::from(position),
+                            coords::Rotation::from(rotation),
+                            coords::Scale::from(scale),
+                        ))
+                    },
+                }
+            };
+
+            // Attach this entity to its parent if it had any
+            if let Some(parent) = parent {
+                context.scene.attach(entity, parent).unwrap();
+            }
+
+            // Pass along the children nodes
+            if let Some(children) = node.children.as_ref() {
+                eval.extend(children.iter().map(|x| (&nodes[x.value()], Some(entity))));
+            }
+
+            count += 1;
+        }
 
         log::debug!("Loaded {} entities into the world", count);
         log::debug!("Loaded {} unique meshes into the world", meshes.len());

@@ -183,6 +183,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         // If a mesh is missing attributes just skip
         if !mesh.vertices().enabled().contains(supported) {
+            log::warn!("Mesh does not have enough attributes to render");
             continue;
         }
 

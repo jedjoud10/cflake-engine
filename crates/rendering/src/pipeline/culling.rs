@@ -26,19 +26,22 @@ pub(crate) fn intersects_frustum(
         *output = vec.with_w(0.0);
     }
 
-    let aabb = crate::aabb_from_points(&out).unwrap();
+    if let Some(aabb) = crate::aabb_from_points(&out) {
+        let corners = [aabb.min, aabb.max];
 
-    let corners = [aabb.min, aabb.max];
+        planes.iter().all(|plane| {
+            let mut furthest = vek::Vec3::zero();
+            furthest.iter_mut().enumerate().for_each(|(i, e)| {
+                *e = corners[(plane.normal[i] > 0.0) as usize][i];
+            });
+            let signed = furthest.dot(plane.normal) + plane.distance;
 
-    planes.iter().all(|plane| {
-        let mut furthest = vek::Vec3::zero();
-        furthest.iter_mut().enumerate().for_each(|(i, e)| {
-            *e = corners[(plane.normal[i] > 0.0) as usize][i];
-        });
-        let signed = furthest.dot(plane.normal) + plane.distance;
-
-        signed > 0.0
-    })
+            signed > 0.0
+        })
+    } else {
+        log::error!("Cannot create AABB for culling!");
+        false
+    }
 }
 
 // Check if an AABB intersects the shadow lightspace matrix

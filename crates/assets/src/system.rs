@@ -31,24 +31,11 @@ fn init(world: &mut World) {
 
     internal!(loader, "engine/shaders/scene/terrain/shadow.vert");
     internal!(loader, "engine/shaders/scene/pbr/shadow.vert");
-    /*
-
-    internal!(loader, "engine/shaders/scene/wireframe/wireframe.vert");
-    internal!(loader, "engine/shaders/scene/wireframe/wireframe.frag");
-    */
-
-    // Load the deferred renderer shader
-    internal!(loader, "engine/shaders/post/lighting.frag");
 
     // Load the default environment compute shaders
     internal!(loader, "engine/shaders/scene/environment/sky.glsl");
     internal!(loader, "engine/shaders/scene/environment/environment.comp");
     internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
-    /*
-    TODO
-    internal!(loader, "engine/shaders/scene/environment/diffuse.comp");
-    internal!(loader, "engine/shaders/scene/environment/specular.comp");
-    */
 
     // Load the default post-rendering shaders
     internal!(loader, "engine/shaders/post/lighting.frag");

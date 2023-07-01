@@ -102,7 +102,6 @@ fn update(world: &mut World) {
         .collapsible(true)
         .default_open(false)
         .show(&gui, |ui| {
-            ui.heading("Initialization Events Registry");
 
             // Small function that will show a table for specific event timings
             fn show_events_table<C: Caller>(
@@ -113,10 +112,10 @@ fn update(world: &mut World) {
                 let mut table = egui_extras::TableBuilder::new(ui)
                     .striped(true)
                     .resizable(false)
+                    .vscroll(true)
                     .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                     .column(egui_extras::Column::initial(800.0))
-                    .column(egui_extras::Column::initial(100.0))
-                    .min_scrolled_height(0.0);
+                    .column(egui_extras::Column::initial(100.0));
 
                 if C::persistent() {
                     table = table
@@ -148,7 +147,7 @@ fn update(world: &mut World) {
                     })
                     .body(|mut body| {
                         timings.sort_by_key(|x| x.elapsed().as_micros());
-                        body.rows(18.0f32, 10, |row_index, mut row| {
+                        body.rows(18.0f32, timings.len().min(10), |row_index, mut row| {
                             let event = &timings[timings.len() - row_index - 1];
                             let elapsed = event.elapsed();
                             let color = pick_stats_label_color(elapsed.as_secs_f32() / total.as_secs_f32());
@@ -176,23 +175,6 @@ fn update(world: &mut World) {
                             }
                         });
                     })
-
-                /*
-                egui::Grid::new(type_name::<C>())
-                    .min_col_width(0f32)
-                    .max_col_width(400f32)
-                    .striped(true)
-                    .show(ui, |ui| {
-                        ui.label("Name | Avg | Med | Min | Max");
-                        ui.end_row();
-
-
-                        for event in timings.iter().rev().take(10) {
-                            
-                            ui.end_row();
-                        }
-                    });
-                */
             }
 
             // Show event timings for init, update, and tick registries

@@ -11,6 +11,7 @@ layout(set = 1, binding = 4) uniform texture2D depth_map;
 #include <engine/shaders/common/conversions.glsl>
 #include <engine/shaders/common/camera.glsl>
 #include <engine/shaders/noises/common.glsl>
+
 layout(set = 0, binding = 2) uniform SceneUniform {
     // Sun related parameters
     vec4 sun_direction;
@@ -293,13 +294,11 @@ vec3 color_temperature_to_RGB(const in float temperature) {
 
 void main() {
     // Fetch G-Buffer values
-	vec3 position = vec3(0);
 	vec4 albedo_alpha = texelFetch(gbuffer_albedo_map, ivec2(gl_FragCoord.xy), 0);
 	vec3 albedo = albedo_alpha.rgb;
 	float alpha = albedo_alpha.a;
     vec3 normal = texelFetch(gbuffer_normal_map, ivec2(gl_FragCoord.xy), 0).rgb;
     vec3 mask = texelFetch(gbuffer_mask_map, ivec2(gl_FragCoord.xy), 0).rgb;
-	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
 
 	// Get the scaled down coordinates
 	float x = gl_FragCoord.x / float(window.width);
@@ -310,9 +309,10 @@ void main() {
 	float linear_depth = linearize_depth(non_linear_depth, camera.near_far_vfov_.x, camera.near_far_vfov_.y);
 
 	// Fetch position from depth
-	vec4 clip_space_location = vec4(x * 2 - 1, -(y * 2 - 1), non_linear_depth, 1.0);
+	vec4 clip_space_location = vec4(x * 2 - 1, - (y * 2 - 1), non_linear_depth, 1.0);
 	vec4 world_pos = inverse(camera.projection * camera.view) * clip_space_location;
-	position = world_pos.xyz / world_pos.w;
+	vec3 position = world_pos.xyz / world_pos.w;
+	vec3 surface_normal = normalize(cross(dFdy(position), dFdx(position)));
 
     // Optional G-Buffer debug
     switch(post_processing.gbuffer_debug) {
@@ -361,10 +361,10 @@ void main() {
 		// Check if the fragment is shadowed
 		color = brdf(surface, camera, sun);
 	} else { 
-		vec3 dir = normalize(position);
+		vec3 dir = -normalize(camera.position.xyz - position);
 
+		// Sample the skybox texture
 		color = texture(samplerCube(environment_map, environment_map_sampler), dir).xyz;
-		//color = texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), dir).xyz;
 
 		// Create a procedural sun with the scene params
 		float sun = dot(dir, -scene.sun_direction.xyz);
@@ -418,7 +418,6 @@ void main() {
 	// Apply tonemapping and gamma correction
 	tonemapped = mix(color, tonemapped, post_processing.tonemapping_strength);
 	color = from_linear(tonemapped);
-	//color = pow(tonemapped, vec3(1.0 / post_processing.gamma));
 
 	// Create a simple vignette
 	vec2 uv = vec2(x, y);

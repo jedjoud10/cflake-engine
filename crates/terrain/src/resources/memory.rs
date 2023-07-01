@@ -44,7 +44,7 @@ pub struct MemoryManager {
     pub(crate) triangles_per_sub_allocation: u32,
 
     // Used to keep track of what buffers will be used per sub-allocation
-    pub sub_allocation_chunk_indices: Vec<Buffer<u32>>,
+    pub(crate) sub_allocation_chunk_indices: Vec<Buffer<u32>>,
     pub(crate) compute_copy: ComputeShader,
 
     // Buffer to store the position and scale of each chunk

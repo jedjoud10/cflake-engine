@@ -196,12 +196,12 @@ fn update(world: &mut World) {
             .collect::<Vec<_>>();
 
         // Sort all nodes from lowed LOD to highest LOD
-        added.sort_by_key(|node| -(node.depth() as i32));
+        //added.sort_by_key(|node| -(node.depth() as i32));
 
         // Chunks with low allocation index should be closer to the camera
         // (to eliminate overdraw since they are generated first)
         // (doesn't really matter since we will implement occlusion culling anyways)
-        query.sort_by_key(|(c, _, _, _)| c.allocation);
+        //query.sort_by_key(|(c, _, _, _)| c.allocation);
 
         // Set the "dirty" state for newly added chunks
         assert!(query.len() >= added.len());

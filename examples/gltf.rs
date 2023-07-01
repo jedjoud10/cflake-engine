@@ -1,9 +1,9 @@
 use cflake_engine::prelude::*;
 
-// Mesh example game window
+// glTF example game window
 fn main() {
     App::default()
-        .set_app_name("cflake engine mesh example")
+        .set_app_name("cflake engine glTF example")
         .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
@@ -16,13 +16,13 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
-    asset!(assets, "user/scenes/example.glb", "/examples/assets/");
+    asset!(assets, "user/scenes/untitled2.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
     let context = GtlfContext::from_world(world).unwrap();
     let settings = GltfSettings::default();
     assets
-        .load::<GltfScene>(("user/scenes/example.glb", settings, context))
+        .load::<GltfScene>(("user/scenes/untitled2.glb", settings, context))
         .unwrap();
 
     // Create a movable camera

@@ -46,6 +46,6 @@ void main() {
     
     // Set the output variables
     m_position = world_pos.xyz;
-    m_normal = -normals.xyz;
+    m_normal = normals.xyz;
     m_color = color;
 }

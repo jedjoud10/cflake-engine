@@ -19,6 +19,18 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out vec3 color, out uint material) {
+    /*
+    vec2 rotated = rotate(position.xz, 3.1415 / 4.0);
+    float spikey = snoise(position.xz * 0.0003) * 0.5 + 0.5;
+    spikey = clamp((spikey - 0.5) * 1 + 0.5, 0, 1); 
+    float biome1 = (1 - spikey) * snoise(position.xz * 0.001 + vec2(snoise(position.xz * 0.0002)) * vec2(1.3, 0.2)) * 30;
+    float spikey2 = pow(abs(snoise(rotated * vec2(2.3, 0.7) * 0.0013 + vec2(snoise(position * 0.0012)) * 0.2)), 1.2);
+    biome1 += spikey * spikey2 * 10;
+    color = mix(vec3(1), vec3(.6), spikey2 * spikey) * (snoise(position) * 0.2 + 0.6);
+    return position.y + biome1;
+    */
+
+    /*
     position *= 2.0;
 
     // Blend between the two biomes
@@ -77,5 +89,29 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         color = (snoise(position * 0.1) * 0.1 + 0.9) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
     }
 
-    return opIntersection(-density, -pyramide);
+    return density;
+    */
+
+    // Rocky biome 2
+    float value = fbm(position.xz * 0.002, 8, 0.5, 2.1) * 100;
+    value = opSmoothUnion(value, 0, 100);
+    float cel = fbmCellular(position * 0.003 * vec3(1, 2, 1), 4, 0.5, 1.8).x * 50.0;
+    value -= cel;
+    color = (snoise(position * vec3(0, 10, 0) * 0.004) * 0.4 + 0.4) * pow(vec3(100.0) / 255.0, vec3(2.2));
+    color *= clamp(-cel / 20 + 0.9, 0, 1) + 0.2;
+    value = smooth_floor(value / 50) * 50;
+    value = opSmoothIntersection(value, position.y - 250, 40);
+    float island = mix(position.y, 0, snoise(position * 0.001));
+    return island + 10 + value;
+
+    /*
+    vec2 rotated = rotate(position.xz, 3.1415 / 4.0);
+    float spikey = snoise(position.xz * 0.0003) * 0.5 + 0.5;
+    spikey = clamp((spikey - 0.5) * 1 + 0.5, 0, 1); 
+    float biome1 = (1 - spikey) * snoise(position.xz * 0.001 + vec2(snoise(position.xz * 0.0002)) * vec2(1.3, 0.2)) * 30;
+    float spikey2 = pow(abs(snoise(rotated * vec2(2.3, 0.7) * 0.0013 + vec2(snoise(position * 0.0012)) * 0.2)), 1.2);
+    biome1 += spikey * spikey2 * 10;
+    color = mix(vec3(1), vec3(.6), spikey2 * spikey);
+    return position.y + biome1;
+    */
 }

@@ -60,7 +60,9 @@ pub struct ShadowMapping {
     // Everything required to render to the depth texture
     pub(crate) render_pass: RenderPass<(), ShadowDepthLayout>,
 
-    // Multilayered shadow map texture
+    // Multilayered shadow map texture for static objects only
+    // TODO: Implement proper interval counter
+    // TODO: Implement separate texture for dynanmic / static objects
     pub(crate) depth_tex: ShadowMap,
 
     // Cached matrices
