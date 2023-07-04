@@ -81,6 +81,7 @@ pub struct Chunk {
 
     // Higher values mean that the chunk must generate before other chunks
     pub(crate) generation_priority: f32,
+    pub(crate) collider: bool,
 
     // If this is Some, then the chunk will generate collisions with the readback mesh
     pub(crate) mesh_readback_state: Option<MeshReadbackState>,

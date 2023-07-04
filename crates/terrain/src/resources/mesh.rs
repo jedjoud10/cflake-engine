@@ -23,11 +23,11 @@ impl MeshGenerator {
     pub(crate) fn new(assets: &Assets, graphics: &Graphics, settings: &TerrainSettings) -> Self {
         // Create some temporary vertices that we will write to first
         // Note: These should be able to handle a complex mesh in the worst case scenario
-        let temp_vertices = Buffer::<<XY<f32> as Vertex>::Storage>::zeroed(
+        let temp_vertices = Buffer::<<XYZW<f32> as Vertex>::Storage>::zeroed(
             graphics,
             (settings.mesher.size as usize).pow(3),
             BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::READ,
+            BufferUsage::STORAGE | BufferUsage::READ | BufferUsage::WRITE,
         )
         .unwrap();
 
@@ -37,7 +37,7 @@ impl MeshGenerator {
             graphics,
             (settings.mesher.size as usize - 1).pow(3) * 2,
             BufferMode::Dynamic,
-            BufferUsage::STORAGE | BufferUsage::READ,
+            BufferUsage::STORAGE | BufferUsage::READ | BufferUsage::WRITE,
         )
         .unwrap();
 

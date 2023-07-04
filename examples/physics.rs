@@ -82,7 +82,8 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(50.0);
     let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
     let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::new(50.0, 0.03, 50.0)).build();
-    scene.insert((surface, renderer, scale, rigidbody, collider));
+    let position = Position::at_y(-10.0);
+    scene.insert((position, surface, renderer, scale, rigidbody, collider));
 
     // Create a prefab that contains the sphere entity and it's components
     let renderer = Renderer::default();

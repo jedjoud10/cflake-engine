@@ -1,9 +1,10 @@
 use std::cell::Cell;
 
-use ecs::Component;
+use ecs::{Component, Entity};
+use rapier3d::prelude::*;
 use utils::Handle;
 
-use crate::PhysicsSurface;
+use crate::{PhysicsSurface, GenericCollider};
 
 // Cuboid colliders represent a cuboid in 3D space
 // The position and rotation of the cuboid will be fetched from it's Position component and Rotation component
@@ -55,6 +56,59 @@ impl Clone for CuboidCollider {
         }
     }
 } 
+
+impl GenericCollider for CuboidCollider {
+    type RawRapierCollider = rapier3d::geometry::Cuboid;
+    
+    #[inline(always)]
+    fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+        self.handle
+    }
+
+    #[inline(always)]
+    fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
+        self.handle = Some(handle);    
+    }
+
+    #[inline(always)]
+    fn modified(&self) -> &Cell<bool> {
+        &self.modified
+    }
+
+    #[inline(always)]
+    fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    #[inline(always)]
+    fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+        &self.material
+    }
+
+    #[inline(always)]
+    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+        generic.shape_mut().as_cuboid_mut().unwrap()
+    }
+
+    #[inline(always)]
+    fn regenerate_when_updating() -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
+        Some(rapier3d::geometry::ColliderBuilder::cuboid(self.half_extent.w, self.half_extent.h, self.half_extent.d)
+            .mass(self.mass)
+            .sensor(self.sensor)
+            .user_data(entity.to_raw() as u128)
+            .build())
+    }
+
+    #[inline(always)]
+    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
+        custom.half_extents = vector![self.half_extent.w, self.half_extent.h, self.half_extent.d];
+    }
+}
 
 // Builder for creating a cuboid collider
 pub struct CuboidColliderBuilder {

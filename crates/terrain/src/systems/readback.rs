@@ -27,14 +27,14 @@ fn readback_begin_update(world: &mut World) {
     );
 
     // Start doing a counter and offset async readback for the chunk of last frame
-    let last_chunk_generated = scene
+    let mut last_chunk_generated = scene
         .query_mut::<(&mut Chunk, &Entity)>()
         .into_iter().find(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart);
-    if let Some((chunk, &entity)) = last_chunk_generated {
+    if let Some((chunk, &entity)) = last_chunk_generated.as_mut() {
         chunk.state = ChunkState::PendingReadbackData;
         let counters = &memory.counters;
         let offsets = &memory.offsets;
-
+        
         // Readback the counters asynchronously
         let hashmap = memory.readback_offsets_and_counters.clone();
         counters
@@ -59,40 +59,41 @@ fn readback_begin_update(world: &mut World) {
     
     // Fetch any given chunk that we can readback a mesh for (collisions only)
     if settings.mesher.collisions {
-        let mesh_readback_chunk = scene
-            .query_mut::<(&mut Chunk, &Entity, &RigidBody, &MeshCollider)>()
-            .into_iter()
-            .filter(|(chunk, _, _, _)| 
-                chunk.mesh_readback_state == Some(MeshReadbackState::PendingReadbackStart)
-                && chunk.state == ChunkState::Generated {
-                    empty: false,
-                })
-            .next();
+        let mesh_readback_chunk = if let Some((chunk, entity)) = last_chunk_generated.as_mut() {
+            if chunk.collider {
+                Some((chunk, &**entity))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
-
-        if let Some((chunk, &entity, _, _)) = mesh_readback_chunk {
+        if let Some((chunk, &entity)) = mesh_readback_chunk {
             chunk.mesh_readback_state = Some(MeshReadbackState::PendingReadbackData);
             let vertices = &mesher.temp_vertices;
             let triangles = &mesher.temp_triangles;
-            let hashmap = memory.readback_vertices_and_triangles.clone();
-            /*
-            let vertices_sender = memory.readback_vertices_sender.clone();
-        
+
             // Readback the vertices asynchronously
-            triangles
-                .async_read(.., move |triangles| {
-                    let _ = triangles_sender.send((entity, triangles.to_vec()));
-                })
-                .unwrap();
-            
-            // Readback the triangles asynchronously
+            let hashmap = memory.readback_vertices_and_triangles.clone();
             vertices
                 .async_read(.., move |vertices| {
-                    let _ = vertices_sender.send((entity, vertices.to_vec()));
+                    let mut locked = hashmap.lock();
+                    let (out, _) = locked.entry(entity).or_default();
+                    *out = Some(vertices.to_vec());
                 })
                 .unwrap();
-            */
-        };
+
+            // Readback the triangles asynchronously
+            let hashmap = memory.readback_vertices_and_triangles.clone();
+            triangles
+                .async_read(.., move |triangles| {
+                    let mut locked = hashmap.lock();
+                    let (_, out) = locked.entry(entity).or_default();
+                    *out = Some(triangles.to_vec());
+                })
+                .unwrap();
+        }
     }
 }
 
@@ -123,42 +124,67 @@ fn readback_end_update(world: &mut World) {
             let b = b.as_ref()?;
             Some((*e, *a, *b))
         }).next();
-    let Some((entity, offset, count)) = iter else {
-        return;
-    };
-    hashmap.remove(&entity).unwrap();
 
-    // Fetch the appropriate chunk
-    let mut entry = scene.entry_mut(entity).unwrap();
-    let chunk = entry.get_mut::<Chunk>().unwrap();
+    if let Some((entity, offset, count)) = iter {
+        hashmap.remove(&entity).unwrap();
 
-    // Check if we are OOM lol
-    let vertices_per_sub_allocation = memory.vertices_per_sub_allocation;
-    let triangles_per_sub_allocation = memory.triangles_per_sub_allocation;
-    if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1)
-        || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1)
-    {
-        panic!("Out of memory xD MDR");
+        // Fetch the appropriate chunk
+        let mut entry = scene.entry_mut(entity).unwrap();
+        let chunk: &mut Chunk = entry.get_mut::<Chunk>().unwrap();
+
+        // Check if we are OOM lol
+        let vertices_per_sub_allocation = memory.vertices_per_sub_allocation;
+        let triangles_per_sub_allocation = memory.triangles_per_sub_allocation;
+        if offset.x >= (u32::MAX - vertices_per_sub_allocation + 1)
+            || offset.y >= (u32::MAX - triangles_per_sub_allocation + 1)
+        {
+            panic!("Out of memory xD MDR");
+        }
+
+        // Calculate sub-allocation index and length
+        let count = f32::max(
+            count.x as f32 / vertices_per_sub_allocation as f32,
+            count.y as f32 / triangles_per_sub_allocation as f32,
+        )
+        .ceil() as u32;
+        let offset = offset.x / vertices_per_sub_allocation;
+
+        // Update chunk range (if valid) and set visibility
+        let solid = count > 0;
+        chunk.state = ChunkState::Generated { empty: !solid };
+
+        // Disable the range and visibility if the mesh is not valid
+        if solid {
+            manager.new_visibilities.push((chunk.allocation, chunk.local_index));
+            chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
+        } else {
+            chunk.ranges = None;
+        }
     }
 
-    // Calculate sub-allocation index and length
-    let count = f32::max(
-        count.x as f32 / vertices_per_sub_allocation as f32,
-        count.y as f32 / triangles_per_sub_allocation as f32,
-    )
-    .ceil() as u32;
-    let offset = offset.x / vertices_per_sub_allocation;
 
-    // Update chunk range (if valid) and set visibility
-    let solid = count > 0;
-    chunk.state = ChunkState::Generated { empty: !solid };
-
-    // Disable the range and visibility if the mesh is not valid
-    if solid {
-        manager.new_visibilities.push((chunk.allocation, chunk.local_index));
-        chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
-    } else {
-        chunk.ranges = None;
+    // Find the first entity that has both vertices and triangles fetched back
+    let mut hashmap = memory.readback_vertices_and_triangles.lock();
+    let iter = hashmap
+        .iter()
+        .filter_map(|(e, (a, b))| {
+            a.as_ref()?;
+            b.as_ref()?;
+            Some(*e)
+        }).next();
+    if let Some(entity) = iter {
+        let (vertices, triangles) = hashmap.remove(&entity).unwrap();
+        let vertices = vertices.unwrap();
+        let triangles = triangles.unwrap();
+        
+        let mut entry = scene.entry_mut(entity).unwrap();
+        let mut chunk = entry.get_mut::<Chunk>().unwrap();
+        let node = chunk.node.unwrap();
+        chunk.mesh_readback_state = Some(MeshReadbackState::Complete);
+        let collision = entry.get_mut::<MeshCollider>().unwrap();
+        
+        let vertices = crate::util::transform_vertices(vertices, node);
+        collision.set_geometry(vertices, triangles);
     }
 }
 

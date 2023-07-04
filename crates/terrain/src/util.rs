@@ -1,12 +1,12 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, Texel,
-    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings,
+    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings, XYZW,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
 
 // Common types used througohut the crate
-pub type TempVertices = Buffer<<XY<f32> as Vertex>::Storage>;
+pub type TempVertices = Buffer<<XYZW<f32> as Vertex>::Storage>;
 pub type TempTriangles = Buffer<[u32; 3]>;
 pub type PermVertices = AttributeBuffer<attributes::Position>;
 pub type PermTriangles = TriangleBuffer<u32>;
@@ -78,6 +78,36 @@ pub(crate) fn generation_priority_heuristic(
         * 5.0;
 
     return priority.clamp(0.0f32, 1000.0f32);
+}
+
+// Convert packed vertices to normal vertices (with scale) for collisions
+pub(crate) fn transform_vertices(
+    packed: Vec<vek::Vec4<f32>>,
+    node: Node,
+) -> Vec<vek::Vec3<f32>> {
+    let factor = node.size() as f32 / (node.size() as f32 - 4.0);
+
+    packed.into_iter()
+        .map(|float_packed| {
+            let uint_packed = float_packed.map(|x| u32::from_ne_bytes(x.to_ne_bytes()));
+            let packed_cell_position = uint_packed.x;
+            let packed_inner_position = uint_packed.y;
+
+            // Unpack the packed cell position
+            let cell_position = {
+                let bytes = packed_cell_position.to_ne_bytes();
+                vek::Vec4::from_slice(&bytes).map(|byte| byte as f32)
+            };
+            
+            // Unpack the packed inner cell position
+            let inner_position = {
+                let bytes = packed_inner_position.to_ne_bytes();
+                vek::Vec4::from_slice(&bytes).map(|byte| byte as f32 / 128.0f32 - 1.0)
+            };
+
+            (cell_position + inner_position).xyz() * factor + vek::Vec3::one()
+        })
+        .collect()
 }
 
 // Gets the direction in which we must generate the skirts

@@ -1,9 +1,9 @@
 use std::cell::Cell;
 
-use ecs::Component;
+use ecs::{Component, Entity};
 use rendering::Mesh;
 use utils::Handle;
-use crate::{PhysicsSurface};
+use crate::{PhysicsSurface, GenericCollider};
 
 // Mesh collider that will represent a mesh using it's triangles and vertices
 #[derive(Component)]
@@ -35,6 +35,68 @@ impl MeshCollider {
     pub fn set_sensor(&mut self, sensor: bool) {
         self.sensor = sensor;
         self.modified.set(true);
+    }
+}
+
+
+impl GenericCollider for MeshCollider {
+    type RawRapierCollider = rapier3d::geometry::TriMesh;
+    
+    #[inline(always)]
+    fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+        self.handle
+    }
+
+    #[inline(always)]
+    fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
+        self.handle = Some(handle);    
+    }
+
+    #[inline(always)]
+    fn modified(&self) -> &Cell<bool> {
+        &self.modified
+    }
+
+    #[inline(always)]
+    fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    #[inline(always)]
+    fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+        &self.material
+    }
+
+    #[inline(always)]
+    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+        generic.shape_mut().as_trimesh_mut().unwrap()
+    }
+
+    #[inline(always)]
+    fn regenerate_when_updating() -> bool {
+        true
+    }
+
+    #[inline(always)]
+    fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
+        let vertices = self.vertices.take()?;
+        let triangles = self.triangles.take()?;
+        
+        if vertices.len() == 0 || triangles.len() == 0 {
+            return None;
+        }
+        
+        let vertices: Vec<rapier3d::na::Point3<f32>> = vertices.into_iter().map(|x| crate::vek_vec_to_na_point(x)).collect::<_>();
+
+        Some(rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
+            .mass(self.mass)
+            .sensor(self.sensor)
+            .user_data(entity.to_raw() as u128)
+            .build())
+    }
+
+    #[inline(always)]
+    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
     }
 }
 

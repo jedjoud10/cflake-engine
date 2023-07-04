@@ -66,7 +66,7 @@ pub struct MemoryManager {
     pub(crate) readback_offsets_and_counters: Arc<Mutex<AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>>>,
 
     // Keeps track of the vertices/triangles async data of nearby chunks
-    pub(crate) readback_vertices_and_triangles: Arc<Mutex<AHashMap<Entity, (Option<Vec<vek::Vec2<f32>>>, Option<Vec<[u32; 3]>>)>>>,
+    pub(crate) readback_vertices_and_triangles: Arc<Mutex<AHashMap<Entity, (Option<Vec<vek::Vec4<f32>>>, Option<Vec<[u32; 3]>>)>>>,
 }
 
 impl MemoryManager {

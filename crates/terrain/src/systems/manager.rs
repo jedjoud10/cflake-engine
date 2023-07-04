@@ -12,6 +12,7 @@ use graphics::{
     DrawIndexedIndirectBuffer,
 };
 use math::OctreeDelta;
+use physics::{RigidBody, MeshCollider, RigidBodyBuilder, MeshColliderBuilder};
 use rand::{seq::SliceRandom};
 use rayon::prelude::{ParallelIterator};
 use rendering::{
@@ -76,7 +77,7 @@ fn update(world: &mut World) {
 
         // Discard non-leaf nodes
         added.retain(|x| x.leaf());
-        //added.retain(|x| x.size() == settings.size);
+        added.retain(|x| x.size() == settings.mesher.size);
 
         // Don't do shit
         if added.is_empty() && removed.is_empty() {
@@ -113,6 +114,7 @@ fn update(world: &mut World) {
             .unwrap();
 
         // Extend the indexed indirect buffer if needed
+        // TODO: Fix bug here
         if added.len() > query_count {
             // Over-allocate so we don't need to do this as many times
             let count = ((added.len() - query_count) * 2).max(128);
@@ -171,6 +173,7 @@ fn update(world: &mut World) {
                         local_index: old_per_allocation + i,
                         generation_priority: 0.0f32,
                         ranges: None,
+                        collider: false,
                         node: None,
                         mesh_readback_state: None,
                     };
@@ -183,13 +186,39 @@ fn update(world: &mut World) {
 
             // Randomly order the entities to reduce the chances of an OOM error
             entities.shuffle(&mut rng);
-            scene.extend_from_iter(entities);
             manager.chunks_per_allocation += count;
+
+            // Let some chunks be generated with a fixed RB and a collider mesh
+            if settings.mesher.collisions {
+                let num_nodes_with_colliders = added
+                    .iter()
+                    .filter(|node| node.size() == settings.mesher.size)
+                    .count();
+                
+                // Split the entities into ones with a collider/RB and ones without
+                let mut with_colliders = Vec::<(Position, Scale, Chunk, RigidBody, MeshCollider)>::new();
+                let without_colliders: Vec::<(Position, Scale, Chunk)>;
+
+                // TODO: Make this more idiomatic
+                for i in 0..num_nodes_with_colliders {
+                    let (pos, scale, mut chunk) = entities.pop().unwrap();
+                    let mesh_collider = MeshColliderBuilder::new(Vec::new(), Vec::new(), 1000.0).build();
+                    let rigid_body = RigidBodyBuilder::new(physics::RigidBodyType::Fixed).build();
+                    chunk.collider = true;
+                    with_colliders.push((pos, scale, chunk, rigid_body, mesh_collider));
+                }
+
+                without_colliders = entities;
+            
+                scene.extend_from_iter(without_colliders);
+                scene.extend_from_iter(with_colliders);
+            } else {
+                scene.extend_from_iter(entities);
+            }
         }
 
-
-        // Get all free chunks in the world and use them
-        let mut query = scene
+        // Get all free chunks in the world and use them (collider and non-collider entities)
+        let query = scene
             .query_mut::<(&mut Chunk, &mut Position, &mut Scale, &Entity)>()
             .into_iter()
             .filter(|(x, _, _, _)| x.state == ChunkState::Free)
@@ -207,6 +236,12 @@ fn update(world: &mut World) {
         assert!(query.len() >= added.len());
         for ((chunk, position, scale, entity), node) in query.into_iter().zip(added.iter()) {
             chunk.state = ChunkState::Dirty;
+
+            if chunk.collider {
+                chunk.mesh_readback_state = Some(crate::MeshReadbackState::PendingReadbackStart);
+            } else {
+                chunk.mesh_readback_state = None;
+            }
 
             // Set node, position, and scale
             chunk.node = Some(*node);
@@ -227,7 +262,6 @@ fn update(world: &mut World) {
             assert!(res.is_none());
         }
 
-        // Handle creating the collision objec
     }
 }
 

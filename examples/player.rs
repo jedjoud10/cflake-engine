@@ -144,7 +144,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(sphere, material.clone(), id.clone());
-    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Dynamic).build();
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = SphereColliderBuilder::new(10.0, 1.0).build();
@@ -155,7 +155,7 @@ fn init(world: &mut World) {
     let position = Position::default();
     let rotation = Rotation::default();
     let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Dynamic).build();
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = CuboidColliderBuilder::new(10.0, vek::Extent3::broadcast(1.0)).build();

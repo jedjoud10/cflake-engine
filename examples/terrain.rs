@@ -50,7 +50,7 @@ fn init(world: &mut World) {
 
     // Terrain rendering settings
     let rendering = TerrainRenderingSettings {
-        blocky: false,
+        blocky: true,
         flat_normals: false,
         derived_normals: true,
         flat_colors: true,
@@ -128,11 +128,17 @@ fn init(world: &mut World) {
     let pipelines = world.get::<Pipelines>().unwrap();
     let id = pipelines.get::<PbrMaterial>().unwrap();
     let renderer = world.get::<DeferredRenderer>().unwrap();
-    let cube = renderer.cube.clone();
+
+    // Create a prefab that contains the cube entity and it's components
+    let surface = Surface::new(renderer.cube.clone(), material, id);
     let renderer = Renderer::default();
     let position = Position::default();
-    let surface = Surface::new(cube, material, id);
-    scene.prefabify("cube", (renderer, position, surface));
+    let rotation = Rotation::default();
+    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Dynamic).build();
+    let velocity = Velocity::default();
+    let angular_velocity = AngularVelocity::default();
+    let collider = CuboidColliderBuilder::new(10.0, vek::Extent3::broadcast(1.0)).build();
+    scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
 }
 
 // Updates the light direction and quites from the engine

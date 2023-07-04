@@ -1,8 +1,8 @@
 use std::cell::Cell;
 
-use ecs::Component;
+use ecs::{Component, Entity};
 use utils::Handle;
-use crate::PhysicsSurface;
+use crate::{PhysicsSurface, GenericCollider};
 
 // Sphere colliders represent perfect spheres in 3D space
 // The position of the sphere will be fetched from it's Position component
@@ -54,6 +54,59 @@ impl Clone for SphereCollider {
         }
     }
 } 
+
+impl GenericCollider for SphereCollider {
+    type RawRapierCollider = rapier3d::geometry::Ball;
+    
+    #[inline(always)]
+    fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
+        self.handle
+    }
+
+    #[inline(always)]
+    fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
+        self.handle = Some(handle);    
+    }
+
+    #[inline(always)]
+    fn modified(&self) -> &Cell<bool> {
+        &self.modified
+    }
+
+    #[inline(always)]
+    fn mass(&self) -> f32 {
+        self.mass
+    }
+
+    #[inline(always)]
+    fn material(&self) -> &Option<Handle<PhysicsSurface>> {
+        &self.material
+    }
+
+    #[inline(always)]
+    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+        generic.shape_mut().as_ball_mut().unwrap()
+    }
+
+    #[inline(always)]
+    fn regenerate_when_updating() -> bool {
+        false
+    }
+
+    #[inline(always)]
+    fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
+        Some(rapier3d::geometry::ColliderBuilder::ball(self.radius)
+            .mass(self.mass)
+            .sensor(self.sensor)
+            .user_data(entity.to_raw() as u128)
+            .build())
+    }
+
+    #[inline(always)]
+    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
+        custom.radius = self.radius
+    }
+}
 
 // Builder for creating a cuboid collider
 pub struct SphereColliderBuilder {

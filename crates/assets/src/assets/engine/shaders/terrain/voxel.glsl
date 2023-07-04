@@ -93,16 +93,17 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     */
 
     // Rocky biome 2
-    float value = fbm(position.xz * 0.002, 8, 0.5, 2.1) * 100;
+    float value = fbm(position.xz * 0.002, 8, 0.5, 2.1) * 150;
     value = opSmoothUnion(value, 0, 100);
-    float cel = fbmCellular(position * 0.003 * vec3(1, 2, 1), 4, 0.5, 1.8).x * 50.0;
+    float cel = fbmCellular(position * 0.003 * vec3(1, 3, 1), 4, 0.5, 1.8).x * 20.0;
     value -= cel;
     color = (snoise(position * vec3(0, 10, 0) * 0.004) * 0.4 + 0.4) * pow(vec3(100.0) / 255.0, vec3(2.2));
     color *= clamp(-cel / 20 + 0.9, 0, 1) + 0.2;
     value = smooth_floor(value / 50) * 50;
-    value = opSmoothIntersection(value, position.y - 250, 40);
-    float island = mix(position.y, 0, snoise(position * 0.001));
-    return island + 10 + value;
+    return position.y + 10 + value;
+    
+
+    //return position.y + 10 + snoise(position.xz * 0.003) * 20;
 
     /*
     vec2 rotated = rotate(position.xz, 3.1415 / 4.0);
