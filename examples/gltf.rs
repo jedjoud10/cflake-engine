@@ -4,7 +4,6 @@ use cflake_engine::prelude::*;
 fn main() {
     App::default()
         .set_app_name("cflake engine glTF example")
-        .set_window_fullscreen(true)
         .insert_init(init)
         .insert_update(update)
         .execute();
@@ -57,10 +56,5 @@ fn update(world: &mut World) {
         let sunrise = vek::Rgb::new(255.0f32, 151.0, 33.0);
         let interpolated = vek::Lerp::lerp(noon, sunrise, value.abs());
         light.color = interpolated.map(|x| x as u8);
-    }
-
-    // Exit the game when the user pressed Escape
-    if input.get_button(KeyboardButton::Escape).pressed() {
-        *state = State::Stopped;
     }
 }

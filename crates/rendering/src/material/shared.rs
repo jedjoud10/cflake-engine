@@ -75,7 +75,10 @@ pub struct CameraUniform {
     pub up: vek::Vec4<f32>,
 
     // Near, far, vertical FOV, horizontal FOV
-    pub near_far_hfov_: vek::Vec4<f32>
+    pub near_far_hfov_: vek::Vec4<f32>,
+    pub _a: vek::Vec4<f32>,
+    pub _b: vek::Vec4<f32>,
+    pub _c: vek::Vec4<f32>,
 }
 
 // Timing data that will be stored in a UBO

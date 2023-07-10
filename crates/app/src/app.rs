@@ -207,7 +207,8 @@ impl App {
         // Level filter for wgpu and subdependencies
         let wgpu_filter = match self.logging_level {
             log::LevelFilter::Off => log::LevelFilter::Off,
-            log::LevelFilter::Trace => log::LevelFilter::Debug,
+            log::LevelFilter::Debug => log::LevelFilter::Off,
+            log::LevelFilter::Trace => log::LevelFilter::Trace,
             _ => log::LevelFilter::Warn,
         };
 

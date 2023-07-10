@@ -99,6 +99,7 @@ pub(super) fn create_bind_group<'b>(
             let layout = &reflected.bind_group_layouts[binding as usize]
                 .as_ref()
                 .unwrap();
+            log::trace!("{:?}", &layout);
             let layout = graphics.0.cached.bind_group_layouts.get(layout).unwrap();
 
             // Keep track of the resources we will set

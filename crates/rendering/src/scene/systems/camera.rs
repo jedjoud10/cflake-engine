@@ -44,6 +44,9 @@ fn update(world: &mut World) {
             right: rotation.right().with_w(0.0),
             up: rotation.up().with_w(0.0),
             near_far_hfov_: vek::Vec4::new(camera.near, camera.far, camera.hfov, 0.0),
+            _a: vek::Vec4::zero(),
+            _b: vek::Vec4::zero(),
+            _c: vek::Vec4::zero(),
         };
 
         // Fill the camera UBO with the proper data

@@ -12,4 +12,7 @@ layout(set = 0, binding = 0) uniform CameraUniform {
 
     // Near, far, orizontal FOV
     vec4 near_far_vfov_;
+    vec4 _a;
+    vec4 _b;
+    vec4 _c;
 } camera;

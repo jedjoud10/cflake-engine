@@ -130,8 +130,6 @@ pub(crate) fn record_render_commands<'r, C: ColorLayout, DS: DepthStencilLayout>
     for render_command in render_commands {
         match render_command {
             RenderCommand::BindPipeline(pipeline) => {
-                dbg!(pipeline.shader().vertex().name());
-                dbg!(pipeline.shader().fragment().name());
                 render_pass.set_pipeline(pipeline.pipeline());
             }
 
