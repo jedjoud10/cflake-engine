@@ -1,6 +1,6 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, Texel,
-    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings, XYZW,
+    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings, XYZW, SamplerSettings,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -49,14 +49,14 @@ pub(crate) fn create_empty_buffer<T: GpuPod, const TYPE: u32>(
 }
 
 // Create a 3D storage texture with null contents with the specified size
-pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32) -> Texture3D<T> {
+pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32, usage: TextureUsage, sampling: Option<SamplerSettings>) -> Texture3D<T> {
     Texture3D::<T>::from_texels(
         graphics,
         None,
         vek::Extent3::broadcast(size),
-        TextureUsage::STORAGE | TextureUsage::WRITE,
+        usage,
         &[TextureViewSettings::whole::<<Texture3D<T> as Texture>::Region>()],
-        None,
+        sampling,
         TextureMipMaps::Disabled,
     )
     .unwrap()

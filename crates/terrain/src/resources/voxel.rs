@@ -4,7 +4,7 @@ use assets::Assets;
 use graphics::{
     ActiveComputeDispatcher, BindGroup, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, PushConstants, StorageAccess, Texel,
-    Texture3D, Vertex, RG,
+    Texture3D, Vertex, RG, TextureUsage, SamplerSettings, SamplerBorderColor, SamplerWrap,
 };
 use notify::Watcher;
 use crate::{create_texture3d, TerrainSettings};
@@ -12,7 +12,7 @@ use crate::{create_texture3d, TerrainSettings};
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
     pub(crate) compute_voxels: ComputeShader,
-    pub(crate) voxel_textures: Texture3D<RG<f32>>,
+    pub(crate) voxel_texture: Texture3D<RG<f32>>,
     pub(crate) hot_reload: Option<(Receiver<()>, JoinHandle<()>)>,
 }
 
@@ -29,7 +29,12 @@ impl VoxelGenerator {
         let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
 
         // Create the main voxel texture
-        let voxel_textures = create_texture3d(graphics, settings.mesher.size);
+        let voxel_textures = create_texture3d(graphics, settings.mesher.size, TextureUsage::STORAGE | TextureUsage::WRITE | TextureUsage::SAMPLED, Some(SamplerSettings {
+            wrap_u: SamplerWrap::ClampToEdge,
+            wrap_v: SamplerWrap::ClampToEdge,
+            wrap_w: SamplerWrap::ClampToEdge,
+            ..Default::default()
+        }));
 
         // Create a watcher that will watch the voxels compute shader file for any changes
         let hot_reload = if !assets.packed() {
@@ -56,7 +61,7 @@ impl VoxelGenerator {
     
         Self {
             compute_voxels,
-            voxel_textures,
+            voxel_texture: voxel_textures,
             hot_reload,
         }
     }

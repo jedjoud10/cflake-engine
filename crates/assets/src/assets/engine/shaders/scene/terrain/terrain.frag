@@ -10,6 +10,7 @@ layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
 layout(location = 2) in flat uint draw; 
 
+/*
 #if defined(flat) && defined(attributes)
 layout(location = 3) in flat vec3 m_normal;
 layout(location = 4) in flat vec3 m_color;
@@ -19,15 +20,17 @@ layout(location = 3) in vec3 m_normal;
 layout(location = 4) in vec3 m_color;
 layout(location = 5) in vec3 m_mask;
 #endif
+*/
 
 // Used to calculate barycentric coordinates
 layout (constant_id = 1) const uint input_vertices_count = 1;
 layout (constant_id = 2) const uint input_triangles_count = 1;
+
 layout(std430, set = 2, binding = 1) readonly buffer InputVertices {
-    uvec4 data[input_vertices_count];
+    vec4 data[];
 } input_vertices;
 layout(std430, set = 2, binding = 2) readonly buffer InputTriangles {
-    uint data[input_triangles_count];
+    uint data[];
 } input_triangles;
 struct IndexedIndirectDrawArgs {
     uint vertex_count;
@@ -40,6 +43,7 @@ layout(std430, set = 2, binding = 3) readonly buffer IndirectBuffer {
     IndexedIndirectDrawArgs data[];
 } indirect;
 
+/*
 #if defined(submaterials)
 // Albedo / diffuse map texture array
 layout(set = 0, binding = 8) uniform texture2DArray layered_albedo_map;
@@ -104,22 +108,35 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 	return normal_final;
 }
 #endif
+*/
+
+// Fetch the packed vertex data (stored in the position attribute) for a single vertex
+/*
+vec4 fetch_packed(uint vertex) {
+	uint base = indirect.data[draw].base_index;
+	uint vertex_offset = indirect.data[draw].vertex_offset;
+	uint index = input_triangles.data[gl_PrimitiveID * 3 + base + vertex];
+	vec4 packed = input_vertices.data[index + vertex_offset];
+	return packed;
+}
+*/
+
+//#include <engine/shaders/terrain/utils.glsl>
 
 void main() {
 	// Fetch packed vertex data
-	uvec4 p0 = fetch_packed(0);
-	uvec4 p1 = fetch_packed(1);
-	uvec4 p2 = fetch_packed(2);
-
-	// Fetch chunk local positions of vertices
-	vec3 v0 = fetch_vertex_position(p0.xy);
-	vec3 v1 = fetch_vertex_position(p1.xy);
-	vec3 v2 = fetch_vertex_position(p2.xy);
+	/*
+	vec4 v0 = fetch_packed(0);
+	vec4 v1 = fetch_packed(1);
+	vec4 v2 = fetch_packed(2);
+	*/
 
 	// Output variables
 	vec3 albedo = vec3(0);
 	vec3 normal = vec3(0);
 	vec3 mask = vec3(0);
+	
+	/*
 
 	// Either handle attributes (flat or non-flat) for or averaged out attributes
 	#if defined(attributes)	
@@ -129,34 +146,66 @@ void main() {
 	mask = m_mask;
 
 	#else
-	
-	// Fetch colors of vertices
-	vec3 c0 = fetch_vertex_colors(p0.w);
-	vec3 c1 = fetch_vertex_colors(p1.w);
-	vec3 c2 = fetch_vertex_colors(p2.w);
+	vec3 p0 = vec3(0);
+	vec3 n0 = vec3(0);
+	vec3 c0 = vec3(0);
+	vec3 m0 = vec3(0);
+	uint mt0 = 0;
 
-	// Fetch normals of vertices
-	vec3 n0 = fetch_vertex_normal(p0.z);
-	vec3 n1 = fetch_vertex_normal(p1.z);
-	vec3 n2 = fetch_vertex_normal(p2.z);
+	vec3 p1 = vec3(0);
+	vec3 n1 = vec3(0);
+	vec3 c1 = vec3(0);
+	vec3 m1 = vec3(0);
+	uint mt1 = 0;
 
-	// Fetch mask of vertices
-	vec3 n0 = fetch_vertex_mask(p0);
-	vec3 n1 = fetch_vertex_mask(p1);
-	vec3 n2 = fetch_vertex_mask(p2);
+	vec3 p2 = vec3(0);
+	vec3 n2 = vec3(0);
+	vec3 c2 = vec3(0);
+	vec3 m2 = vec3(0);
+	uint mt2 = 0;
 
+	fetch_vertex_data(
+    	v0,
+    	p0,
+    	n0,
+    	c0,
+    	m0,
+    	mt0
+	);
+
+	fetch_vertex_data(
+    	v1,
+    	p1,
+    	n1,
+    	c1,
+    	m1,
+    	mt1
+	);
+
+	fetch_vertex_data(
+    	v2,
+    	p2,
+    	n2,
+    	c2,
+    	m2,
+    	mt2
+	);
 
 	albedo = (c0 + c1 + c2) / 3.0;
 	normal = normalize(n0 + n1 + n2);
-	mask = vec3(1, 0.1, 0);
+	mask = (m0 + m1 + m2) / 3.0;
+	*/
 
-	#endif
+	//#endif
+	
 
 	// OVERWRITES THE NORMALS IN CASE OF DERIVED NORMALS
 	// (compiler should get rid of this so it's ok)
+	/*
 	#if defined(derived)
 	normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
 	#endif
+	*/
 
 	gbuffer_albedo = vec4(albedo, 1);
 	gbuffer_normal = vec4(normal, 0);

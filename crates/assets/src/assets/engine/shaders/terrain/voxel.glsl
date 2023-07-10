@@ -95,7 +95,7 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         color = (snoise(position * 0.1) * 0.1 + 0.9) * pow(vec3(255, 188, 133) / 255.0, vec3(2.2));
     }
 
-    return density;
+    return min(density, pyramide);
 
     // Rocky biome 2
     /*

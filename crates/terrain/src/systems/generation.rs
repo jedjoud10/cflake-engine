@@ -191,7 +191,7 @@ fn update(world: &mut World) {
     // One global bind group for voxel generation
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture_mut("voxels", &mut voxelizer.voxel_textures).unwrap();
+            set.set_storage_texture_mut("voxels", &mut voxelizer.voxel_texture).unwrap();
         })
         .unwrap();
     active
@@ -203,7 +203,8 @@ fn update(world: &mut World) {
 
     active
         .set_bind_group(0, |set| {
-            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
+            set.set_sampled_texture("voxels", &voxelizer.voxel_texture).unwrap();
+            set.set_sampler("voxels_sampler", voxelizer.voxel_texture.sampler().unwrap()).unwrap();
             set.set_storage_texture_mut("cached_indices", &mut mesher.cached_indices)
                 .unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
@@ -238,7 +239,7 @@ fn update(world: &mut World) {
     active
         .set_bind_group(0, |set| {
             set.set_storage_texture("cached_indices", &mesher.cached_indices).unwrap();
-            set.set_storage_texture("voxels", &voxelizer.voxel_textures).unwrap();
+            set.set_storage_texture("voxels", &voxelizer.voxel_texture).unwrap();
             set.set_storage_buffer_mut("counters", counters, ..)
                 .unwrap();
         })

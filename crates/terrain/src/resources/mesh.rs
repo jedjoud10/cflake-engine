@@ -4,7 +4,7 @@ use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, StorageAccess, Texel, Texture3D, Vertex, R, RG, XY, XYZW,
+    ModuleVisibility, StorageAccess, Texel, Texture3D, Vertex, R, RG, XY, XYZW, TextureUsage,
 };
 
 use crate::{create_texture3d, TempTriangles, TempVertices, TerrainSettings, TerrainRenderingMode};
@@ -56,7 +56,8 @@ impl MeshGenerator {
         );
 
         // Set the voxels texture that we will sample
-        compiler.use_storage_texture::<Texture3D<RG<f32>>>("voxels", StorageAccess::ReadOnly);
+        compiler.use_sampled_texture::<Texture3D<RG<f32>>>("voxels", false);
+        compiler.use_sampler::<RG<f32>>("voxels_sampler", false);
 
         // Set the cached indices that we will use to reuse vertices
         compiler
@@ -104,7 +105,7 @@ impl MeshGenerator {
             temp_triangles,
             compute_vertices,
             compute_quads,
-            cached_indices: create_texture3d(graphics, settings.mesher.size),
+            cached_indices: create_texture3d(graphics, settings.mesher.size, TextureUsage::STORAGE | TextureUsage::WRITE, None),
         }
     }
 }
