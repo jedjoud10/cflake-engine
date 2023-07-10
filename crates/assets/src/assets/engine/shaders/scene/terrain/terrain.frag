@@ -26,6 +26,7 @@ layout(location = 5) in vec3 m_mask;
 layout (constant_id = 1) const uint input_vertices_count = 1;
 layout (constant_id = 2) const uint input_triangles_count = 1;
 
+/*
 layout(std430, set = 2, binding = 1) readonly buffer InputVertices {
     vec4 data[];
 } input_vertices;
@@ -42,6 +43,7 @@ struct IndexedIndirectDrawArgs {
 layout(std430, set = 2, binding = 3) readonly buffer IndirectBuffer {
     IndexedIndirectDrawArgs data[];
 } indirect;
+*/
 
 /*
 #if defined(submaterials)
@@ -132,9 +134,11 @@ void main() {
 	*/
 
 	// Output variables
+	/*
 	vec3 albedo = vec3(0);
 	vec3 normal = vec3(0);
 	vec3 mask = vec3(0);
+	*/
 	
 	/*
 
@@ -207,9 +211,9 @@ void main() {
 	#endif
 	*/
 
-	gbuffer_albedo = vec4(albedo, 1);
-	gbuffer_normal = vec4(normal, 0);
-	gbuffer_mask = vec4(mask, 0);
+	gbuffer_albedo = vec4(1);
+	gbuffer_normal = vec4(0);
+	gbuffer_mask = vec4(0);
 
 	/*
 	vec4 v0 = fetch_vertex_position_and_extra(0);

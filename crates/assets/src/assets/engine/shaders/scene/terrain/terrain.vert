@@ -53,9 +53,11 @@ void main() {
     // Set the output variables
     m_position = world_pos.xyz;
 
+    /*
     #ifdef attributes
     m_normal = normals.xyz;
     m_color = color;
     m_mask = vec3(cell_position_ao.w / 255.0, 1, 0);
     #endif
+    */
 }
