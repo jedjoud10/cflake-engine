@@ -76,16 +76,21 @@ impl Material for TerrainMaterial {
                 // Set the scaling factor for the vertex positions
                 compiler.use_constant(0, (size as f32) / (size as f32 - 4.0));
 
-                if settings.rendering.flat_colors {
-                    compiler.use_define("flatcolors", "");
-                }
+                // Set the custom rendering mode defines
+                match &settings.rendering.mode {
+                    crate::TerrainRenderingMode::Blocky => {
+                        compiler.use_define("derived", "");
+                    },
+                    
+                    crate::TerrainRenderingMode::LowPoly(mode) => match mode {
+                        crate::TerrainRenderingLowPolyMode::Flat => {
+                            compiler.use_define("flat", "");
+                            compiler.use_define("attributes", "");
+                        },
+                        crate::TerrainRenderingLowPolyMode::Averaged => {},
+                    },
 
-                if settings.rendering.derived_normals {
-                    compiler.use_define("derivednormals", "");
-                }
-
-                if settings.rendering.flat_normals {
-                    compiler.use_define("flatnormals", "");
+                    crate::TerrainRenderingMode::Smooth => {},
                 }
 
                 // Multi-draw indirect youpieee

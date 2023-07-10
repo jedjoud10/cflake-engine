@@ -102,10 +102,10 @@ pub(crate) fn transform_vertices(
             // Unpack the packed inner cell position
             let inner_position = {
                 let bytes = packed_inner_position.to_ne_bytes();
-                vek::Vec4::from_slice(&bytes).map(|byte| byte as f32 / 128.0f32 - 1.0)
+                vek::Vec4::from_slice(&bytes).map(|byte| i8::from_ne_bytes([byte]) as f32 / 127.0f32)
             };
 
-            (cell_position + inner_position).xyz() * factor + vek::Vec3::one()
+            (cell_position + inner_position).xyz() * factor
         })
         .collect()
 }
@@ -119,8 +119,8 @@ pub(crate) fn transform_vertices(
 // Bit 6 = End Z
 // TODO: URGENT PLEASE FIX
 pub(crate) fn find_skirts_direction(_node: &Node, _octree: &Octree) -> u32 {
-    return 0;
-    //return u32::MAX;
+    //return 0;
+    return u32::MAX;
     /*
     let mut skirts = 0u32;
     let nodes = octree.nodes();

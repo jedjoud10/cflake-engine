@@ -12,9 +12,13 @@ layout(location = 0) in vec4 packed;
 // Data to give to the fragment shader
 layout(location = 0) out vec3 m_position;
 layout(location = 1) out vec3 m_local_position;
-layout(location = 2) out vec3 m_normal;
-layout(location = 3) out flat uint draw; 
+layout(location = 2) out flat uint draw; 
+
+#ifdef attributes
+layout(location = 3) out vec3 m_normal;
 layout(location = 4) out vec3 m_color; 
+layout(location = 5) out vec3 m_mask; 
+#endif
 
 // Contains position and scale value
 layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
@@ -23,15 +27,15 @@ layout(std430, set = 2, binding = 0) readonly buffer PositionScaleBuffer {
 
 void main() {
     // Convert from 4 floats into uints 
-    uint packed_cell_position = floatBitsToUint(packed.x);
+    uint packed_cell_position_ao = floatBitsToUint(packed.x);
     uint packed_inner_position = floatBitsToUint(packed.y);
     uint packed_normals = floatBitsToUint(packed.z);
     uint packed_extras = floatBitsToUint(packed.w);
 
     // Positions only need 16 bits (1 byte for cell coord, 1 byte for inner vertex coord)
-    vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
+    vec4 cell_position_ao = unpackUnorm4x8(packed_cell_position_ao) * 255;
     vec4 inner_position = unpackSnorm4x8(packed_inner_position);
-    vec4 position = cell_position + inner_position;
+    vec4 position = cell_position_ao + inner_position;
     m_local_position = position.xyz;
     vec4 normals = unpackSnorm4x8(packed_normals);
     vec4 extras = unpackUnorm4x8(packed_extras);
@@ -46,6 +50,10 @@ void main() {
     
     // Set the output variables
     m_position = world_pos.xyz;
+
+    #ifdef attributes
     m_normal = normals.xyz;
     m_color = color;
+    m_mask = vec3(cell_position_ao.w / 255.0, 1, 0);
+    #endif
 }

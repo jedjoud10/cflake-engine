@@ -22,65 +22,11 @@ fn graph(x: VoxelNode<f32>, y: VoxelNode<f32>, z: VoxelNode<f32>) -> VoxelNode<f
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
-
-    // Setup the assets that will be loaded
-    asset!(assets, "user/textures/diffuse1.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal1.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask1.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/diffuse3.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal3.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask3.jpg", "/examples/assets/");
-
-    // Terrain mesher/octree settings
-    let mesher = TerrainMeshSettings {
-        size: 64,
-        collisions: true,
-        max_octree_depth: 9,
-        quality: 1.0,
-    };
-
-    // Terrain memory settings
-    let memory = TerrainMemorySettings {
-        allocation_count: 4,
-        sub_allocation_count: 1024,
-    };
-
-    // Terrain rendering settings
-    let rendering = TerrainRenderingSettings {
-        blocky: true,
-        flat_normals: false,
-        derived_normals: true,
-        flat_colors: true,
-        submaterials: Some(TerrainSubMaterialsSettings {
-            materials: [
-                TerrainSubMaterial {
-                    diffuse: "user/textures/diffuse1.jpg".to_string(),
-                    normal: "user/textures/normal1.jpg".to_string(),
-                    mask: "user/textures/mask1.jpg".to_string(),
-                },
-                TerrainSubMaterial {
-                    diffuse: "user/textures/diffuse2.jpg".to_string(),
-                    normal: "user/textures/normal2.jpg".to_string(),
-                    mask: "user/textures/mask2.jpg".to_string(),
-                },
-                TerrainSubMaterial {
-                    diffuse: "user/textures/diffuse3.jpg".to_string(),
-                    normal: "user/textures/normal3.jpg".to_string(),
-                    mask: "user/textures/mask3.jpg".to_string(),
-                },
-            ].to_vec(),
-            scale: TextureScale::default(),
-            sampler: SamplerSettings {
-                mipmaps: SamplerMipMaps::Auto,
-                ..Default::default()
-            },
-        }),
-    };
-
+    
     // Create the terrain generator's settings
+    let mesher = TerrainMeshSettings::default();
+    let memory = TerrainMemorySettings::default();
+    let rendering = TerrainRenderingSettings::default();
     let settings = TerrainSettings::new(
         mesher, memory, rendering
     ).unwrap();

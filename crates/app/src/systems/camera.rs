@@ -132,6 +132,11 @@ fn update(world: &mut World) {
         hide_ui(&window, &mut gui);
     }
 
+    // Ignore inputs from early frames
+    if time.frame_count() <= 2 {
+        return;
+    }
+
     // Reset the camera rotation and position
     if input.get_button("reset").pressed() {
         **position = vek::Vec3::zero();

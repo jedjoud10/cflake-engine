@@ -8,26 +8,23 @@ layout(location = 2) out vec4 gbuffer_mask;
 // Data given by the vertex shader
 layout(location = 0) in vec3 m_position;
 layout(location = 1) in vec3 m_local_position;
+layout(location = 2) in flat uint draw; 
 
-#ifdef flatnormals
-layout(location = 2) in flat vec3 m_normal;
-#else
-layout(location = 2) in vec3 m_normal;
-#endif
-
-layout(location = 3) in flat uint draw; 
-
-#ifdef flatcolors
+#if defined(flat) && defined(attributes)
+layout(location = 3) in flat vec3 m_normal;
 layout(location = 4) in flat vec3 m_color;
-#else
+layout(location = 5) in flat vec3 m_mask;
+#elif defined(attributes)
+layout(location = 3) in vec3 m_normal;
 layout(location = 4) in vec3 m_color;
+layout(location = 5) in vec3 m_mask;
 #endif
 
 // Used to calculate barycentric coordinates
 layout (constant_id = 1) const uint input_vertices_count = 1;
 layout (constant_id = 2) const uint input_triangles_count = 1;
 layout(std430, set = 2, binding = 1) readonly buffer InputVertices {
-    vec4 data[input_vertices_count];
+    uvec4 data[input_vertices_count];
 } input_vertices;
 layout(std430, set = 2, binding = 2) readonly buffer InputTriangles {
     uint data[input_triangles_count];
@@ -43,6 +40,7 @@ layout(std430, set = 2, binding = 3) readonly buffer IndirectBuffer {
     IndexedIndirectDrawArgs data[];
 } indirect;
 
+#if defined(submaterials)
 // Albedo / diffuse map texture array
 layout(set = 0, binding = 8) uniform texture2DArray layered_albedo_map;
 layout(set = 0, binding = 9) uniform sampler layered_albedo_map_sampler;
@@ -105,31 +103,64 @@ vec3 triplanar_normal(float layer, vec3 normal) {
 	vec3 normal_final = normalize(normalx.zyx + normaly.xzy + normalz.xyz);
 	return normal_final;
 }
-
-// Fetch the position (and material index) of a specific vertex that makes the current rasterized triangle
-vec4 fetch_vertex_position_and_extra(uint vertex) {
-	uint base = indirect.data[draw].base_index;
-	uint vertex_offset = indirect.data[draw].vertex_offset;
-	uint index = input_triangles.data[gl_PrimitiveID * 3 + base + vertex];
-	vec4 packed = input_vertices.data[index + vertex_offset];
-    uint packed_cell_position = floatBitsToUint(packed.x);
-    uint packed_inner_position = floatBitsToUint(packed.y);
-	vec4 cell_position = unpackUnorm4x8(packed_cell_position) * 255;
-    vec4 inner_position = unpackSnorm4x8(packed_inner_position);
-    return vec4((cell_position + inner_position).xyz, packed.w);
-}
+#endif
 
 void main() {
-	#ifdef derivednormals
-	vec3 surface_normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	// Fetch packed vertex data
+	uvec4 p0 = fetch_packed(0);
+	uvec4 p1 = fetch_packed(1);
+	uvec4 p2 = fetch_packed(2);
+
+	// Fetch chunk local positions of vertices
+	vec3 v0 = fetch_vertex_position(p0.xy);
+	vec3 v1 = fetch_vertex_position(p1.xy);
+	vec3 v2 = fetch_vertex_position(p2.xy);
+
+	// Output variables
+	vec3 albedo = vec3(0);
+	vec3 normal = vec3(0);
+	vec3 mask = vec3(0);
+
+	// Either handle attributes (flat or non-flat) for or averaged out attributes
+	#if defined(attributes)	
+
+	albedo = m_color;
+	normal = normalize(m_normal);
+	mask = m_mask;
+
 	#else
-	vec3 surface_normal = normalize(m_normal);
+	
+	// Fetch colors of vertices
+	vec3 c0 = fetch_vertex_colors(p0.w);
+	vec3 c1 = fetch_vertex_colors(p1.w);
+	vec3 c2 = fetch_vertex_colors(p2.w);
+
+	// Fetch normals of vertices
+	vec3 n0 = fetch_vertex_normal(p0.z);
+	vec3 n1 = fetch_vertex_normal(p1.z);
+	vec3 n2 = fetch_vertex_normal(p2.z);
+
+	// Fetch mask of vertices
+	vec3 n0 = fetch_vertex_mask(p0);
+	vec3 n1 = fetch_vertex_mask(p1);
+	vec3 n2 = fetch_vertex_mask(p2);
+
+
+	albedo = (c0 + c1 + c2) / 3.0;
+	normal = normalize(n0 + n1 + n2);
+	mask = vec3(1, 0.1, 0);
+
 	#endif
 
-	gbuffer_albedo = vec4(m_color, 1);
-	gbuffer_normal = vec4(surface_normal, 0);
-	gbuffer_mask = vec4(1, 1, 0, 0);
-	
+	// OVERWRITES THE NORMALS IN CASE OF DERIVED NORMALS
+	// (compiler should get rid of this so it's ok)
+	#if defined(derived)
+	normal = normalize(cross(dFdy(m_position), dFdx(m_position)));
+	#endif
+
+	gbuffer_albedo = vec4(albedo, 1);
+	gbuffer_normal = vec4(normal, 0);
+	gbuffer_mask = vec4(mask, 0);
 
 	/*
 	vec4 v0 = fetch_vertex_position_and_extra(0);

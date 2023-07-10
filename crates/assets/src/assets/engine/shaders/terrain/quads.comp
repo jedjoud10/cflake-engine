@@ -131,7 +131,7 @@ void main() {
         );
     }
 
-    bool edge = any(greaterThanEqual(gl_GlobalInvocationID, vec3(size - 3)));
+    bool edge = any(greaterThanEqual(gl_GlobalInvocationID, vec3(size - 3))) || any(equal(gl_GlobalInvocationID, vec3(0)));
 
     if (!edge) {
         // Check the X axis edge

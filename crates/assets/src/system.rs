@@ -12,7 +12,7 @@ fn init(world: &mut World) {
         };
     }
 
-
+    // Commong GLSL files
     internal!(loader, "engine/shaders/common/conversions.glsl");
     internal!(loader, "engine/shaders/common/dither.glsl");
     internal!(loader, "engine/shaders/common/packer.glsl");
@@ -20,15 +20,19 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/common/camera.glsl");
     internal!(loader, "engine/shaders/common/empty.frag");
 
+    // Basic SDF operations taken from Inigo Quilez's website
     internal!(loader, "engine/shaders/sdf/common.glsl");
     internal!(loader, "engine/shaders/sdf/operations.glsl");
 
+    // Load the physically based rendering shader
     internal!(loader, "engine/shaders/scene/pbr/pbr.vert");
     internal!(loader, "engine/shaders/scene/pbr/pbr.frag");
 
+    // Load the custom terrain shader
     internal!(loader, "engine/shaders/scene/terrain/terrain.vert");
     internal!(loader, "engine/shaders/scene/terrain/terrain.frag");
 
+    // Load the default shadow shaders
     internal!(loader, "engine/shaders/scene/terrain/shadow.vert");
     internal!(loader, "engine/shaders/scene/pbr/shadow.vert");
 
@@ -68,6 +72,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/shaders/terrain/quads.comp");
     internal!(loader, "engine/shaders/terrain/copy.comp");
     internal!(loader, "engine/shaders/terrain/find.comp");
+    internal!(loader, "engine/shaders/terrain/utils.glsl");
 
     // Load the default textures
     internal!(loader, "engine/textures/scene/bumps.jpg");

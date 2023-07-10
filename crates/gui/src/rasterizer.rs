@@ -180,7 +180,9 @@ impl Rasterizer {
                     ImageData::Font(font) => {
                         create_rf32_texture(graphics, dimensions, &font.pixels)
                     }
-                    _ => todo!(),
+                    ImageData::Color(color) => {
+                        todo!()
+                    },
                 }
             });
         }

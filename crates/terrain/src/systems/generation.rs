@@ -144,8 +144,10 @@ fn update(world: &mut World) {
     view.splat(None, u32::MAX).unwrap();
     offsets.write(&[u32::MAX; 2], 0).unwrap();
 
+    /*
     mesher.temp_vertices.splat(.., vek::Vec4::zero()).unwrap();
     mesher.temp_triangles.splat(.., [0; 3]).unwrap();
+    */
 
     // Update alloc-local position buffer
     let packed = (*position).with_w(**scale);

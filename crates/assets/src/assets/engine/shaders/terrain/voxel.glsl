@@ -19,6 +19,12 @@ vec2 rotate(vec2 v, float a) {
 // Main voxel function that will create the shape of the terrain
 // Negative values represent terrain, positive values represent air
 float voxel(vec3 position, out vec3 color, out uint material) {
+    float box = sdBox(position - vec3(200, 90, 0), vec3(80));
+    float sphere = sdSphere(position, 60);
+    //color = vec3(1);
+    //return snoise(position * 0.02 * vec3(1, 3, 1)) * 20 + position.y;
+    //return max(min(box, position.y + 10), -sphere);
+    
     /*
     vec2 rotated = rotate(position.xz, 3.1415 / 4.0);
     float spikey = snoise(position.xz * 0.0003) * 0.5 + 0.5;
@@ -30,7 +36,6 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     return position.y + biome1;
     */
 
-    /*
     position *= 2.0;
 
     // Blend between the two biomes
@@ -67,6 +72,7 @@ float voxel(vec3 position, out vec3 color, out uint material) {
         rocky += fbmCellular(position.xz * 0.01, 2, 0.5, 1.95).x * 10;
         rocky = opSmoothUnion(position.y, rocky, 400);
         color2 = (snoise(position * vec3(0, 10, 0) * 0.004) * 0.4 + 0.4) * pow(vec3(100.0) / 255.0, vec3(2.2));
+        rocky += fbmCellular(position * 0.001 * vec3(1, 2.2, 1), 7, 0.5, 2.1).x * -330;
         //rocky += position.y;
         rocky += smooth_floor(position.y / 200) * 200;
     }
@@ -90,9 +96,9 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     }
 
     return density;
-    */
 
     // Rocky biome 2
+    /*
     float value = fbm(position.xz * 0.002, 8, 0.5, 2.1) * 150;
     value = opSmoothUnion(value, 0, 100);
     float cel = fbmCellular(position * 0.003 * vec3(1, 3, 1), 4, 0.5, 1.8).x * 20.0;
@@ -101,9 +107,13 @@ float voxel(vec3 position, out vec3 color, out uint material) {
     color *= clamp(-cel / 20 + 0.9, 0, 1) + 0.2;
     value = smooth_floor(value / 50) * 50;
     return position.y + 10 + value;
+    */
     
-
-    //return position.y + 10 + snoise(position.xz * 0.003) * 20;
+    /*
+    color = vec3(0.7);
+    float value = fbmCellular(position.xz * 0.003, 6, 0.6, 2.0).x * -20;
+    return position.y + 10 + value;
+    */
 
     /*
     vec2 rotated = rotate(position.xz, 3.1415 / 4.0);

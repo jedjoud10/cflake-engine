@@ -7,7 +7,7 @@ use graphics::{
     ModuleVisibility, StorageAccess, Texel, Texture3D, Vertex, R, RG, XY, XYZW,
 };
 
-use crate::{create_texture3d, TempTriangles, TempVertices, TerrainSettings};
+use crate::{create_texture3d, TempTriangles, TempVertices, TerrainSettings, TerrainRenderingMode};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {
@@ -71,7 +71,7 @@ impl MeshGenerator {
 
         // Set vertex generation parameters (constants)
         compiler.use_constant(0, settings.mesher.size);
-        compiler.use_constant(1, settings.rendering.blocky);
+        compiler.use_constant(1, matches!(settings.rendering.mode, TerrainRenderingMode::Blocky));
 
         // Create the compute vertices shader
         let compute_vertices = ComputeShader::new(module, &compiler).unwrap();
