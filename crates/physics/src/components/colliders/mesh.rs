@@ -110,8 +110,8 @@ impl MeshColliderBuilder {
     pub fn new(vertices: Vec<vek::Vec3<f32>>, triangles: Vec<[u32; 3]>, mass: f32) -> Self {
         Self {
             inner: MeshCollider {
-                vertices: None,
-                triangles: None,
+                vertices: Some(vertices),
+                triangles: Some(triangles),
                 mass,
                 material: None,
                 sensor: false,
