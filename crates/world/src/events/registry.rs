@@ -181,7 +181,7 @@ fn sort(
     let mut keys = map.keys().cloned().collect::<Vec<_>>();
     keys.sort();
 
-    let mut indices = AHashMap::<StageId, usize>::default();
+    let mut indices: AHashMap<StageId, usize> = AHashMap::<StageId, usize>::default();
     let mut vec = Vec::<Vec<Rule>>::default();
 
     // Insert the reserved stages, since we use them as reference points
@@ -247,14 +247,14 @@ fn sort(
                             if location > l {
                                 location = l.saturating_sub(1);
                                 changed = true;
-                                log::trace!("moved node to before {}", reference.system.name);
+                                log::trace!("moved {} to before {}", key.system.name, reference.system.name);
                             }
                         }
 
                         // Move the current stage AFTER the parent stage
                         Rule::After(reference) => {
                             if location <= l {
-                                log::trace!("moved node to after {}", reference.system.name);
+                                log::trace!("moved {} to after {}", key.system.name, reference.system.name);
                                 location = l + 1;
                                 changed = true;
                             }

@@ -341,7 +341,6 @@ pub fn system(system: &mut System) {
         .insert_update(render)
         .after(post_user)
         .after(graphics::acquire)
-        .after(coords::hierarchy)
         .before(graphics::present);
     system
         .insert_window(event)
