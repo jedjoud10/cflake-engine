@@ -1,5 +1,3 @@
-fn main() {}
-/*
 use cflake_engine::prelude::*;
 
 // Mesh example game window
@@ -109,4 +107,3 @@ fn update(world: &mut World) {
         *state = State::Stopped;
     }
 }
-*/

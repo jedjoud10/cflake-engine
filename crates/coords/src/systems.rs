@@ -290,5 +290,7 @@ fn update_hierarchy(world: &mut World) {
 
 // This system will update the scene hierarchy with the proper local offsets and rotations
 pub fn hierarchy(system: &mut System) {
-    system.insert_update(update_hierarchy).after(post_user);
+    system.insert_update(update_hierarchy)
+        .after(post_user)
+        .before(ecs::post_frame_or_tick);
 }

@@ -9,19 +9,19 @@ pub use assets;
 pub use audio;
 pub use coords;
 pub use ecs;
-//pub use gui;
+pub use gui;
 pub use input;
 pub use math;
 pub use networking;
-//pub use physics;
-//pub use terrain;
+pub use physics;
+pub use terrain;
 pub use utils;
 pub use world;
 pub(crate) mod systems;
 
 // Gfx related
 pub use graphics;
-//pub use rendering;
+pub use rendering;
 
 /// Prelude that re-exports most of the types and interfaces used within cFlake engine
 pub mod prelude {
@@ -30,13 +30,13 @@ pub mod prelude {
     pub use crate::audio::*;
     pub use crate::coords::*;
     pub use crate::ecs::*;
-    //pub use crate::gui::*;
+    pub use crate::gui::*;
     pub use crate::input::*;
     pub use crate::math::*;
     pub use crate::networking::*;
-    //pub use crate::physics::*;
-    //pub use crate::systems::camera::CameraController;
-    //pub use crate::terrain::*;
+    pub use crate::physics::*;
+    pub use crate::systems::camera::CameraController;
+    pub use crate::terrain::*;
     pub use crate::utils::*;
     pub use crate::world::*;
 
@@ -52,5 +52,5 @@ pub mod prelude {
 
     // Gfx related
     pub use crate::graphics::*;
-    //pub use crate::rendering::*;
+    pub use crate::rendering::*;
 }

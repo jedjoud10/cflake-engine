@@ -1,34 +1,89 @@
-use phobos::{prelude::*, FrameManager, ExecutionManager, DefaultAllocator, Device, Surface, PhysicalDevice, Instance, pool::ResourcePool};
 use ahash::AHashMap;
 use dashmap::DashMap;
 use parking_lot::Mutex;
 use std::{hash::BuildHasherDefault, path::PathBuf, sync::Arc};
 use thread_local::ThreadLocal;
 use utils::Storage;
+pub use wgpu::CommandEncoder;
+use wgpu::{
+    util::StagingBelt, Adapter, Device, Instance, Maintain, Queue, Sampler, Surface,
+    SurfaceCapabilities, SurfaceConfiguration, TextureView,
+};
 
+use crate::{
+    BindGroupLayout, BindResourceLayout, Id, ReflectedShader, SamplerSettings, SamplerWrap,
+    Snippets, StagingPool, UniformBuffer, Defines, CachedSpirvKey, CachedShaderKey,
+};
+
+// Cached graphics data that can be reused
+pub(crate) struct Cached {
+    pub(crate) spirvs: 
+        DashMap<CachedSpirvKey, Vec<u32>>,
+    pub(crate) shaders:
+        DashMap<CachedShaderKey, (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
+    pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
+    pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
+    pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
+    pub(crate) bind_groups: DashMap<Vec<Id>, Arc<wgpu::BindGroup>>,
+}
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
-    pub(crate) physical_device: PhysicalDevice,
-    pub(crate) device: Device,
-    pub(crate) allocator: DefaultAllocator,
-    pub(crate) exec: ExecutionManager,
-    pub(crate) frame: FrameManager,
-    pub(crate) surface: Surface,
-    pub(crate) debug_messenger: DebugMessenger,
-    pub(crate) pool: ResourcePool,
+    // Main WGPU instance, device, and shenanigans
     pub(crate) instance: Instance,
+    pub(crate) device: Device,
+    pub(crate) adapter: Adapter,
+    pub(crate) queue: Queue,
+
+    // List of command encoders that are unused per thread
+    pub(crate) encoders: ThreadLocal<Mutex<Vec<CommandEncoder>>>,
+
+    // Helpers and cachers
+    pub(crate) staging: StagingPool,
+    pub(crate) shaderc: shaderc::Compiler,
+    pub(crate) cached: Cached,
+
+    // Keep track of these numbers for statistics
+    pub(crate) acquires: Mutex<u32>,
+    pub(crate) submissions: Mutex<u32>,
+    pub(crate) stalls: Mutex<u32>,
 }
 
-unsafe impl Sync for InternalGraphics {}
+// Stats that can be displayed using egui
+#[derive(Default, Clone, Copy)]
+pub struct GraphicsStats {
+    pub acquires: usize,
+    pub submissions: usize,
+    pub stalls: usize,
+    pub staging_buffers: usize,
 
-// Graphical context that we will wrap around the phobos instance
+    pub cached_shaders: usize,
+    pub cached_samplers: usize,
+    pub cached_bind_group_layouts: usize,
+    pub cached_pipeline_layouts: usize,
+    pub cached_bind_groups: usize,
+
+    pub adapters: usize,
+    pub devices: usize,
+    pub pipeline_layouts: usize,
+    pub shader_modules: usize,
+    pub bind_group_layouts: usize,
+    pub bind_groups: usize,
+    pub command_buffers: usize,
+    pub render_pipelines: usize,
+    pub compute_pipelines: usize,
+    pub buffers: usize,
+    pub textures: usize,
+    pub texture_views: usize,
+    pub samplers: usize,
+}
+
+// Graphical context that we will wrap around the WGPU instance
 // This context must be shareable between threads to allow for multithreading
 #[derive(Clone)]
 pub struct Graphics(pub(crate) Arc<InternalGraphics>);
 
 impl Graphics {
-    /*
     // Get the internally stored instance
     pub fn instance(&self) -> &Instance {
         &self.0.instance
@@ -138,5 +193,4 @@ impl Graphics {
         let cached = &self.0.cached;
         cached.spirvs.remove(&key).is_some()
     } 
-    */
 }

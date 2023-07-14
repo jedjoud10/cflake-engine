@@ -1,6 +1,3 @@
-fn main() {}
-
-/*
 use cflake_engine::prelude::*;
 
 // Terrain example game window
@@ -119,4 +116,3 @@ fn update(world: &mut World) {
         **entry.get_mut::<Position>().unwrap() = rotation.forward() * 3.0 + **position;
     }
 }
-*/

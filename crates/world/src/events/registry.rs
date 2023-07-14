@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
 
 // Number of maximum iterations allowed before we detect a cyclic reference when recursing through the calc event
-const CYCLIC_REFERENCE_THRESHOLD: usize = 50;
+const CYCLIC_REFERENCE_THRESHOLD: usize = 64;
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
@@ -188,6 +188,7 @@ fn sort(
     let iter = RESERVED_STAGE_IDS.iter().filter(|r| r.caller == cid);
 
     for reserved in iter {
+        log::trace!("registry sorting: reserved {}", reserved.caller.name);
         vec.push(Vec::default());
         indices.insert(*reserved, vec.len() - 1);
     }
@@ -202,6 +203,9 @@ fn sort(
         iter: usize,
         caller: Option<StageId>,
     ) -> Result<usize, RegistrySortingError> {
+        log::trace!("calc called from {:?}", caller.map(|x| x.system.name));
+        log::trace!("node: {}", key.system.name);
+
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
             return Err(RegistrySortingError::CyclicReference);
@@ -225,6 +229,8 @@ fn sort(
                 for rule in rules.iter() {
                     // Get the location of the parent stage
                     let parent = rule.parent();
+
+                    
                     let l = calc(
                         parent,
                         indices,
@@ -237,16 +243,18 @@ fn sort(
 
                     match rule {
                         // Move the current stage BEFORE the parent stage
-                        Rule::Before(_) => {
+                        Rule::Before(reference) => {
                             if location > l {
                                 location = l.saturating_sub(1);
                                 changed = true;
+                                log::trace!("moved node to before {}", reference.system.name);
                             }
                         }
 
                         // Move the current stage AFTER the parent stage
-                        Rule::After(_) => {
+                        Rule::After(reference) => {
                             if location <= l {
+                                log::trace!("moved node to after {}", reference.system.name);
                                 location = l + 1;
                                 changed = true;
                             }

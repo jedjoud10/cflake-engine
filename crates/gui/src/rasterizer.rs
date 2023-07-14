@@ -225,7 +225,7 @@ impl Rasterizer {
         self.triangles.extend_from_slice(triangles).unwrap();
 
         // Get the destination render target we will render to
-        let Ok(dst) = window.as_render_target() else {
+        let Some(dst) = window.as_render_target() else {
             return;
         };
 

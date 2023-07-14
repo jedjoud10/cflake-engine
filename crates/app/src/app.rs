@@ -10,7 +10,7 @@ use winit::{
 };
 use world::{Event, Init, Shutdown, State, System, Systems, Tick, Update, World};
 
-//use crate::systems::gui::EventStatsDurations;
+use crate::systems::gui::EventStatsDurations;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -135,7 +135,7 @@ impl App {
     }
 
     /// Set the logger level that can hide/show log messages.
-    pub fn set_logging_level(mut self, level: log::LevelFilter) -> Self {
+    pub fn set_level_filter(mut self, level: log::LevelFilter) -> Self {
         self.logging_level = level;
         self
     }
@@ -250,12 +250,10 @@ impl App {
         self.systems.init.execute((&mut self.world, &self.el));
 
         // Update the EventStatsDurations
-        /*
         let mut durations = self.world.get_mut::<EventStatsDurations>().unwrap();
         durations.init = self.systems.init.timings().0.to_vec();
         durations.init_total = self.systems.init.timings().1;
         drop(durations);
-        */
 
         // Decompose the app
         let mut world = self.world;
@@ -303,7 +301,6 @@ impl App {
                 // Execute the tick event 120 times per second
                 let time = world.get::<utils::Time>().unwrap();
 
-                /*
                 // Update "update" and "tick" timings
                 if time.frame_count() % 2 == 0 {
                     let mut durations = world.get_mut::<EventStatsDurations>().unwrap();
@@ -314,7 +311,6 @@ impl App {
                     durations.tick_total = systems.tick.timings().1;
                     drop(durations);
                 }
-                */
 
                 // Handle app shutdown
                 if let Ok(State::Stopped) = world.get::<State>().map(|x| *x) {
@@ -401,7 +397,6 @@ impl App {
         self.regsys(graphics::common);
         self.regsys(graphics::acquire);
         self.regsys(graphics::present);
-        /*
 
         // Rendering systems
         self.regsys(rendering::systems::camera::system);
@@ -430,7 +425,6 @@ impl App {
         // Camera system and statistics system
         self.regsys(crate::systems::camera::system);
         self.regsys(crate::systems::gui::system);
-        */
 
         // Fetch names and versions
         let app_name = self.app_name.clone();
