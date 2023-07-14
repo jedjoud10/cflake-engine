@@ -208,16 +208,16 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
                     collider.set_mass(C::mass(component));
                     let custom = C::cast_rapier_collider(collider);
 
-                    // TODO: Ion think dis is right blud
                     if C::regenerate_when_updating() {
                         C::set_custom_rapier_collider_settings(component, custom);
                     } else if let Some(new_collider) = C::build_collider(component, entity) {
                         *collider = new_collider;
                     }
                 } else if C::regenerate_when_updating() {
-                    log::trace!("Rebuilding collider... (1st valid rebuild)");
-                    if let Some(collider) = C::build_collider(component, entity) {                        
-                        log::trace!("Rebuilt collider! (1st valid rebuild)");
+                    log::debug!("Rebuild collider...");
+                    if let Some(collider) = C::build_collider(component, entity) {
+                        log::debug!("Rebuild collider2...");
+                        
                         let handle = physics.colliders.insert_with_parent(collider, rb.handle.unwrap(), &mut physics.bodies);
                         C::set_handle(component, handle)
                     }

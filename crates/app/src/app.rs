@@ -24,6 +24,8 @@ pub struct App {
     author_name: String,
     app_name: String,
     app_version: u32,
+    engine_name: String,
+    engine_version: u32,
 
     // Main app resources
     systems: Systems,
@@ -45,6 +47,8 @@ impl Default for App {
             author_name: "cFlake Dev".to_string(),
             app_name: "cFlake Prototype Game".to_string(),
             app_version: 1,
+            engine_name: "cFlake Game Engine".to_string(),
+            engine_version: 1,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -428,6 +432,8 @@ impl App {
         // Fetch names and versions
         let app_name = self.app_name.clone();
         let app_version = self.app_version;
+        let engine_name = self.engine_name.clone();
+        let engine_version = self.engine_version;
         let author_name = self.author_name.clone();
 
         // Insert the utils' settings
@@ -443,6 +449,7 @@ impl App {
 
         // Print app / author / engine data
         log::info!("App Name: '{app_name}', App Version: '{app_version}'");
+        log::info!("Engine Name: '{engine_name}', Engine Version: '{engine_version}'");
         log::info!("Author Name: '{author_name}'");
         self
     }
