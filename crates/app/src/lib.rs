@@ -1,3 +1,9 @@
+#![warn(missing_docs)]
+#![allow(ambiguous_glob_reexports)]
+
+//! TODO: Docs
+
+/// TODO: Docs
 pub mod app;
 pub use assets;
 pub use audio;
@@ -16,6 +22,8 @@ pub(crate) mod systems;
 // Gfx related
 pub use graphics;
 pub use rendering;
+
+/// Prelude that re-exports most of the types and interfaces used within cFlake engine
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::assets::*;

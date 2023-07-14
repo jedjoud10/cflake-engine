@@ -14,15 +14,15 @@ members = [
     "crates/audio",    
     "crates/ecs",    
     "crates/app",
-    "crates/gui",
+    #"crates/gui",
     "crates/input",
     "crates/math",
     "crates/graphics",
     "crates/networking",
-    "crates/terrain",
-    "crates/rendering",
+    #"crates/terrain",
+    #"crates/rendering",
     "crates/world",
-    "crates/physics"
+    #"crates/physics"
 ]
 
 [features]

@@ -2,7 +2,7 @@ use cflake_engine::prelude::*;
 
 fn main() {
     App::default()
-        .set_logging_level(LevelFilter::Off)
+        .set_level_filter(LevelFilter::Off)
         .insert_init(init)
         .execute();
 }

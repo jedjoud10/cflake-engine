@@ -1,4 +1,3 @@
-
 use cflake_engine::prelude::*;
 
 // Player example game window

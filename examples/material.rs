@@ -1,4 +1,3 @@
-
 use cflake_engine::prelude::*;
 
 // Custom material example game window

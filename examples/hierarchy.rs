@@ -1,4 +1,3 @@
-
 use cflake_engine::prelude::*;
 
 // Hierarchy example game window
@@ -7,6 +6,7 @@ fn main() {
         .set_app_name("cflake engine hierarchy example")
         .insert_init(init)
         .insert_update(update)
+        .set_level_filter(LevelFilter::Trace)
         .execute();
 }
 

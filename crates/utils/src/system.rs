@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{FileManager, FileType, Time};
-use world::{user, System, World};
+use world::{user, System, World, post_user};
 
 // Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
@@ -135,4 +135,17 @@ pub fn time(system: &mut System) {
             time.ticks_to_execute = None;
         })
         .before(user);
+}
+
+// Add the event cleaner system
+pub fn per_frame_event_clean(system: &mut System) {
+    system.insert_update(|world: &mut World| {
+        if let Some(cleaner) = crate::PER_FRAME_EVENTS_CACHE_CLEANER.get() {
+            let locked = cleaner.lock();
+
+            for (_, callback) in locked.iter() {
+                callback(world)
+            }
+        }
+    }).after(post_user);
 }

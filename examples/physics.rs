@@ -1,4 +1,3 @@
-
 use cflake_engine::prelude::*;
 
 // Physics example game window

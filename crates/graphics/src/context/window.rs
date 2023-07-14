@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use wgpu::{Surface, SurfaceCapabilities, SurfaceConfiguration, SurfaceTexture, TextureView};
 
-use crate::{Normalized, RenderTarget, WindowAsTargetError, BGRA, RGBA};
+use crate::{Normalized, RenderTarget, BGRA, RGBA};
 
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -60,14 +60,13 @@ impl Window {
     // Get the texture render that we can render to
     pub fn as_render_target(
         &mut self,
-    ) -> Result<RenderTarget<SwapchainFormat>, WindowAsTargetError> {
+    ) -> Option<RenderTarget<SwapchainFormat>> {
         self.presentable_texture_view
             .as_ref()
             .map(|view| RenderTarget {
                 _phantom: std::marker::PhantomData,
                 view,
             })
-            .ok_or(WindowAsTargetError)
     }
 
     // Get the current size of the window in pixels

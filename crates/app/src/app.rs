@@ -15,7 +15,8 @@ use crate::systems::gui::EventStatsDurations;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-// An app is just a world builder. It uses the builder pattern to construct a world object and the corresponding game engine window
+/// An app that can be built that will use cFlake engine.
+/// It uses the builder pattern to set settings and to register custom events
 pub struct App {
     // Graphical settings
     window: WindowSettings,
@@ -58,87 +59,87 @@ impl Default for App {
 }
 
 impl App {
-    // Set the window framerate limit
+    /// Set the window framerate limit.
     pub fn set_frame_rate_limit(mut self, limit: FrameRateLimit) -> Self {
         self.window.limit = limit;
         self
     }
 
-    // Set window fullscreen mode
+    /// Set window fullscreen mode.
     pub fn set_window_fullscreen(mut self, toggled: bool) -> Self {
         self.window.fullscreen = toggled;
         self
     }
 
-    // Set the author name of the app
+    /// Set the author name of the app.
     pub fn set_author_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
         self
     }
 
-    // Set the app name (and also the window title)
+    /// Set the app name (and also the window title).
     pub fn set_app_name(mut self, name: &str) -> Self {
         self.app_name = name.to_string();
         self.window.title = name.to_string();
         self
     }
 
-    // Set the app version
+    /// Set the app version.
     pub fn set_app_version(mut self, version: u32) -> Self {
         self.app_version = version;
         self
     }
 
-    // Insert a new system into the app and register the necessary events
+    /// Insert a new system into the app and register the necessary events.
     pub fn insert_system(mut self, callback: impl FnOnce(&mut System) + 'static) -> Self {
         self.systems.insert(callback);
         self
     }
 
-    // Insert a single init event
+    /// Insert a single init event that will be called during initialization.
     pub fn insert_init<ID>(self, init: impl Event<Init, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_init(init);
         })
     }
 
-    // Insert a single update event
+    /// Insert a single update event that will be called every frame.
     pub fn insert_update<ID>(self, update: impl Event<Update, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_update(update);
         })
     }
 
-    // Insert a single shutdown event
+    /// Insert a single shutdown event that will be called when the engine shuts down.
     pub fn insert_shutdown<ID>(self, shutdown: impl Event<Shutdown, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_shutdown(shutdown);
         })
     }
 
-    // Insert a single tick event
+    /// Insert a single tick event that will execute [`N times`](utils::TICKS_PER_SEC) per second.
     pub fn insert_tick<ID>(self, tick: impl Event<Tick, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_tick(tick);
         })
     }
 
-    // Insert a single window event
+    /// Insert a single window event that receives Winit window events.
     pub fn insert_window<ID>(self, event: impl Event<WindowEvent<'static>, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_window(event);
         })
     }
 
-    // Insert a single device event
+    /// Insert a single device event that receives Winit device events.
     pub fn insert_device<ID>(self, event: impl Event<DeviceEvent, ID> + 'static) -> Self {
         self.insert_system(move |system: &mut System| {
             system.insert_device(event);
         })
     }
 
-    // Set the logger level that can hide/show log messages
-    pub fn set_logging_level(mut self, level: log::LevelFilter) -> Self {
+    /// Set the logger level that can hide/show log messages.
+    pub fn set_level_filter(mut self, level: log::LevelFilter) -> Self {
         self.logging_level = level;
         self
     }
@@ -224,7 +225,7 @@ impl App {
             .unwrap();
     }
 
-    // Consume the App builder, and start the engine window
+    /// Consume the App builder, and start the engine.
     pub fn execute(mut self) {
         // Enable the environment logger
         let (tx, rx) = mpsc::channel::<String>();

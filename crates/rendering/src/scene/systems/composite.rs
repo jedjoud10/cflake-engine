@@ -36,7 +36,7 @@ fn update(world: &mut World) {
     let gbuffer_mask_map = &renderer.gbuffer_mask_texture;
     let depth_map = &renderer.depth_texture;
 
-    let Ok(dst) = window.as_render_target() else {
+    let Some(dst) = window.as_render_target() else {
         return;
     };
 
