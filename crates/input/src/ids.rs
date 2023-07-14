@@ -1,7 +1,9 @@
 use crate::{Axis, Button, ButtonState, Input};
 
-// Trait implemented for structs that allow us to fetch the key state from the main input handler
+/// Trait implemented for structs that allow us to fetch the key state from the main input handler.
+/// Allows for use to pass `&str` and `Button` interchangeably into methods that require fetching button state.
 pub trait InputButtonId {
+    /// Get the button state using `self` as an identifier
     fn get(self, input: &Input) -> ButtonState;
 }
 
@@ -27,8 +29,10 @@ impl InputButtonId for &'static str {
     }
 }
 
-// Trait implemented for structs that allow us to fetch the axis state from the main input handler
+/// Trait implemented for structs that allow us to fetch the axis state from the main input handler.
+/// Allows for use to pass `&str` and `Axis` interchangeably into methods that require fetching button state.
 pub trait InputAxisId {
+    /// Get the input state using `self` as an identifier
     fn get(self, input: &Input) -> f32;
 }
 

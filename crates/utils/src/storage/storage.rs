@@ -11,17 +11,17 @@ use std::{
 };
 
 use crate::Handle;
-
 use super::Weak;
 
+// Internal storage cache
 pub(super) struct Trackers {
     pub(super) dropped: Mutex<Vec<DefaultKey>>,
     pub(super) counters: RwLock<SecondaryMap<DefaultKey, AtomicU32>>,
     pub(super) cleaned: AtomicBool,
 }
 
-// TODO: Rewrite tracking logic
-
+// Strongly typed utility cache that stores some values that can be fetched by a ``Handle``
+// 
 pub struct Storage<T: 'static> {
     map: SlotMap<DefaultKey, Option<T>>,
     trackers: Arc<Trackers>,
@@ -55,6 +55,26 @@ impl<T: 'static> Storage<T> {
             trackers: self.trackers.clone(),
             key,
         }
+    }
+
+    // Reserve a new storage value that might be inserted later
+    pub fn reserve(&mut self) -> Weak<T> {
+        let key = self.map.insert(None);
+        self.trackers
+            .counters
+            .write()
+            .insert(key, AtomicU32::new(1));
+
+        Weak {
+            _phantom: PhantomData,
+            trackers: self.trackers.clone(),
+            key,
+        } 
+    }
+
+    // Fill a reserved spot by a weak handle
+    pub fn shove(&mut self, weak: &Weak<T>, value: T) {
+        *self.map.get_mut(weak.key).unwrap() = Some(value);
     }
 
     // Get an immutable reference to a value using a strong handle

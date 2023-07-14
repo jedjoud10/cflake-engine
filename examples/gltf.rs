@@ -1,3 +1,6 @@
+fn main() {}
+
+/*
 use cflake_engine::prelude::*;
 
 // glTF example game window
@@ -58,3 +61,4 @@ fn update(world: &mut World) {
         light.color = interpolated.map(|x| x as u8);
     }
 }
+*/

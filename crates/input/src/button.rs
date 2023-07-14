@@ -1,19 +1,19 @@
 use serde::*;
 use winit::event::ElementState;
 
-// The current state of any key
+/// The current state of any key / button.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonState {
-    // The button just got pressed this frame
+    /// The button just got pressed this frame.
     Pressed,
 
-    // The button was pressed/held last frame, but not this frame
+    /// The button was pressed/held last frame, but not this frame.
     Released,
 
-    // The button was kept pressed from last frame till this frame
+    /// The button was kept pressed from last frame till this frame.
     Held,
 
-    // The button was not touched this frame nor last frame
+    /// The button was not touched this frame nor last frame.
     None,
 }
 
@@ -27,7 +27,7 @@ impl From<ElementState> for ButtonState {
 }
 
 impl ButtonState {
-    // This checks if the state is equal to State::Pressed
+    /// This checks if the state is equal to State::Pressed.
     pub fn pressed(&self) -> bool {
         matches!(self, ButtonState::Pressed)
     }
@@ -37,28 +37,32 @@ impl ButtonState {
         matches!(self, ButtonState::Released)
     }
 
-    // This checks if the State is equal to State::Held
+    /// This checks if the State is equal to State::Held.
     pub fn held(&self) -> bool {
         matches!(self, ButtonState::Held)
     }
 }
 
+/// Keyboard button / key
 pub type KeyboardButton = winit::event::VirtualKeyCode;
+
+/// Mouse button / key
 pub type MouseButton = winit::event::MouseButton;
+
+/// Gamepad button / key 
 pub type GamepadButton = gilrs::Button;
 
-// The virtual keycodes that the window will receive (as a form of events)
-// These will also sometimes represent buttons that are pressed by gamepads or mouse buttons
+/// A button that might come from the keyboard, mouse, or a gamepad
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum Button {
-    // Any sort of keyboard button
+    /// Any sort of keyboard button
     Keyboard(KeyboardButton),
 
-    // Mouse buttons that we can press
+    /// Mouse buttons that we can press
     Mouse(MouseButton),
 
-    // Gamepad buttons
+    /// Gamepad buttons
     Gamepad(GamepadButton),
 }
 

@@ -1,4 +1,6 @@
 
+fn main() {}
+/*
 use cflake_engine::prelude::*;
 
 // Physics example game window
@@ -154,3 +156,4 @@ fn update(world: &mut World) {
         **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
     }
 }
+*/

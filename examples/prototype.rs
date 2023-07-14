@@ -1,3 +1,6 @@
+fn main() {}
+
+/*
 use cflake_engine::prelude::*;
 
 // Prototype example game window
@@ -35,3 +38,4 @@ fn update(world: &mut World) {
 
     egui::Window::new("Prototyping").show(&gui, |_ui| {});
 }
+*/

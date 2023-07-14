@@ -1,4 +1,6 @@
+fn main() {}
 
+/*
 use cflake_engine::prelude::*;
 
 // Hierarchy example game window
@@ -98,3 +100,4 @@ fn update(world: &mut World) {
         }
     }
 }
+*/

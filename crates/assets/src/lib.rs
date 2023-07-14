@@ -1,3 +1,7 @@
+#![warn(missing_docs)]
+
+//! TODO: Docs
+
 mod asset;
 mod error;
 mod input;

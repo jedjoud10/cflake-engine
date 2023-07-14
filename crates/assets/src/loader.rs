@@ -12,7 +12,9 @@ use std::{
     }, str::FromStr,
 };
 
-// This is a handle to a specific asset that we are currently loading in
+/// This is a handle to a specific asset that we are currently loading in asynchronously
+/// 
+/// This can be used to fetch for the state of the asset and to fetch for it after it loaded completely
 pub struct AsyncHandle<A: Asset> {
     _phantom: PhantomData<A>,
     index: usize,
@@ -29,21 +31,13 @@ type AsyncLoadedBytes = Arc<RwLock<AHashMap<PathBuf, Arc<[u8]>>>>;
 type HijackPaths = AHashMap<PathBuf, PathBuf>;
 type AsyncHijackPaths = Arc<RwLock<HijackPaths>>;
 
-// Type that contains all files that are (possibly linked) when we call the "assets!" macro
-// Contains a list of all the files within the given directory and stores their binary data
-// Also contains the path of the directory that contains the files. All file paths are relative to this one
-pub struct UserAssets {
-    pub path: Arc<Path>,
-    pub files: Vec<(PathBuf, Vec<u8>)>,
-}
-
-//pub use include_dir::{include_dir, Dir};
 pub use cfg_if;
 pub use include_dir;
 pub use with_builtin_macros;
 
-// This is the main asset manager resource that will load & cache newly loaded assets
-// This asset manager will also contain the persistent assets that are included by default into the engine executable
+/// This is the main asset manager resource that will load & cache newly loaded assets
+///
+/// This asset manager will also contain the persistent assets that are included by default into the engine executable
 pub struct Assets {
     // Receiver that will keep track of the assets that were loaded
     sender: Sender<AsyncChannelResult>,
@@ -77,13 +71,12 @@ impl Default for Assets {
 }
 
 impl Assets {
-    // Create a new asset loader using a pre-defined user assets (if supplied)
+    /// Create a new asset loader using a pre-defined user assets (if supplied).
     pub fn new() -> Self {
         Self::default()
     }
 
-    // Import a persistent asset using it's asset path (not global) and it's raw bytes
-    // Will panic if given an absolute path
+    /// Import a persistent asset using it's asset path (not global) and it's raw bytes.
     pub fn import(&self, path: impl AsRef<Path>, bytes: Vec<u8>) {
         assert!(!path.as_ref().is_absolute(), "Told you, dumbass");
 
@@ -100,8 +93,8 @@ impl Assets {
             .or_insert_with(|| Arc::from(bytes));
     }
 
-    // Add a "hijack" path that will overwrite the path for a specific asset
-    // This allows the user to write their own assets for engine assets if they want to
+    /// Add a "hijack" path that will overwrite the path for a specific asset.
+    /// This allows users to overwrite engine assets using their own custom assets.
     pub fn hijack(&self, og: impl AsRef<Path>, new: impl AsRef<Path>) {
         let mut write = self.hijack.write();
         let og = og.as_ref().to_path_buf();
@@ -109,8 +102,7 @@ impl Assets {
         write.insert(og, new);
     }
 
-    // Uncache the bytes of an already cached asset
-    // Can be used to handle hot reloading during runtime
+    /// Uncache the bytes of an already cached asset. Used for hot-reloading.
     pub fn uncache(&self, path: &str) -> Option<()> {
         let path = Path::new(path);
         let mut bytes = self.bytes.write();
@@ -119,8 +111,7 @@ impl Assets {
         Some(())
     }
 
-    // If we created this loader using packed assets, return true
-    // If the loader loads in assets at runtime, returns fale
+    /// Checks if the asset loader will load in assets at runtime or if they will be packed.
     pub fn packed(&self) -> bool {
         cfg_if::cfg_if! {
             if #[cfg(feature = "pack-assets")] {
@@ -131,8 +122,7 @@ impl Assets {
         }
     }
 
-    // Get the global path of the file that is used by an asset
-    // Returns None if the loader contains packed assets
+    /// Get the global path of the file that is used by an asset.
     pub fn path(&self, asset: &str) -> Option<PathBuf> {
         let owned = PathBuf::from_str(asset).ok()?;
         let read = self.hijack.read();
@@ -283,7 +273,7 @@ impl Assets {
 
 // Synchronous loading
 impl Assets {
-    // Load an asset using some explicit/default loading arguments
+    /// Load an asset using some an implementation of an [Asset Input](crate::AssetInput)
     pub fn load<'str, 'ctx, 'stg, A: Asset>(
         &self,
         input: impl AssetInput<'str, 'ctx, 'stg, A>,
@@ -317,7 +307,7 @@ impl Assets {
         .map_err(|err| AssetLoadError::BoxedDeserialization(Box::new(err)))
     }
 
-    // Load multiple assets using some explicit/default loading arguments
+    /// Load multiple assets using a common implementation of an [Asset Input](crate::AssetInput)
     pub fn load_from_iter<'str, 'ctx, 'stg, A: Asset>(
         &self,
         inputs: impl IntoIterator<Item = impl AssetInput<'str, 'ctx, 'stg, A>>,
@@ -331,7 +321,8 @@ impl Assets {
 
 // Asynchronous loading
 impl Assets {
-    // Load an asset using some explicit/default loading arguments in another thread
+    /// Load an asset using some an implementation of an [Asset Input](crate::AssetInput) in another thread.
+    /// Thread management is handled by [rayon].
     pub fn async_load<'str, A: AsyncAsset>(
         &self,
         input: impl AssetInput<'str, 'static, 'static, A>,
@@ -366,8 +357,8 @@ impl Assets {
         handle
     }
 
-    // Load multiple assets using some explicit/default loading arguments in another thread
-    // This returns handle(s) that we can wait for and fetch later on
+    /// Load multiple assets using a common implementation of an [Asset Input](crate::AssetInput) in another thread.
+    /// Returns the [async handles](crate::AsyncHandle) that we can wait for and fetch later on.
     pub fn async_load_from_iter<'s, A: AsyncAsset>(
         &self,
         inputs: impl IntoIterator<Item = impl AssetInput<'s, 'static, 'static, A> + Send>,
@@ -409,7 +400,7 @@ impl Assets {
         outer
     }
 
-    // Fetches the loaded assets from the receiver and caches them locally
+    /// Fetches the loaded assets from the receiver and caches them locally.
     pub fn refresh(&self) {
         let mut loaded = self.loaded.lock();
         for (result, index) in self.receiver.try_iter() {
@@ -419,7 +410,7 @@ impl Assets {
         }
     }
 
-    // This will check if the asset loader finished loading a specific asset using it's handle
+    /// This will check if the asset loader finished loading a specific asset using it's handle.
     pub fn has_finished_loading<A: AsyncAsset>(&self, handle: &AsyncHandle<A>) -> bool {
         self.refresh();
         self.loaded
@@ -429,7 +420,7 @@ impl Assets {
             .unwrap_or_default()
     }
 
-    // This will wait until the asset referenced by this handle has finished loading
+    /// This will wait until the asset referenced by this handle has finished loading.
     pub fn wait<A: AsyncAsset>(&self, handle: AsyncHandle<A>) -> Result<A, AssetLoadError> {
         // Spin lock whilst whilst waiting for an asset to load
         while !self.has_finished_loading(&handle) {
@@ -442,7 +433,7 @@ impl Assets {
         old.map(|b| *b.downcast::<A>().unwrap())
     }
 
-    // This will wait until all the assets reference by these handles have finished loading
+    /// This will wait until all the assets reference by these handles have finished loading.
     pub fn wait_from_iter<A: AsyncAsset>(
         &self,
         handles: impl IntoIterator<Item = AsyncHandle<A>>,

@@ -1,3 +1,7 @@
+#![warn(missing_docs)]
+
+//! TODO: Docs
+
 mod axis;
 mod button;
 mod ids;
@@ -9,9 +13,10 @@ pub use system::*;
 
 use ahash::AHashMap;
 use serde::*;
-use std::{borrow::Cow, collections::BTreeMap};
+use std::collections::BTreeMap;
 
-// This keyboard struct will be responsible for all key events and state handling for the keyboard
+/// Main input resource responsible for keyboard / mouse / gamepad input events.
+/// This resource will automatically be added into the world at startup.
 pub struct Input {
     // Key and axis bindings
     pub(crate) bindings: InputUserBindings,
@@ -27,7 +32,7 @@ pub struct Input {
     pub(crate) gamepad: Option<gilrs::GamepadId>,
 }
 
-// User input bindings are basically
+/// User input bindings that can be serialized / deserialized.
 #[derive(Default, Clone, Serialize, Deserialize)]
 #[serde(bound(deserialize = "'de: 'static"))]
 pub struct InputUserBindings {
@@ -49,26 +54,26 @@ where
 }
 
 impl Input {
-    // Load the bindings from the user binding struct
-    // If there are conflicting bindings, they will get overwritten
+    /// Load the bindings from the user binding struct.
+    /// If there are conflicting bindings, they will get overwritten.
     pub fn read_bindings_from_user_bindings(&mut self, user: InputUserBindings) {
         self.bindings.axis_bindings.extend(user.axis_bindings);
         self.bindings.key_bindings.extend(user.key_bindings);
     }
 
-    // Convert the bindings to a user binding struct
+    /// Convert the bindings to a user binding struct.
     pub fn as_user_binding(&self) -> InputUserBindings {
         self.bindings.clone()
     }
 
-    // Create a new button binding using a name and a unique key
+    /// Create a new button binding using a name and a unique key.
     pub fn bind_button(&mut self, name: &'static str, key: impl Into<Button>) {
         let key = key.into();
         log::debug!("Binding button/key {key:?} to '{name}'");
         self.bindings.key_bindings.insert(name, key);
     }
 
-    // Create a new axis binding using a name and a unique axis
+    /// Create a new axis binding using a name and a unique axis.
     pub fn bind_axis(&mut self, name: &'static str, axis: impl Into<Axis>) {
         let axis = axis.into();
         log::debug!("Binding axis {axis:?} to '{name}'");
@@ -77,12 +82,12 @@ impl Input {
             .insert(name, axis);
     }
 
-    // Get the state of a button mapping or a key mapping
+    /// Get the state of a button mapping or a key mapping.
     pub fn get_button<B: InputButtonId>(&self, button: B) -> ButtonState {
         B::get(button, self)
     }
 
-    // Get the state of a unique axis or an axis mapping
+    /// Get the state of a unique axis or an axis mapping.
     pub fn get_axis<A: InputAxisId>(&self, axis: A) -> f32 {
         A::get(axis, self)
     }

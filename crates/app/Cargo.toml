@@ -14,17 +14,17 @@ mimalloc = "0.1.28"
 input = { path = "../input" }
 ecs = { path = "../ecs" }
 graphics = { path = "../graphics" }
-rendering = { path = "../rendering" }
+#rendering = { path = "../rendering" }
 networking = { path = "../networking" }
 world = { path = "../world" }
 assets = { path = "../assets" }
 math = { path = "../math" }
-gui = { path = "../gui" }
+#gui = { path = "../gui" }
 audio = { path = "../audio" }
 utils = { path = "../utils" }
-terrain = { path = "../terrain" }
+#terrain = { path = "../terrain" }
 coords = { path = "../coords" }
-physics = { path = "../physics" }
+#physics = { path = "../physics" }
 fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 rayon = "1.7.0"

@@ -1,3 +1,6 @@
+fn main() {}
+
+/*
 use cflake_engine::prelude::*;
 
 fn main() {
@@ -62,3 +65,4 @@ fn init(world: &mut World) {
     let surface = Surface::new(sphere, material, id);
     scene.insert((surface, Renderer::default()));
 }
+*/

@@ -11,8 +11,8 @@ assets = { path = "../assets" }
 math = { path = "../math" }
 utils = { path = "../utils" }
 
-# Wgpu and Window creation
-wgpu = { version = "0.16.2", default-features = false, features = ["vulkan-portability", "expose-ids"] }
+# Phobos and Window creation
+phobos = { git = "https://github.com/jedjoud10/phobos-rs.git", branch = "cflake-engine-internal" }
 spirq = "0.6.3"
 spirv = "0.2.0"
 winit = "0.28.0"
@@ -38,8 +38,6 @@ snailquote = "0.3.1"
 half = { version = "2.1.0", features = ["bytemuck", "num-traits"] }
 paste = "1.0.7"
 image = "0.24.5"
-once_cell = "1.17.0"
-lru = "0.10.0"
 
 # Common utils
 log = { workspace = true }

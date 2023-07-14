@@ -1,3 +1,5 @@
+fn main() {}
+/*
 use cflake_engine::prelude::*;
 
 // Create an app that will render some GUI text
@@ -16,3 +18,4 @@ fn update(world: &mut World) {
 
     egui::Window::new("Test window").show(&ui, |_ui| {});
 }
+*/

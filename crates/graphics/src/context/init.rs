@@ -1,13 +1,13 @@
 use crate::{
-    Cached, FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window, WindowSettings,
+    FrameRateLimit, Graphics, Window, WindowSettings, InternalGraphics,
 };
 
 use dashmap::DashMap;
 use nohash_hasher::NoHashHasher;
 use parking_lot::Mutex;
-use std::sync::Arc;
+use phobos::{AppBuilder, QueueRequest, QueueType, WindowedContext, ContextInit, Swapchain, GPUFeatures, vk};
+use std::{sync::Arc, ffi::CStr};
 use systemstat::Platform;
-use wgpu::RequestAdapterOptions;
 use winit::{
     event_loop::EventLoop,
     window::{Fullscreen, WindowBuilder},
@@ -20,55 +20,10 @@ pub(crate) unsafe fn init_context_and_window(
 ) -> (Graphics, Window) {
     // Create a winit window (but don't make it's wrapper)
     let window = Arc::new(init_window(el, &settings));
-    let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(window.inner_size()));
+    let size = vek::Extent2::<u32>::from(<(u32, u32)>::from(window.inner_size()));        
 
-    // TODO: Try to find a pure rust alternative to SHADERC to compile glsl
-    // Don't use naga since it's shit (the glsl interface at least)
-    // and NO I AM NOT GOING TO USE WGLSL
-    let backends = wgpu::Backends::VULKAN;
+    /*
 
-    // Create the WGPU instance that will pick an appropriate backend
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends,
-        dx12_shader_compiler: Default::default(),
-    });
-
-    // Create the rendering surface
-    let surface = unsafe { instance.create_surface(&window.as_ref()).unwrap() };
-
-    // Modified default limits are sufficient
-    let mut limits = wgpu::Limits::default();
-    limits.max_push_constant_size = 128;
-    limits.max_storage_buffer_binding_size = 128 << 20;
-
-    // Required device features
-    let features = wgpu::Features::TEXTURE_COMPRESSION_BC
-        | wgpu::Features::STORAGE_RESOURCE_BINDING_ARRAY
-        | wgpu::Features::BUFFER_BINDING_ARRAY
-        | wgpu::Features::MULTI_DRAW_INDIRECT
-        | wgpu::Features::MULTI_DRAW_INDIRECT_COUNT
-        | wgpu::Features::TEXTURE_BINDING_ARRAY
-        | wgpu::Features::SAMPLED_TEXTURE_AND_STORAGE_BUFFER_ARRAY_NON_UNIFORM_INDEXING
-        | wgpu::Features::UNIFORM_BUFFER_AND_STORAGE_TEXTURE_ARRAY_NON_UNIFORM_INDEXING
-        | wgpu::Features::DEPTH32FLOAT_STENCIL8
-        | wgpu::Features::TEXTURE_FORMAT_16BIT_NORM
-        | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
-        | wgpu::Features::ADDRESS_MODE_CLAMP_TO_ZERO
-        | wgpu::Features::POLYGON_MODE_LINE
-        | wgpu::Features::PUSH_CONSTANTS
-        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH;
-
-    // Checks if we should use integrated graphics
-    fn use_integrated_gpu() -> bool {
-        let system = systemstat::System::new();
-
-        // Simple check in case we want to disable integrated GPU
-        if std::env::var("CFLAKE_DISCARD_INTEGRATED").is_ok() {
-            return false;
-        }
-
-        !system.on_ac_power().ok().unwrap_or(true)
-    }
 
     // Pick the appropriate adapter with the supported features and limits
     let (adapter, _) = instance.enumerate_adapters(backends).filter(|adapter| {
@@ -97,7 +52,9 @@ pub(crate) unsafe fn init_context_and_window(
         (adapter, score)
     }).max_by(|(_, a), (_, b)| i32::cmp(a, b))
     .expect("Did not find a suitable GPU!");
+    */
 
+    /*
     // Print details about the chosen adapter
     let info = adapter.get_info();
     let name = info.name;
@@ -114,67 +71,112 @@ pub(crate) unsafe fn init_context_and_window(
         None,
     ))
     .unwrap();
-
-    // Get surface data
-    let surface_capabilities = surface.get_capabilities(&adapter);
-    let surface_format = surface_capabilities
-        .formats
-        .contains(&wgpu::TextureFormat::Bgra8Unorm)
-        .then_some(wgpu::TextureFormat::Bgra8Unorm)
-        .expect("Adapter does not support Bgra8Unorm surface format");
+    */
 
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
-        FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
-        FrameRateLimit::Limited(_) => wgpu::PresentMode::Immediate,
-        FrameRateLimit::Unlimited => wgpu::PresentMode::Immediate,
+        FrameRateLimit::VSync => phobos::vk::PresentModeKHR::FIFO,
+        FrameRateLimit::Limited(_) | FrameRateLimit::Unlimited => phobos::vk::PresentModeKHR::IMMEDIATE,
     };
+    
+    // Create the phobos context settings
+    let phobos = AppBuilder::<'_, winit::window::Window>::new()
+        .version((1, 0, 0))
+        .name("cFlake engine")
+        .validation(true)
+        .window(&window)
+        .present_mode(present_mode)
+        .scratch_size(1 * 1024u64) // 1 KiB scratch memory per buffer type per frame
+        .gpu_features(GPUFeatures {
+            queues: vec![
+                QueueRequest { dedicated: false, queue_type: QueueType::Graphics },
+                QueueRequest { dedicated: true, queue_type: QueueType::Transfer },
+                QueueRequest { dedicated: true, queue_type: QueueType::Compute }
+            ],
+            features: vk::PhysicalDeviceFeatures::builder()
+                /*
+                .robust_buffer_access(true)
+                .multi_draw_indirect(true)
+                .sampler_anisotropy(true)
+                .texture_compression_astc_ldr(true)
+                .texture_compression_bc(true)
+                .texture_compression_etc2(true)
+                .shader_uniform_buffer_array_dynamic_indexing(true)
+                .shader_sampled_image_array_dynamic_indexing(true)
+                .shader_storage_buffer_array_dynamic_indexing(true)
+                .shader_storage_image_array_dynamic_indexing(true)
+                .shader_int16(true)
+                .shader_int64(true)
+                .shader_int16(true)
+                */
+                .build(),
+            features_1_1: vk::PhysicalDeviceVulkan11Features::builder().build(),
+            features_1_2: vk::PhysicalDeviceVulkan12Features::builder().build(),
+            features_1_3: vk::PhysicalDeviceVulkan13Features::builder().build(),
+            device_extensions: vec![],
+        })
+        .gpu_selector(|mut physical_devices| {
+            // Checks if we should use integrated graphics
+            fn use_integrated_gpu() -> bool {
+                let system = systemstat::System::new();
+            
+                // Simple check in case we want to disable integrated GPU
+                if std::env::var("CFLAKE_DISCARD_INTEGRATED").is_ok() {
+                    return false;
+                }
+            
+                !system.on_ac_power().ok().unwrap_or(true)
+            }
 
-    // Create the surface configuration
-    let surface_config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
-        format: surface_format,
-        width: window.inner_size().width,
-        height: window.inner_size().height,
-        present_mode,
-        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-        view_formats: vec![],
-    };
-    surface.configure(&device, &surface_config);
-
-    // Create the Graphics context wrapper
-    let graphics = Graphics(Arc::new(InternalGraphics {
+            physical_devices.pop().unwrap()
+            /*
+            let index = 0;
+            
+            for device in physical_devices {
+                let name = unsafe { CStr::from_ptr(x.properties().device_name.as_ptr()) };
+                let name = name.to_str().unwrap();
+                
+                log::info!("{}", name);
+            };
+            */
+        })
+        .build();
+    
+    // Actually create the context
+    let (
         instance,
+        physical_device,
+        surface,
         device,
-        adapter,
-        queue,
-        encoders: thread_local::ThreadLocal::default(),
-        staging: StagingPool::new(),
-        shaderc: shaderc::Compiler::new().unwrap(),
-        cached: Cached {
-            shaders: Default::default(),
-            samplers: Default::default(),
-            pipeline_layouts: Default::default(),
-            bind_groups: Default::default(),
-            bind_group_layouts: Default::default(),
-            spirvs: Default::default(),
-        },
-        acquires: Default::default(),
-        submissions: Default::default(),
-        stalls: Default::default(),
-    }));
+        allocator,
+        pool,
+        exec,
+        frame,
+        Some(debug_messenger)
+    ) = WindowedContext::init(&phobos).unwrap() else {
+        panic!("Asked for debug messenger but didn't get one.")
+    };
 
     // Create the Window wrapper
     let window = Window {
         settings,
         raw: window,
         size,
-        surface,
-        surface_config,
-        surface_capabilities,
-        presentable_texture: None,
-        presentable_texture_view: None,
     };
+
+    // Create the Graphics wrapper
+    let internal = InternalGraphics {
+        instance,
+        physical_device,
+        surface,
+        device,
+        allocator,
+        exec,
+        frame,
+        pool,
+        debug_messenger,
+    };
+    let graphics = Graphics(Arc::new(internal));
 
     (graphics, window)
 }

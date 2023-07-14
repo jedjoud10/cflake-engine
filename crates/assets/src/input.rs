@@ -1,8 +1,15 @@
 use crate::Asset;
 
-// Asset path input that might also contain the asset custom loading arguments
+/// Asset path input that might also contain the asset custom loading arguments
+/// 
+/// Used to allow default implementations of [Settings](crate::Asset::Settings) and [Context](crate::Asset::Context)
 pub trait AssetInput<'str, 'ctx, 'stg, A: Asset> {
+    /// Split the asset input into its raw components:
+    /// 
+    /// Asset path, asset settings, and asset context
     fn split(self) -> (&'str str, A::Settings<'stg>, A::Context<'ctx>);
+    
+    /// Get the path of the asset input
     fn path(&self) -> &'str str;
 }
 

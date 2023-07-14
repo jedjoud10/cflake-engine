@@ -1,4 +1,6 @@
+fn main() {}
 
+/*
 use cflake_engine::prelude::*;
 
 // Player example game window
@@ -270,3 +272,4 @@ fn tick(world: &mut World) {
     }
 
 }
+*/

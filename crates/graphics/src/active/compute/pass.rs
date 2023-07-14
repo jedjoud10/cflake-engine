@@ -1,5 +1,3 @@
-use wgpu::CommandEncoder;
-
 use crate::{
     calculate_refleced_group_bitset, ActiveComputeDispatcher, ActiveRenderPipeline, BufferInfo,
     ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout, Graphics, RenderCommand,
