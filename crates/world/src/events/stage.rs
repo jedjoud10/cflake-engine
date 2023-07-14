@@ -111,8 +111,8 @@ pub enum Rule {
 }
 
 impl Rule {
-    // Get the current parent of the current strict node
-    pub(super) fn parent(&self) -> StageId {
+    // Get the node this rule is referencing
+    pub(super) fn reference(&self) -> StageId {
         match self {
             Rule::Before(p) => *p,
             Rule::After(p) => *p,

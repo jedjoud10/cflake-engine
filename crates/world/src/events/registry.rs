@@ -203,8 +203,9 @@ fn sort(
         iter: usize,
         caller: Option<StageId>,
     ) -> Result<usize, RegistrySortingError> {
-        log::trace!("calc called from {:?}", caller.map(|x| x.system.name));
-        log::trace!("node: {}", key.system.name);
+        let tabbing = "   ".repeat(iter);
+        log::trace!("{tabbing} calc called from {:?}", caller.map(|x| x.system.name));
+        log::trace!("{tabbing} node: {}", key.system.name);
 
         // Check for a cyclic reference that might be caused when sorting the stages
         if iter > CYCLIC_REFERENCE_THRESHOLD {
@@ -228,11 +229,11 @@ fn sort(
                 // Restrict the current node using it's rules
                 for rule in rules.iter() {
                     // Get the location of the parent stage
-                    let parent = rule.parent();
+                    let reference = rule.reference();
 
-                    
+                    log::trace!("{tabbing} scope enter calling {}", reference.system.name);
                     let l = calc(
-                        parent,
+                        reference,
                         indices,
                         dedupped,
                         current_tree,
@@ -240,22 +241,25 @@ fn sort(
                         iter + 1,
                         Some(key),
                     )?;
+                    log::trace!("{tabbing} scope exit calling {}", reference.system.name);
 
                     match rule {
                         // Move the current stage BEFORE the parent stage
-                        Rule::Before(reference) => {
+                        Rule::Before(_) => {
                             if location > l {
+                                let copied = location;
                                 location = l.saturating_sub(1);
                                 changed = true;
-                                log::trace!("moved {} to before {}", key.system.name, reference.system.name);
+                                log::trace!("{tabbing} moved {} to before {} ({} -> {}, ref: {})", key.system.name, reference.system.name, copied, location, l);
                             }
                         }
 
                         // Move the current stage AFTER the parent stage
-                        Rule::After(reference) => {
-                            if location <= l {
-                                log::trace!("moved {} to after {}", key.system.name, reference.system.name);
+                        Rule::After(_) => {
+                            if location < l {
+                                let copied = location;
                                 location = l + 1;
+                                log::trace!("{tabbing} moved {} to after {} ({} -> {}, ref: {})", key.system.name, reference.system.name, copied, location, l);
                                 changed = true;
                             }
                         }
@@ -265,6 +269,7 @@ fn sort(
                 // Check for a cyclic reference when constraining the stage
                 count += 1;
                 if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
+                    dbg!(&indices);
                     return Err(RegistrySortingError::CyclicRuleReference(key));
                 }
             }
