@@ -17,6 +17,7 @@ hrtf = "0.8.0"
 wav = "1.0.0"
 rayon = "1.7.0"
 minimp3 = "0.5.1"
+atomic_float = "0.1.0"
 vek = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }

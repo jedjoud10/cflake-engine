@@ -1,9 +1,10 @@
-use std::sync::{
+use std::{sync::{
     atomic::{AtomicU32, Ordering},
     Arc,
-};
+}, time::{Duration, Instant}};
 
-use crate::{AudioClip, AudioPlayer};
+use crate::{AudioClip, AudioListener, Source, SourceInput};
+use atomic_float::AtomicF32;
 use cpal::{traits::DeviceTrait, BuildStreamError, Stream, StreamConfig};
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
@@ -63,14 +64,14 @@ fn stereo_to_mono(stereo: &[f32]) -> Vec<f32> {
 
 // Create a CPAL output stream for a specific audio clip
 pub(super) fn build_clip_output_stream(
-    clip: &AudioClip,
-    player: &AudioPlayer,
+    source: Box<dyn Source>,
+    player: &AudioListener,
 ) -> Result<Stream, BuildStreamError> {
-    let channels = clip.channels();
-    let sample_rate = clip.sample_rate();
+    let channels = source.target_channels();
+    let sample_rate = source.target_sample_rate();
 
     log::debug!(
-        "Looking for audio stream config for sample rate = {sample_rate} with {channels} channels"
+        "Looking for audio stream config for sample rate = {sample_rate:?} with {channels:?} channels"
     );
 
     let mut supported_configs = player
@@ -78,15 +79,23 @@ pub(super) fn build_clip_output_stream(
         .iter()
         .cloned()
         .filter(move |config_range| {
-            let channels = config_range.channels() == channels;
-            let max = config_range.max_sample_rate().0 >= sample_rate;
-            let min = config_range.min_sample_rate().0 <= sample_rate;
+            let channels = channels.map(|channels| config_range.channels() == channels).unwrap_or(true);
+            
+            let (min, max) = if let Some(sample_rate) = sample_rate {
+                let max = config_range.max_sample_rate().0 >= sample_rate;
+                let min = config_range.min_sample_rate().0 <= sample_rate;
+                (min, max)
+            } else {
+                (true, true)
+            };
+
             log::debug!("Channels supported: {channels}");
             log::debug!("Max sample rate supported: {max}");
             log::debug!("Min sample rate supported: {min}");
             channels & max & min
         })
         .map(move |p| {
+            let sample_rate = sample_rate.unwrap_or(p.max_sample_rate().0);
             p
                 .with_sample_rate(cpal::SampleRate(sample_rate))
                 .config()
@@ -94,11 +103,25 @@ pub(super) fn build_clip_output_stream(
 
     // Pick the first config available or resample if needed
     let (config, src) = match supported_configs.next() {
-        // Pick the first cxonfig available
-        Some(config) => (config, clip.samples()),
+        // Pick the first config available
+        Some(config) => (config, source),
 
         // Resample the audio clip samples
         None => {
+            /*
+            let sample_rate = sample_rate.unwrap();
+            let channels = channels.unwrap();
+            let source: Duration = source.duration().unwrap();
+
+            // Buffer the whole source into a vec
+            let max_samples = sample_rate as f32 * source.duration().map(|d| d.as_secs_f32()).unwrap_or_default();
+            assert!(max_samples < usize::MAX as f32);
+            let mut buffered = Vec::<f32>::with_capacity(max_samples as usize);
+
+            while let Some(value) = source.sample() {
+                buffered.push(value);
+            }
+
             let configs = player.supported_output_configs[0]
                 .clone()
                 .with_max_sample_rate();
@@ -107,12 +130,12 @@ pub(super) fn build_clip_output_stream(
             let src = if configs.channels() != channels {
                 todo!()
             } else {
-                clip.samples()
+                &buffered
             };
 
             // or we have the wrong number of samples
-            let src = if configs.sample_rate().0 != sample_rate {
-                let chunk_size_in = clip.samples().len() / (channels as usize);
+            let resampled = if configs.sample_rate().0 != sample_rate {
+                let chunk_size_in = buffered.len() / (channels as usize);
                 let sub_chunks = 256;
 
                 // Create a resampler to change the sample rate
@@ -126,19 +149,53 @@ pub(super) fn build_clip_output_stream(
                 .unwrap();
 
                 // De-interleave the data
-                let wave_in = deinterleave(&clip.samples(), channels as usize);
+                let wave_in = deinterleave(src, channels as usize);
 
                 // Change the sample rate
-                let output = rubato::Resampler::process(&mut resampler, &wave_in, None).unwrap();
+                let output = rubato::Resampler::process_into_buffer(&mut resampler, &wave_in, None).unwrap();
 
                 // Re-interleave the data
                 let interleaved = interleave(&output, channels as usize);
-                Arc::from(interleaved)
+
+                // Readback the given data
+                struct Readback {
+                    samples: Vec<f32>,
+                    channels: u16,
+                    sample_rate: u32,
+                }
+
+                impl Source for Readback {
+                    fn sample(&mut self, input: &SourceInput) -> Option<f32> {
+                        self.samples.get(input.index * 2 + input.channel as usize).copied()
+                    }
+
+                    fn duration(&self) -> Option<std::time::Duration> {
+                        todo!()
+                    }
+
+                    fn target_channels(&self) -> Option<u16> {
+                        todo!()
+                    }
+
+                    fn target_sample_rate(&self) -> Option<u32> {
+                        todo!()
+                    }
+                }
+
+                Box::from(Readback {
+                    samples: interleaved,
+                    channels,
+                    sample_rate,
+                })
             } else {
-                src
+                source
             };
 
-            (configs.config(), src)
+
+            (configs.config(), resampled)
+            */
+
+            todo!()
         }
     };
 
@@ -147,13 +204,7 @@ pub(super) fn build_clip_output_stream(
         config,
         &player.device,
         player.volume.clone(),
-        Box::new(move |dst, frame| {
-            if frame >= src.len() {
-                dst.fill(0.0f32);
-            }
-
-            dst.copy_from_slice(&src[frame..][..dst.len()]);
-        }),
+        src
     )
 }
 
@@ -162,30 +213,47 @@ pub(super) fn build_clip_output_stream(
 pub(super) fn build_output_raw_stream(
     config: StreamConfig,
     device: &cpal::Device,
-    volume: Arc<AtomicU32>,
-    callback: Box<dyn Fn(&mut [f32], usize) + Send + Sync>,
+    volume: Arc<AtomicF32>,
+    mut source: Box<impl Source + ?Sized + 'static>,
 ) -> Result<Stream, BuildStreamError> {
-    let channels = config.channels as usize;
-    let mut index = 0;
+    let channels = config.channels;
+    let sample_rate = config.sample_rate.0;
+    let mut index = 0usize;
 
     log::debug!("Building CPAL audio stream...");
 
     device.build_output_stream(
         &config,
         move |dst: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            // Using the callback write into the stream
-            for frame in dst.chunks_mut(channels) {
-                callback(frame, index);
-                index += channels;
-            }
+            source.cache();
 
             // Read the volume values from the player
-            let value = volume.load(Ordering::Relaxed);
-            let volume = f32::from_ne_bytes(value.to_ne_bytes());
+            let volume = volume.load(Ordering::Relaxed);
+            
+            // Probably could be optimized but works okay for now
+            for frame in dst.chunks_mut(channels as usize) {
+                let mut channel = 0;
+                for sample in frame.iter_mut() {
+                    let duration = index as f32 / sample_rate as f32;
 
-            // Affect the audio clip using the volume
-            for sample in dst {
-                *sample *= volume;
+                    // Create the source input used by the source trait
+                    let input = SourceInput {
+                        channel,
+                        index,
+                        given_sample_rate: sample_rate,
+                        duration,
+                    };
+    
+                    // Fetch the next sample
+                    if let Some(value) = source.sample(&input) {
+                        *sample = value * volume;
+                    } else {
+                        *sample = 0.0;
+                    }
+    
+                    index += 1;
+                    channel += 1;
+                }
             }
         },
         move |err| {

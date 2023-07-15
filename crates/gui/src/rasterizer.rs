@@ -5,14 +5,14 @@ use graphics::{
     BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation,
     PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
     Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureUsage, TriangleBuffer,
-    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings,
+    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings, Texel,
 };
 use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
 
 // Font texel type and font map
 type FontTexel = RGBA<Normalized<u8>>;
 type FontMap = Texture2D<FontTexel>;
-type FontMapRegion = <FontMap as Texture>::Region;
+
 // A global rasterizer that will draw the Egui elements onto the screen
 pub(crate) struct Rasterizer {
     // Render pass and shit needed for displaying
@@ -60,13 +60,24 @@ fn create_rf32_texture(
         .iter()
         .map(|x| vek::Vec4::broadcast(x * u8::MAX as f32).as_::<u8>())
         .collect::<Vec<_>>();
+    create_texture(
+        graphics,
+        extent,
+        &texels
+    )
+}
 
+fn create_texture<T: Texel>(
+    graphics: &Graphics,
+    extent: vek::Extent2<u32>,
+    texels: &[T::Storage]
+) -> Texture2D<T> {
     Texture2D::from_texels(
         graphics,
         Some(&texels),
         extent,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        &[TextureViewSettings::whole::<FontMapRegion>()],
+        &[TextureViewSettings::whole::<<Texture2D::<T> as Texture>::Region>()],
         Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             mag_filter: SamplerFilter::Linear,

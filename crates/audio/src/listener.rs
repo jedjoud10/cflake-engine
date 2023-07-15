@@ -1,24 +1,23 @@
 use std::sync::{
-    atomic::{AtomicU32, Ordering},
+    atomic::Ordering,
     Arc,
 };
 
-use cpal::{
-    traits::{DeviceTrait, HostTrait},
-};
+use atomic_float::AtomicF32;
+use cpal::traits::{HostTrait, DeviceTrait};
 use ecs::Component;
 
 // This is a component that will be able to playback any type of audio to a specific cpal device
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
 #[derive(Component)]
-pub struct AudioPlayer {
+pub struct AudioListener {
     pub(crate) device: cpal::Device,
     pub(crate) host: cpal::Host,
     pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
-    pub(crate) volume: Arc<AtomicU32>,
+    pub(crate) volume: Arc<AtomicF32>,
 }
 
-impl AudioPlayer {
+impl AudioListener {
     // Create an audio player that uses the default host device
     pub fn new() -> Option<Self> {
         // Fetch the CPAL device
@@ -48,20 +47,18 @@ impl AudioPlayer {
         Some(Self {
             host,
             device,
-            volume: Arc::new(AtomicU32::new(u32::from_ne_bytes(1.0f32.to_ne_bytes()))),
+            volume: Arc::new(AtomicF32::new(1.0)),
             supported_output_configs,
         })
     }
 
     // Set the volume of the audio player as a percentage
     pub fn set_volume(&mut self, volume: f32) {
-        let value = u32::from_ne_bytes(volume.to_ne_bytes());
-        self.volume.store(value, Ordering::Relaxed);
+        self.volume.store(volume, Ordering::Relaxed);
     }
 
     // Get the volume of the audio player
     pub fn volume(&self) -> f32 {
-        let value = self.volume.load(Ordering::Relaxed);
-        f32::from_ne_bytes(value.to_ne_bytes())
+        self.volume.load(Ordering::Relaxed)
     }
 }

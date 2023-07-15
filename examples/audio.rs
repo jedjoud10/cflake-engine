@@ -14,7 +14,11 @@ fn init(world: &mut World) {
     // Get the required resources
     let assets = world.get::<Assets>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    scene.insert(AudioPlayer::new().unwrap());
+    
+    // Create an audio listener
+    let mut player = AudioListener::new().unwrap();
+    player.set_volume(0.25);
+    scene.insert(player);
 
     asset!(assets, "user/audio/bruh.wav", "/examples/assets/");
     asset!(assets, "user/audio/nicolas.mp3", "/examples/assets/");
@@ -24,14 +28,24 @@ fn init(world: &mut World) {
     let clip2 = assets.load::<AudioClip>("user/audio/nicolas.mp3").unwrap();
 
     // Play both clips at the same time
-    scene.insert(AudioSource::new(clip1));
-    scene.insert(AudioSource::new(clip2));
+    //scene.insert(AudioEmitter::new(clip1));
+    //scene.insert(AudioEmitter::new(clip2));
+
+    let arc = std::sync::Arc::new(AtomicF32::new(1.0));
+    let source = Sine::sine(440.0)
+        .amplify(arc.clone());
+    let emitter = AudioEmitter::new(source);
+    scene.insert(emitter);
+
+    drop(scene);
+    drop(assets);
+    world.insert(arc);
 }
 
-// Changes the volume of the audio player based on sin
+// Update amplification
 fn update(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    let player = scene.find_mut::<&mut AudioPlayer>().unwrap();
+    let frequency = world.get::<std::sync::Arc<AtomicF32>>().unwrap();
     let time = world.get::<Time>().unwrap();
-    player.set_volume((time.elapsed().as_secs_f32().sin() + 1.0) / 2.0);
+    let sin = time.startup().elapsed().as_secs_f32().sin() * 0.5 + 0.5;
+    frequency.store(sin, std::sync::atomic::Ordering::Relaxed);
 }

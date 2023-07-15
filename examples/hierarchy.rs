@@ -85,13 +85,11 @@ fn init(world: &mut World) {
 // Update the local and global rotations of the children and parent
 fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let mut time = world.get::<Time>().unwrap();
-
-    let (_, pos) = scene.find::<(&Child, &Position)>().unwrap();
+    let time = world.get::<Time>().unwrap();
 
     for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut LocalRotation>)>() {
         if let Some(relative_rotation) = relative_rotation {
-            //relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
+            relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
         } else {
             rotation.rotate_x(0.15 * time.delta().as_secs_f32());
         }

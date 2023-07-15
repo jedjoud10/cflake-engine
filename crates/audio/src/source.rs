@@ -1,64 +1,61 @@
-use cpal::traits::StreamTrait;
-use ecs::Component;
+use std::time::Duration;
 
+use crate::{Amplify, Buffered, Easing, Fade, FadeIn, FadeOut, Value};
 
-use crate::AudioClip;
-
-// An audio source is a component that produces sound
-// Each audio source is a CPAL stream that will be played
-#[derive(Component)]
-pub struct AudioSource {
-    // Audio clipthat we will play
-    pub(crate) clip: AudioClip,
-
-    // These two fields get validated whenever we start playing the audio stream
-    pub(crate) stream: Option<cpal::Stream>,
-
-    // Is the audio stream currently playing?
-    pub(crate) playing: bool,
+// Given to the sources when they execute their "sample" method
+pub struct SourceInput {
+    pub channel: u16,
+    pub index: usize,
+    pub given_sample_rate: u32,
+    pub duration: f32,
 }
 
-impl AudioSource {
-    // Create a new audio source to play, and automatically play it on start
-    pub fn new(clip: AudioClip) -> Self {
-        Self {
-            clip,
-            stream: None,
-            playing: true,
-        }
+// An audio source that can generate some samples
+pub trait Source: Sync + Send {
+    // Called during cpal callback
+    fn cache(&mut self) {}
+
+    // Basically just an iterator
+    fn sample(&mut self, input: &SourceInput) -> Option<f32>;
+
+    // Source data
+    fn duration(&self) -> Option<Duration>;
+
+    // Channels we would like to use. Might not be what we get to use at the end
+    fn target_channels(&self) -> Option<u16>;
+
+    // Sample rate we would like to use. Might not be what we get to use at the end
+    fn target_sample_rate(&self) -> Option<u32>;
+
+    // Amplification (volume) modified
+    fn amplify<V: Value>(self, volume: V) -> Amplify<V, Self>
+    where
+        Self: Sized,
+    {
+        Amplify(self, V::new_storage_from(volume))
     }
 
-    // Check if the audio source is currently playing
-    pub fn is_playing(&self) -> bool {
-        self.stream.is_some() && self.playing
+    // Buffers the audio output with a specific buffer size
+    fn buffered(self, buffer_size: usize) -> Buffered<Self>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 
-    // Toggles the play/resume state of the audio source
-    pub fn toggle(&mut self) {
-        if self.playing {
-            self.pause()
-        } else {
-            self.resume();
-        }
+    // Creates a fade in effect
+    fn fade_in(self, easing: Easing) -> Fade<Self, FadeIn>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 
-    // Pause the audio source. No-op if it's already paused
-    pub fn pause(&mut self) {
-        if self.playing {
-            self.playing = false;
-            if let Some(stream) = &self.stream {
-                stream.pause().unwrap();
-            }
-        }
-    }
-
-    // Resume the audio source. No-op if it's already playing
-    pub fn resume(&mut self) {
-        if !self.playing {
-            self.playing = true;
-            if let Some(stream) = &self.stream {
-                stream.play().unwrap();
-            }
-        }
+    // Creates a fade out effect
+    fn fade_out(self, easing: Easing) -> Fade<Self, FadeOut>
+    where
+        Self: Sized,
+    {
+        todo!()
     }
 }
