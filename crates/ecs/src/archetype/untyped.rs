@@ -1,6 +1,6 @@
 use crate::{Component, StateColumn, UntypedVec};
 
-// Untyped column that contains the untyped vec (for components) and the delta frame and delta tick states
+/// Untyped column that contains the untyped vec (for components) and the delta frame and delta tick states.
 pub struct UntypedColumn {
     // Internal component data
     data: Box<dyn UntypedVec>,
@@ -22,7 +22,7 @@ impl UntypedColumn {
         }
     }
 
-    // Get the number of rows stored in this column
+    /// Get the number of rows stored in this column.
     pub fn len(&self) -> usize {
         assert_eq!(self.data.len(), self.delta_frame_states.len());
         assert_eq!(self.data.len(), self.delta_tick_states.len());
@@ -38,21 +38,21 @@ impl UntypedColumn {
         assert_eq!(self.data.len(), self.delta_tick_states.len());
     }
 
-    // Reserve more space to add more components
+    /// Reserve more space to add more components.
     pub fn reserve(&mut self, additional: usize) {
         self.data.reserve(additional);
         self.delta_frame_states.reserve(additional);
         self.delta_tick_states.reserve(additional);
     }
 
-    // Shrink the memory allocation as much as possible
+    /// Shrink the memory allocation as much as possible.
     pub fn shrink_to_fit(&mut self) {
         self.data.shrink_to_fit();
         self.delta_frame_states.shrink_to_fit();
         self.delta_tick_states.shrink_to_fit();
     }
 
-    // Get an immutable reference to the per-frame states
+    /// Get an immutable reference to the per-frame states.
     pub fn delta_frame_states(&self) -> &StateColumn {
         &self.delta_frame_states
     }
@@ -62,7 +62,7 @@ impl UntypedColumn {
         &mut self.delta_frame_states
     }
 
-    // Get an immutable reference to the per-tick states
+    /// Get an immutable reference to the per-tick states.
     pub fn delta_tick_states(&self) -> &StateColumn {
         &self.delta_tick_states
     }
@@ -72,7 +72,7 @@ impl UntypedColumn {
         &mut self.delta_tick_states 
     }
 
-    // Get an immutable reference to the components
+    /// Get an immutable reference to the components.
     pub fn components(&self) -> &dyn UntypedVec {
         &*self.data
     }
@@ -82,7 +82,7 @@ impl UntypedColumn {
         &mut *self.data
     }
 
-    // Try to cast the internally stored component vector to Vec<T> and return it as an immutable "typed column"
+    /// Try to cast the internally stored component vector to Vec<T> and return it as an immutable "typed column".
     pub fn as_<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn, &StateColumn)> {
         let vec = self.data.as_any().downcast_ref::<Vec<T>>()?;
         let delta_frame_states = &self.delta_frame_states;
@@ -98,6 +98,7 @@ impl UntypedColumn {
         Some((vec, delta_frame_states, delta_tick_states))
     }
 
+    /// Create a default untyped vec based on this one (needed for object safety).
     pub fn clone_default(&self) -> Self {
         Self {
             data: self.data.clone_default(),

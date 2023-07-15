@@ -1,8 +1,7 @@
 use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
-use std::{iter::once, cell::Cell};
-use utils::Time;
+use std::iter::once;
 use world::{user, System, World, post_user};
 
 use crate::{
@@ -15,9 +14,11 @@ use crate::{
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;
 pub(crate) type ArchetypeSet = MaskHashMap<Archetype>;
 pub(crate) type RemovedComponents = MaskHashMap<Box<dyn UntypedVec>>;
+
+/// Identifier for prefabs
 pub type PrefabId = &'static str;
 
-// The scene is what will contain the multiple ECS entities and archetypes
+/// The scene is what will contain the multiple ECS entities and archetypes
 pub struct Scene {
     // Entities are just objects that contain an ID and some component masks
     // Entities are linked to multiple components, but they don't store the component data by themselves
@@ -54,7 +55,7 @@ impl Default for Scene {
 }
 
 impl Scene {
-    // Spawn an entity with specific components
+    /// Spawn an entity with specific components.
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
         assert!(
             B::is_valid(),
@@ -63,7 +64,7 @@ impl Scene {
         self.extend_from_iter(once(components))[0]
     }
 
-    // Spawn a batch of entities with specific components from an iterator
+    /// Spawn a batch of entities with specific components from an iterator.
     pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
         assert!(
             B::is_valid(),
@@ -81,8 +82,8 @@ impl Scene {
         archetype.extend_from_iter::<B>(&mut self.entities, iter)
     }
 
-    // Despawn an entity from the scene
-    // Panics if the entity ID is invalid
+    /// Despawn an entity from the scene.
+    /// Panics if the entity ID is invalid.
     pub fn remove(&mut self, entity: Entity) {
         let linkings = *self.entities.get(entity).unwrap();
         let archetype = self.archetypes.get_mut(&linkings.mask).unwrap();
@@ -93,8 +94,8 @@ impl Scene {
         );
     }
 
-    // Despawn a batch of entities from an iterator
-    // Panics if ANY entity ID is invalid
+    /// Despawn a batch of entities from an iterator.
+    /// Panics if ANY entity ID is invalid.
     pub fn remove_from_iter(&mut self, iter: impl IntoIterator<Item = Entity>) {
         // Sort the entities by their masks (we can use unstable since the ordering of the entities does not matter)
         let mut entities = iter
@@ -130,7 +131,7 @@ impl Scene {
         }
     }
 
-    // Fetch all the removed components of a specific type immutably
+    /// Fetch all the removed components of a specific type immutably.
     pub fn removed<T: Component>(&self) -> &[T] {
         self.removed
             .get(&mask::<T>())
@@ -144,7 +145,7 @@ impl Scene {
             .unwrap_or(&[])
     }
 
-    // Fetch all the removed components of a specific type mutably
+    /// Fetch all the removed components of a specific type mutably.
     pub fn removed_mut<T: Component>(&mut self) -> &mut [T] {
         self.removed
             .get_mut(&mask::<T>())
@@ -158,7 +159,7 @@ impl Scene {
             .unwrap_or(&mut [])
     }
 
-    // Instantiate a prefab using it's prefab name and return a mutable entry
+    /// Instantiate a prefab using it's prefab name and return a mutable entry.
     pub fn instantiate(&mut self, name: PrefabId) -> Option<EntryMut> {
         let (boxed, mask) = self.prefabs.get(name)?;
 
@@ -168,7 +169,7 @@ impl Scene {
         self.entry_mut(entity)
     }
 
-    // Add a new bundle as a prefab so we can clone it multiple times
+    /// Add a new bundle as a prefab so we can clone it multiple times.
     pub fn prefabify<B: Bundle + Clone>(&mut self, name: PrefabId, bundle: B) {
         // Try to get the archetype, and create a default one if it does not exist
         let mask = B::reduce(|a, b| a | b);
@@ -180,47 +181,47 @@ impl Scene {
         self.prefabs.insert(name, (boxed, mask));
     }
 
-    // Get the internally stored prefab hashmap
+    /// Get the internally stored prefab hashmap.
     pub fn prefabs(&self) -> &AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)> {
         &self.prefabs
     }
 
-    // Check if an entity is stored within the scene
+    /// Check if an entity is stored within the scene.
     pub fn contains(&self, entity: Entity) -> bool {
         self.entities.contains_key(entity)
     }
 
-    // Get the immutable entity entry for a specific entity
+    /// Get the immutable entity entry for a specific entity.
     pub fn entry(&self, entity: Entity) -> Option<EntryRef> {
         EntryRef::new(self, entity)
     }
 
-    // Get the mutable entity entry for a specific entity
+    /// Get the mutable entity entry for a specific entity.
     pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut> {
         EntryMut::new(self, entity)
     }
 
-    // Get a immutable reference to the active archetype set
+    /// Get a immutable reference to the active archetype set.
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
 
-    // Get a mutable reference to the active archetype set
+    /// Get a mutable reference to the active archetype set.
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
 
-    // Get an immutable reference to the entity set
+    /// Get an immutable reference to the entity set.
     pub fn entities(&self) -> &EntitySet {
         &self.entities
     }
 
-    // Get a mutable reference to the entity set
+    /// Get a mutable reference to the entity set.
     pub fn entities_mut(&mut self) -> &mut EntitySet {
         &mut self.entities
     }
 
-    // Create a new mutable query from this scene (with no filter)
+    /// Create a new mutable query from this scene (with no filter).
     pub fn query_mut<'a, L: QueryLayoutMut>(&'a mut self) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
@@ -229,7 +230,7 @@ impl Scene {
         QueryMut::new(self)
     }
 
-    // Create a new mutable query from this scene using a filter
+    /// Create a new mutable query from this scene using a filter.
     pub fn query_mut_with<'a, L: QueryLayoutMut>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
@@ -241,12 +242,12 @@ impl Scene {
         QueryMut::new_with_filter(self, filter, self.ticked)
     }
 
-    // Create a new immutable query from this scene (with no filter)
+    /// Create a new immutable query from this scene (with no filter).
     pub fn query<'a, L: QueryLayoutRef>(&'a self) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
-    // Create a new immutable query from this scene using a filter
+    /// Create a new immutable query from this scene using a filter.
     pub fn query_with<'a, L: QueryLayoutRef>(
         &'a self,
         filter: Wrap<impl QueryFilter>,
@@ -254,13 +255,13 @@ impl Scene {
         QueryRef::new_with_filter(self, filter, self.ticked)
     }
 
-    // Find the a layout ref (if it's the only one that exists in the scene)
+    /// Find the a layout ref (if it's the only one that exists in the scene).
     pub fn find<'a, L: QueryLayoutRef>(&'a self) -> Option<L> {
         let mut iterator = self.query::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
     }
 
-    // Find the a layout mut (if it's the only one that exists in the scene)
+    /// Find the a layout mut (if it's the only one that exists in the scene).
     pub fn find_mut<'a, L: QueryLayoutMut>(&'a mut self) -> Option<L> {
         let mut iterator = self.query_mut::<L>().into_iter().fuse();
         iterator.next().xor(iterator.next())
@@ -308,18 +309,18 @@ fn set_ticked_false(world: &mut World) {
     scene.ticked = false;
 }
 
-// Only used for init
+/// Only used for init
 pub fn common(system: &mut System) {
     system.insert_init(init).before(user);
 }
 
-// Executes shit at the start of every frame
+/// Executes shit at the start of every frame
 pub fn pre_frame_or_tick(system: &mut System) {
     system.insert_tick(set_ticked_true).before(user).after(utils::time);
     system.insert_update(set_ticked_false).before(user).after(utils::time);
 }
 
-// Executes shit at the end of each frame 
+/// Executes shit at the end of each frame 
 pub fn post_frame_or_tick(system: &mut System) {
     system.insert_update(reset_delta_frame_states_end).after(post_user).after(utils::time);
     system.insert_tick(reset_delta_tick_states_end).after(post_user).after(utils::time);

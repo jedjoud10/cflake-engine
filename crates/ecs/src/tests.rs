@@ -1,4 +1,4 @@
-// FIXME: Why in the EVERLIGING FUCK is it NOT DETERMINISTIC
+// FIXME: Why in the EVERLIVING FUCK is it NOT DETERMINISTIC
 
 #[cfg(test)]
 mod tests {
@@ -14,6 +14,7 @@ mod tests {
     #[derive(Component, Debug, PartialEq, Eq, Clone, Copy, Default)]
     struct Placeholder();
 
+    #[allow(dead_code)]
     fn cleanup(ecs: &mut Scene) {
         for (_, archetype) in ecs.archetypes_mut() {
             for (_, column) in archetype.table_mut().iter_mut() {

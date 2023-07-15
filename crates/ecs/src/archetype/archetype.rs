@@ -4,11 +4,11 @@ use crate::{
     RemovedComponents, StateColumn, UntypedColumn,
 };
 
-// The table that will be stored internally
+/// The table that will be stored internally the archetype
 pub type Table = MaskHashMap<UntypedColumn>;
 
-// An archetype is a special structure that contains multiple entities of the same layout
-// Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance
+/// An archetype is a special structure that contains multiple entities of the same layout.
+/// Archetypes are used in archetypal ECSs to improve iteration and insertion/removal performance.
 pub struct Archetype {
     mask: Mask,
     table: Table,
@@ -144,7 +144,7 @@ impl Archetype {
         }
     }
 
-    // Reserve enough memory space to be able to fit all the new entities in one allocation
+    /// Reserve enough memory space to be able to fit all the new entities in one allocation.
     pub fn reserve(&mut self, additional: usize) {
         log::debug!(
             "Reserving {} additional elements for archetype {}",
@@ -159,7 +159,7 @@ impl Archetype {
         }
     }
 
-    // Shrink the memory allocation used by this archetype
+    /// Shrink the memory allocation used by this archetype.
     pub fn shrink_to_fit(&mut self) {
         self.entities.shrink_to_fit();
         self.table.shrink_to_fit();
@@ -179,7 +179,7 @@ impl Archetype {
         self.entities.clear();
     }
 
-    // Get the number of entities that reference this archetype
+    /// Get the number of entities that reference this archetype.
     pub fn len(&self) -> usize {
         let len = self.entities.len();
         for (_, c) in &self.table {
@@ -189,22 +189,22 @@ impl Archetype {
         len
     }
 
-    // Check if the archetype is empty
+    /// Check if the archetype is empty.
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
 
-    // Get the entity slice immutably
+    /// Get the entity slice immutably.
     pub fn entities(&self) -> &[Entity] {
         &self.entities
     }
 
-    // Get the unique archetype mask
+    /// Get the unique archetype mask.
     pub fn mask(&self) -> Mask {
         self.mask
     }
 
-    // Try to get an immutable reference to an untyped column of a specific component
+    /// Try to get an immutable reference to an untyped column of a specific component.
     pub fn untyped_column<T: Component>(&self) -> Option<&UntypedColumn> {
         self.table.get(&mask::<T>())
     }
@@ -214,7 +214,7 @@ impl Archetype {
         self.table.get_mut(&mask::<T>())
     }
 
-    // Try to get an immutable reference to a typed column of a specific component
+    /// Try to get an immutable reference to a typed column of a specific component.
     pub fn column<T: Component>(&self) -> Option<(&Vec<T>, &StateColumn, &StateColumn)> {
         self.untyped_column::<T>().map(|c| c.as_::<T>().unwrap())
     }
@@ -225,7 +225,7 @@ impl Archetype {
             .map(|c| c.as_mut_::<T>().unwrap())
     }
 
-    // Try to get an immutable reference to the data vector of a specific component
+    /// Try to get an immutable reference to the data vector of a specific component.
     pub fn components<T: Component>(&self) -> Option<&Vec<T>> {
         self.column::<T>().map(|(vec, _, _)| vec)
     }
@@ -235,7 +235,7 @@ impl Archetype {
         self.column_mut::<T>().map(|(vec, _,  _)| vec)
     }
 
-    // Get an immutable reference to the per-frame states
+    /// Get an immutable reference to the per-frame states.
     pub fn delta_frame_states<T: Component>(&self) -> Option<&StateColumn> {
         self.untyped_column::<T>().map(|c| c.delta_frame_states())
     }
@@ -245,7 +245,7 @@ impl Archetype {
         self.untyped_column_mut::<T>().map(|c| c.delta_frame_states_mut())
     }
 
-    // Get an immutable reference to the per-tick states
+    /// Get an immutable reference to the per-tick states.
     pub fn delta_tick_states<T: Component>(&self) -> Option<&StateColumn> {
         self.untyped_column::<T>().map(|c| c.delta_tick_states())
     }
@@ -255,7 +255,7 @@ impl Archetype {
         self.untyped_column_mut::<T>().map(|c| c.delta_tick_states_mut())
     }
 
-    // Get the internal table immutably
+    /// Get the internal table immutably.
     pub fn table(&self) -> &Table {
         &self.table
     }

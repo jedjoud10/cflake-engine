@@ -9,52 +9,52 @@ use nohash_hasher::{IsEnabled, NoHashHasher};
 
 use crate::Bundle;
 
-// RawBitMask bitmask value
+/// RawBitMask bitmask value. Either [u64] or [u128] based if the `extended-bitmasks` feature is enabled.
 #[cfg(not(feature = "extended-bitmasks"))]
 pub type RawBitMask = u64;
 #[cfg(feature = "extended-bitmasks")]
 pub type RawBitMask = u128;
 
-// A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity
-// The ECS registry system uses masks to annotate each different type that might be a component, so in total
-// In total, there is only 64 different components that can be implemented using this ECS implementation
+/// A mask is a simple 64 bit integer that tells us what components are enabled / disabled from within an entity.
+/// The ECS registry system uses masks to annotate each different type that might be a component, so in total.
+/// In total, there is only 64 (or 128 if the `extended-bitmasks` feature is enabled) different components that can be implemented using this ECS implementation.
 #[derive(Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Mask(RawBitMask);
 impl IsEnabled for Mask {}
 
 impl Mask {
-    // Create a mask from a bundle
+    /// Create a mask from a bundle.
     pub fn from_bundle<B: Bundle>() -> Self {
         B::reduce(|a, b| a | b)
     }
 
-    // Create a mask that has it's bitfield set to one
+    /// Create a mask that has it's bitfield set to one.
     pub fn one() -> Mask {
         Mask(0b1)
     }
 
-    // Create a mask that has it's bitfield set to zero
+    /// Create a mask that has it's bitfield set to zero.
     pub fn zero() -> Mask {
         Mask(0b0)
     }
 
-    // Create a mask that has all of it's bits set
+    /// Create a mask that has all of it's bits set.
     pub fn all() -> Mask {
         Mask(RawBitMask::MAX)
     }
 
-    // Get the offset of this mask, assuming that it is a unit mask
-    // Returns None if it's not a unit mask
+    /// Get the offset of this mask, assuming that it is a unit mask.
+    /// Returns None if it's not a unit mask.
     pub fn offset(&self) -> Option<usize> {
         (self.count_ones() == 1).then(|| self.0.trailing_zeros() as usize)
     }
 
-    // Check if a mask is empty
+    /// Check if a mask is empty
     pub fn is_zero(&self) -> bool {
         *self == Self::zero()
     }
 
-    // Set a single bit to either true or false
+    /// Set a single bit to either true or false.
     pub fn set(&mut self, offset: usize, enabled: bool) {
         *self = if enabled {
             // Or
@@ -65,20 +65,23 @@ impl Mask {
         }
     }
 
-    // Get a specific bit using an offset
+    /// Get a specific bit using an offset.
     pub fn get(&self, offset: usize) -> bool {
         (self.0 >> offset) & 1 == 1
     }
 
-    // Check if all the bits from Other are present within Self
-    // other: 0100
-    // self:  1111
-    // true
+    /// Check if all the bits from Other are present within Self
+    /// # Example:
+    /// other: 0100.
+    /// 
+    /// self:  1111.
+    /// 
+    /// true
     pub fn contains(&self, other: Self) -> bool {
         *self & other == other
     }
 
-    // Iterate through the bits of this mask immutably
+    /// Iterate through the bits of this mask immutably.
     pub fn bits(&self) -> impl Iterator<Item = bool> {
         let raw = self.0;
         (0..(u64::BITS as usize))
@@ -86,8 +89,8 @@ impl Mask {
             .map(move |i| (raw >> i) & 1 == 1)
     }
 
-    // Iterate through the unit masks given from this main mask
-    // This will split the current mask into it's raw components that return itself when ORed together
+    /// Iterate through the unit masks given from this main mask.
+    /// This will split the current mask into it's raw components that return itself when ORed together.
     pub fn units(&self) -> impl Iterator<Item = Mask> {
         let raw = self.0;
         (0..(RawBitMask::BITS as usize))
@@ -95,12 +98,12 @@ impl Mask {
             .filter_map(move |i| ((raw >> i) & 1 == 1).then(|| Mask::one() << i as usize))
     }
 
-    // Count the number of set bits in this mask
+    /// Count the number of set bits in this mask.
     pub fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
 
-    // Count the number of unset bits in this mask
+    /// Count the number of unset bits in this mask.
     pub fn count_zeros(&self) -> u32 {
         self.0.count_zeros()
     }
@@ -122,7 +125,13 @@ impl From<RawBitMask> for Mask {
 
 // NoHash hasher that works with Mask
 type NoHashMaskHasher = BuildHasherDefault<NoHashHasher<Mask>>;
+
+/// Hashmap that uses a mask as a key
+/// Uses [NoHashMaskHasher] for faster hashing since the key is literally just a u64
 pub type MaskHashMap<E> = HashMap<Mask, E, NoHashMaskHasher>;
+
+/// Maskmap that uses a mask as a key
+/// Uses [NoHashMaskHasher] for faster hashing since the key is literally just a u64
 pub type MaskHashSet = HashSet<Mask, NoHashMaskHasher>;
 
 impl BitAnd for Mask {

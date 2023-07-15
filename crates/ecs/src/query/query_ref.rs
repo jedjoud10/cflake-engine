@@ -1,11 +1,10 @@
-use rayon::prelude::ParallelIterator;
 use utils::BitSet;
 
 use crate::{Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef, Scene, Wrap};
 use std::{iter::FusedIterator, marker::PhantomData};
 
-// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout
-// Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator
+/// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
+/// Even though I define the 'it, 'b, and 's lifetime, I don't use them in this query, I only use them in the query iterator.
 pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
     archetypes: Vec<&'a Archetype>,
     access: LayoutAccess,
@@ -45,17 +44,17 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
         }
     }
 
-    // Get the access masks that we have calculated
+    /// Get the access masks that we have calculated.
     pub fn layout_access(&self) -> LayoutAccess {
         self.access
     }
 
-    // Get the number of entries that we will have to iterate through
+    /// Get the number of entries that we will have to iterate through.
     pub fn len(&self) -> usize {
         len(&self.archetypes, &self.bitsets)
     }
 
-    // Check if the query is empty
+    /// Check if the query is empty.
     pub fn is_empty(&self) -> bool {
         self.archetypes.is_empty()
     }
@@ -97,7 +96,7 @@ struct Chunk<L: QueryLayoutRef> {
     length: usize,
 }
 
-// This is a immutable query iterator that will iterate through all the query entries in arbitrary order
+/// This is a immutable query iterator that will iterate through all the query entries in arbitrary order.
 pub struct QueryRefIter<'b, L: QueryLayoutRef> {
     // Inputs from the query
     archetypes: Vec<&'b Archetype>,

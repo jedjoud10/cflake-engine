@@ -3,24 +3,27 @@ use utils::{enable_in_range, is_bit_enabled, toggle_bit};
 // Number of bits in a usize as an usize
 const BITS: usize = usize::BITS as usize;
 
-// A single chunk that will be contained within the archetype component column
+/// A single chunk that will be contained within the archetype component column.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct StateColumnChunk {
-    // Keeps track of added components
+    /// Keeps track of added components.
     pub added: usize,
 
-    // Keeps track of mutated (modified) components
+    /// Keeps track of mutated (modified) components.
     pub modified: usize,
 }
 
-// Returned from the Vec<StateColumnChunk>
+/// Returned from the Vec<StateColumnChunk>.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct StateFlags {
+    /// Added flag
     pub added: bool,
+
+    /// Modified flag
     pub modified: bool,
 }
 
-// A single column of archetype entity states
+/// A single column of archetype entity states.
 #[derive(Default, Debug)]
 pub struct StateColumn(Vec<StateColumnChunk>, usize);
 
@@ -134,7 +137,7 @@ impl StateColumn {
         toggle_bit(&mut chunk.modified, location, flags.modified);
     }
 
-    // Get an immutable slice over all the chunks
+    /// Get an immutable slice over all the chunks.
     pub fn chunks(&self) -> &[StateColumnChunk] {
         &self.0
     }
@@ -144,12 +147,12 @@ impl StateColumn {
         &mut self.0
     }
 
-    // Get a specific state column chunk immutably
+    /// Get a specific state column chunk immutably.
     pub fn get_chunk(&self, index: usize) -> Option<&StateColumnChunk> {
         self.0.get(index)
     }
 
-    // Get a specific state column entry immutably
+    /// Get a specific state column entry immutably.
     pub fn get(&self, index: usize) -> Option<StateFlags> {
         // Cannot get non-existant index
         if index >= self.1 {
@@ -166,7 +169,7 @@ impl StateColumn {
         Some(flags)
     }
 
-    // Get the number of component states we have
+    /// Get the number of component states we have.
     pub fn len(&self) -> usize {
         self.1
     }

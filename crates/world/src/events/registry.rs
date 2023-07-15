@@ -1,15 +1,10 @@
-use std::{any::TypeId, cmp::Ordering, time::Duration};
+use std::{any::TypeId, time::Duration};
 
 use crate::{Caller, CallerId, Event, RegistrySortingError, Rule, StageError, StageId, SystemId, EventTimings};
-use ahash::{AHashMap, AHashSet};
+use ahash::{AHashMap};
 
 use lazy_static::lazy_static;
-
-// Number of maximum iterations allowed before we detect a cyclic reference from within the rules
-const CYCLIC_REFERENCE_RULES_THRESHOLD: usize = 8;
-
-// Number of maximum iterations allowed before we detect a cyclic reference when recursing through the calc event
-const CYCLIC_REFERENCE_THRESHOLD: usize = 64;
+use petgraph::{Graph, visit::Topo};
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
@@ -125,11 +120,11 @@ impl<C: Caller> Registry<C> {
 
     // Sort all the events stored in the registry using the stages
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
-        let indices = sort(&mut self.map, self.caller)?;
+        let indices = sort(&self.map)?;
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
-        self.events.sort_by_key(|(x, _)| &indices[x]);
-        self.timings_per_event.sort_by_key(|x| &indices[&x.id()]);
+        self.events.sort_by_key(|(x, _)| &indices[&x.system]);
+        self.timings_per_event.sort_by_key(|x| &indices[&x.id().system]);
 
         log::debug!(
             "Sorted {} events for {} registry",
@@ -172,148 +167,62 @@ impl<C: Caller> Registry<C> {
 // This returns a hashmap containing the new indices of the sorted stages
 fn sort(
     map: &AHashMap<StageId, Vec<Rule>>,
-    cid: CallerId,
-) -> Result<AHashMap<StageId, usize>, RegistrySortingError> {
-    // Keep a hashmap containing the key -> indices and the global vector for our sorted stages (now converted to just rules)
-    let mut map: AHashMap<StageId, Vec<Rule>> = map.clone();
+) -> Result<AHashMap<SystemId, usize>, RegistrySortingError> {
+    let map = map.into_iter().collect::<Vec<_>>();
+    let mut output = AHashMap::<SystemId, usize>::new();
+    let mut graph = Graph::<SystemId, &Rule>::new();
 
-    // We might need to sort the keys to make sure they are deterministic
-    let mut keys = map.keys().cloned().collect::<Vec<_>>();
-    keys.sort();
+    // Convert all stages into graph nodes
+    let mut nodes = map.iter().map(|node| {
+        (node.0.system, graph.add_node(node.0.system.clone()))
+    }).collect::<AHashMap<_, _>>();
+    
+    // Insert the default user system
+    let sid = crate::fetch_system_id(&crate::user);
+    let user = graph.add_node(sid);
+    nodes.insert(sid, user);
+    
+    // Insert the default post user system
+    let sid = crate::fetch_system_id(&crate::post_user);
+    let post_user = graph.add_node(sid);
+    nodes.insert(sid, post_user);
 
-    let mut indices: AHashMap<StageId, usize> = AHashMap::<StageId, usize>::default();
-    let mut vec = Vec::<Vec<Rule>>::default();
+    // Create the edges (rules) between the nodes (stages)
+    for (node, rules) in map.iter() {
+        
+        // edges follow the direction of execution
+        for rule in *rules {
+            let this = nodes[&node.system];
+            let reference = rule.reference();
+            let reference = *nodes.get(&reference.system).ok_or_else(||
+                RegistrySortingError::MissingStage(**node, reference)
+            )?;
 
-    // Insert the reserved stages, since we use them as reference points
-    let iter = RESERVED_STAGE_IDS.iter().filter(|r| r.caller == cid);
+            match rule {
+                // dir: a -> b.
+                // dir: this -> reference
+                Rule::Before(_) => graph.add_edge(this, reference, rule),
 
-    for reserved in iter {
-        log::trace!("registry sorting: reserved {}", reserved.caller.name);
-        vec.push(Vec::default());
-        indices.insert(*reserved, vec.len() - 1);
-    }
-
-    // This event will add a current stage into the main vector and sort it according to it's rules
-    fn calc(
-        key: StageId,
-        indices: &mut AHashMap<StageId, usize>,
-        dedupped: &mut AHashMap<StageId, Vec<Rule>>,
-        current_tree: &mut AHashSet<StageId>,
-        vec: &mut Vec<Vec<Rule>>,
-        iter: usize,
-        caller: Option<StageId>,
-    ) -> Result<usize, RegistrySortingError> {
-        let tabbing = "   ".repeat(iter);
-        log::trace!("{tabbing} calc called from {:?}", caller.map(|x| x.system.name));
-        log::trace!("{tabbing} node: {}", key.system.name);
-
-        // Check for a cyclic reference that might be caused when sorting the stages
-        if iter > CYCLIC_REFERENCE_THRESHOLD {
-            return Err(RegistrySortingError::CyclicReference);
-        }
-
-        if dedupped.contains_key(&key) {
-            // We must insert the stage into the main vector
-            let rules = dedupped.remove(&key).unwrap();
-            current_tree.insert(key);
-
-            // Restrict the index of the stage based on it's rules
-            let mut changed = true;
-            let mut location = 0;
-            let mut count = 0;
-
-            // Check if we need to keep updating the location
-            while changed {
-                changed = false;
-
-                // Restrict the current node using it's rules
-                for rule in rules.iter() {
-                    // Get the location of the parent stage
-                    let reference = rule.reference();
-
-                    log::trace!("{tabbing} scope enter calling {}", reference.system.name);
-                    let l = calc(
-                        reference,
-                        indices,
-                        dedupped,
-                        current_tree,
-                        vec,
-                        iter + 1,
-                        Some(key),
-                    )?;
-                    log::trace!("{tabbing} scope exit calling {}", reference.system.name);
-
-                    match rule {
-                        // Move the current stage BEFORE the parent stage
-                        Rule::Before(_) => {
-                            if location > l {
-                                let copied = location;
-                                location = l.saturating_sub(1);
-                                changed = true;
-                                log::trace!("{tabbing} moved {} to before {} ({} -> {}, ref: {})", key.system.name, reference.system.name, copied, location, l);
-                            }
-                        }
-
-                        // Move the current stage AFTER the parent stage
-                        Rule::After(_) => {
-                            if location < l {
-                                let copied = location;
-                                location = l + 1;
-                                log::trace!("{tabbing} moved {} to after {} ({} -> {}, ref: {})", key.system.name, reference.system.name, copied, location, l);
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-
-                // Check for a cyclic reference when constraining the stage
-                count += 1;
-                if count > CYCLIC_REFERENCE_RULES_THRESHOLD {
-                    dbg!(&indices);
-                    return Err(RegistrySortingError::CyclicRuleReference(key));
-                }
-            }
-
-            // Insert the name -> index reference
-            indices.insert(key, location);
-
-            // Insert the new updated stage at it's correct location
-            match vec.len().cmp(&location) {
-                Ordering::Less => {
-                    panic!("{} {}", location, vec.len())
-                }
-                Ordering::Equal => vec.insert(location, rules),
-                Ordering::Greater => vec.push(rules),
-            }
-
-            // Update the indices of all the values that are after the current stage (since they were shifted to the right)
-            for (name, i) in indices.iter_mut() {
-                if *i >= location && name != &key {
-                    *i += 1;
-                }
-            }
-
-            Ok(location)
-        } else {
-            // We must check if the stage referenced by "called" is even valid
-            if !indices.contains_key(&key) {
-                if current_tree.contains(&key) {
-                    return Err(RegistrySortingError::CyclicReference);
-                } else {
-                    return Err(RegistrySortingError::MissingStage(caller.unwrap(), key));
-                }
-            }
-
-            // Fetch the cached location instead
-            Ok(indices[&key])
+                // dir: a -> b.
+                // dir: reference -> this
+                Rule::After(_) => graph.add_edge(reference, this, rule),
+            };
         }
     }
 
-    // Add the stages into the vector and start sorting them
-    for key in keys {
-        let mut tree = AHashSet::new();
-        calc(key, &mut indices, &mut map, &mut tree, &mut vec, 0, None)?;
+    // Topoligcally sort the graph (stage ordering)
+    let mut topo = Topo::new(&graph);
+    let mut counter = 0;
+    while let Some(node) = topo.next(&graph) {
+        let balls = nodes.iter().find(|x| *x.1 == node).unwrap();
+        output.insert(balls.0.clone(), counter);
+        counter += 1;
     }
 
-    Ok(indices)
+    // If there are missing nodes then we must have a cylic reference
+    if output.len() < map.len() {
+        return Err(RegistrySortingError::GraphVisitMissingNodes);
+    }
+
+    Ok(output)
 }

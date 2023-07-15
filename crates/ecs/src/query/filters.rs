@@ -4,19 +4,19 @@ use crate::{
 use std::marker::PhantomData;
 use utils::BitSet;
 
-// Result value whenever we call evaluate_chunk within QueryFilter
-// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation
+/// Result value whenever we call evaluate_chunk within QueryFilter.
+/// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation.
 pub enum ChunkEval {
-    // Chunk evaluation that gave us a predictable answer that is taken acount when using modifiers
+    /// Chunk evaluation that gave us a predictable answer that is taken acount when using modifiers
     Evaluated(usize),
 
-    // Value that isn't needed or that SHOULD NOT be taken account when using modifiers
-    // This will propagate up whenever we use combinational modifiers, and it will always return true
+    /// Value that isn't needed or that SHOULD NOT be taken account when using modifiers
+    /// This will propagate up whenever we use combinational modifiers, and it will always return true
     Passthrough,
 }
 
 impl ChunkEval {
-    // Same function as Option::zip_with, but stable
+    /// Same function as Option::zip_with, but stable.
     pub fn zip_with<F: FnOnce((usize, usize)) -> usize>(self, other: Self, fun: F) -> Self {
         match (self, other) {
             (ChunkEval::Evaluated(a), ChunkEval::Evaluated(b)) => Self::Evaluated(fun((a, b))),
@@ -24,7 +24,7 @@ impl ChunkEval {
         }
     }
 
-    // Map, only used for modifiers
+    /// Map, only used for modifiers.
     pub fn map<F: FnOnce(usize) -> usize>(self, fun: F) -> Self {
         match self {
             ChunkEval::Evaluated(x) => Self::Evaluated(fun(x)),
@@ -32,7 +32,7 @@ impl ChunkEval {
         }
     }
 
-    // Return the inner value if Valid, or return usize::MAX if DontCare
+    /// Return the inner value if Valid, or return usize::MAX if [passthrough](ChunkEval::Passthrough).
     pub fn into_inner(self) -> usize {
         match self {
             ChunkEval::Evaluated(x) => x,
@@ -41,26 +41,26 @@ impl ChunkEval {
     }
 }
 
-// Basic evaluator that will be implemented for the filter sources and modifiers
-// These filters allow users to discard certain entries when iterating
+/// Basic evaluator that will be implemented for the filter sources and modifiers.
+/// These filters allow users to discard certain entries when iterating.
 pub trait QueryFilter {
-    // Cached data for fast traversal (only stores the bitmask of a specific component)
+    /// Cached data for fast traversal (only stores the bitmask of a specific component).
     type Cached: 'static + Clone + Copy;
 
-    // Cached columns that we fetch from an archetypes
+    /// Cached columns that we fetch from an archetypes.
     type Columns<'a>: 'a;
 
-    // Create the permanent cached data
+    /// Create the permanent cached data.
     fn prepare() -> Self::Cached;
 
-    // Evaluate a single archetype to check if it passes the filter
+    /// Evaluate a single archetype to check if it passes the filter.
     fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool;
 
-    // Cache the state columns of a specific archetype
+    /// Cache the state columns of a specific archetype
     fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype, ticked: bool) -> Self::Columns<'a>;
 
-    // Evaluate a single chunk to check if all the entries within it pass the filter
-    // When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter
+    /// Evaluate a single chunk to check if all the entries within it pass the filter.
+    /// When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter.
     fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval;
 }
 
@@ -124,7 +124,7 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     Vec::from_iter(iterator)
 }
 
-// We need a wrapper to be able to implemented the rust bitwise operators
+/// We need a wrapper to be able to implemented the rust bitwise operators.
 pub struct Wrap<T: QueryFilter>(PhantomData<T>);
 
 impl<T: QueryFilter> Clone for Wrap<T> {
@@ -135,18 +135,31 @@ impl<T: QueryFilter> Clone for Wrap<T> {
 
 impl<T: QueryFilter> Copy for Wrap<T> {}
 
-// Filter sources based on immutable query layouts
+/// Filter sources that passes if the [QueryLayoutRef] was added into the entities
+/// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
 pub struct Added<T: QueryLayoutRef>(PhantomData<T>);
+
+/// Filter sources that passes if the [QueryLayoutRef] was modified before the query was executed
+/// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
 pub struct Modified<T: QueryLayoutRef>(PhantomData<T>);
+
+/// Filter sources that passes if the [QueryLayoutRef] is used by the entities
+/// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
 pub struct Contains<T: QueryLayoutRef>(PhantomData<T>);
 
 // Note: ONLY USED INTERNALLY. THIS IS LITERALLY USELESS
 pub(crate) struct Always;
 
-// Query filter operators
+/// Passes if both filters pass the coarse / fine tests
 pub struct And<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
+
+/// Passes if any of the filters pass the coarse / fine tests
 pub struct Or<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
+
+/// Passes if only one of the filters pass the coarse / fine tests
 pub struct Xor<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
+
+/// Passes if the filters fail the coarse / fine tests
 pub struct Not<A: QueryFilter>(PhantomData<A>);
 
 pub(crate) fn get_either_states(col: &crate::UntypedColumn, ticked: bool) -> &StateColumn {
@@ -369,17 +382,17 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
     }
 }
 
-// Source to check if we have modified a specific component before this call
+/// Source to check if we have modified a specific component before this call.
 pub fn modified<L: QueryLayoutRef>() -> Wrap<Modified<L>> {
     Wrap::<Modified<L>>(PhantomData)
 }
 
-// Source to check if we added a specific component before this call
+/// Source to check if we added a specific component before this call.
 pub fn added<L: QueryLayoutRef>() -> Wrap<Added<L>> {
     Wrap::<Added<L>>(PhantomData)
 }
 
-// Source to check if we contain a specific component within the archetype
+/// Source to check if we contain a specific component within the archetype.
 pub fn contains<L: QueryLayoutRef>() -> Wrap<Contains<L>> {
     Wrap::<Contains<L>>(PhantomData)
 }

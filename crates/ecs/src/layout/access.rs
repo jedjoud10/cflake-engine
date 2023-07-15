@@ -1,7 +1,7 @@
 use crate::{Mask, QueryLayoutMut, QueryLayoutRef};
 use std::ops::{BitAnd, BitOr, BitXor};
 
-// Layout access that contain the shared access mask and unique access mask
+/// Layout access that contain the shared access mask and unique access mask.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutAccess {
     // Used for searching for valid archetypes
@@ -13,32 +13,32 @@ pub struct LayoutAccess {
 }
 
 impl LayoutAccess {
-    // Get the archetype search mask
+    /// Get the archetype search mask.
     pub fn search(&self) -> Mask {
         self.arch_search
     }
 
-    // Get the shared validation mask
+    /// Get the shared validation mask.
     pub fn shared(&self) -> Mask {
         self.validation_shared
     }
 
-    // Get the unique validation mask
+    /// Get the unique validation mask.
     pub fn unique(&self) -> Mask {
         self.validation_unique
     }
 
-    // Get both validation masks (bitwise or)
+    /// Get both validation masks (bitwise or).
     pub fn both_validation_masks(&self) -> Mask {
         self.validation_shared | self.validation_unique
     }
 
-    // Create a layout access mask from a layout ref
+    /// Create a layout access mask from a layout ref.
     pub fn from_layout_ref<L: QueryLayoutRef>() -> Self {
         L::reduce(|a, b| a | b)
     }
 
-    // Create a layout access mask from a query layout mut
+    /// Create a layout access mask from a query layout mut.
     pub fn from_layout_mut<L: QueryLayoutMut>() -> Self {
         L::reduce(|a, b| a | b)
     }

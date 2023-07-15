@@ -125,6 +125,7 @@ pub fn user(system: &mut System) {
     system.insert_init(|_world: &mut World| {});
     system.insert_update(|_world: &mut World| {});
     system.insert_shutdown(|_world: &mut World| {});
+    system.insert_tick(|_world: &mut World| {});
     system.insert_device(|_world: &mut World, _device: &DeviceEvent| {});
     system.insert_window(|_world: &mut World, _window: &mut WindowEvent| {});
 }
@@ -133,6 +134,7 @@ pub fn user(system: &mut System) {
 pub fn post_user(system: &mut System) {
     system.insert_init(|_world: &mut World| {});
     system.insert_update(|_world: &mut World| {});
+    system.insert_tick(|_world: &mut World| {});
     system.insert_shutdown(|_world: &mut World| {});
     system.insert_device(|_world: &mut World, _device: &DeviceEvent| {});
     system.insert_window(|_world: &mut World, _window: &mut WindowEvent| {});

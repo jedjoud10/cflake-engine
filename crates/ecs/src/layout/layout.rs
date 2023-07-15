@@ -1,31 +1,45 @@
 use crate::{Archetype, LayoutAccess, Mask, QueryItemMut, QueryItemRef};
 
-// A query layout ref is a combination of multiple immutable query items
-// I separated mutable and immutable query for the sake of type safety
+/// A query layout ref is a combination of multiple immutable query items.
+/// I separated mutable and immutable query for the sake of type safety.
 pub trait QueryLayoutRef {
+    /// Immutable tuple containing multiple slices of the query items.
     type SliceTuple<'s>: 's;
+
+    /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
+    
+    /// Owned query tuple item.
     type OwnedTuple: 'static;
 
-    // Get a combined layout access mask by running a lambda on each layout
+    /// Get a combined layout access mask by running a lambda on each layout.
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess;
 
-    // Read ptrs from the archetype, convert to slices, read from pointers
+    /// Get the pointers from an immutable archetype.
     unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple;
+
+    /// Convert the pointers into slices.
     unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s>;
+    
+    /// Read from the raw pointers directly.
     unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self;
 }
 
-// A query layout mut is a combination of multiple mutable/immutable query items
+/// A query layout mut is a combination of multiple mutable/immutable query items.
 pub trait QueryLayoutMut {
+    /// Immutable tuple containing multiple slices of the query items.
     type SliceTuple<'s>: 's;
+
+    /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
+    
+    /// Owned query tuple item.
     type OwnedTuple: 'static;
 
-    // Get a combined layout access mask by running a lambda on each layout
+    /// Get a combined layout access mask by running a lambda on each layout.
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess;
 
-    // This checks if the layout is valid (no collisions, no ref-mut collisions)
+    /// This checks if the layout is valid (no collisions, no ref-mut collisions)
     fn is_valid() -> bool {
         // Check for ref-mut collisions
         let combined = Self::reduce(|a, b| a | b);
@@ -41,15 +55,19 @@ pub trait QueryLayoutMut {
         !refmut_collisions && !mut_collisions
     }
 
-    // Check if the query layout contains any mutable items
+    /// Check if the query layout contains any mutable items.
     fn is_mutable() -> bool {
         let combined = Self::reduce(|a, b| a | b);
         combined.unique() != Mask::zero()
     }
 
-    // Read ptrs from the archetype, convert to slices, read from pointers
+    /// Get the pointers from an immutable archetype.
     unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple;
+
+    /// Convert the pointers into slices.
     unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s>;
+
+    /// Read from the raw pointers directly.
     unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self;
 }
 

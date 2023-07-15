@@ -1,6 +1,6 @@
 [package]
 name = "cflake-engine"
-version = "0.1.2"
+version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,15 +14,15 @@ members = [
     "crates/audio",    
     "crates/ecs",    
     "crates/app",
-    #"crates/gui",
+    "crates/gui",
     "crates/input",
     "crates/math",
     "crates/graphics",
     "crates/networking",
-    #"crates/terrain",
-    #"crates/rendering",
+    "crates/terrain",
+    "crates/rendering",
     "crates/world",
-    #"crates/physics"
+    "crates/physics"
 ]
 
 [features]

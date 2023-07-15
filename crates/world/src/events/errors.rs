@@ -5,11 +5,8 @@ use crate::StageId;
 /// Error that gets thrown whenever we fail to sort the event stages
 #[derive(Error, Debug)]
 pub enum RegistrySortingError {
-    #[error("Detected a cyclic reference when trying to sort stages")]
-    CyclicReference,
-
-    #[error("Detected a cyclic reference for rules of stage '{0:?}'")]
-    CyclicRuleReference(StageId),
+    #[error("Error while parsing Graph. Possibly due to cyclic reference / rules")]
+    GraphVisitMissingNodes,
 
     #[error("Stage '{0:?}' tried to reference stage '{1:?}', but the latter stage does not exist")]
     MissingStage(StageId, StageId),

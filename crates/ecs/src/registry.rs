@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
 use std::any::TypeId;
 
-// This is a certified hood classic
+/// This is a certified hood classic
 pub trait Component
 where
     Self: 'static,
@@ -19,7 +19,7 @@ lazy_static! {
     static ref NAMES: RwLock<MaskHashMap<String>> = RwLock::new(MaskHashMap::default());
 }
 
-// Return the registered mask of the component (or register it if needed)
+/// Return the registered mask of the component (or register it if needed).
 pub fn mask<T: Component>() -> Mask {
     // Check if we need to register
     let id = TypeId::of::<T>();
@@ -50,7 +50,7 @@ pub fn mask<T: Component>() -> Mask {
     }
 }
 
-// Get the name of a component mask
+/// Get the name of a component mask.
 pub fn name(mask: Mask) -> Option<String> {
     if mask.count_ones() != 1 {
         return None;
@@ -60,7 +60,7 @@ pub fn name(mask: Mask) -> Option<String> {
     names.get(&mask).cloned()
 }
 
-// Get the number of registered components
+/// Get the number of registered components.
 pub fn count() -> usize {
     REGISTERED.read().len()
 }

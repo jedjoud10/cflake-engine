@@ -1,3 +1,7 @@
+#![warn(missing_docs)]
+
+//! TODO: Docs
+
 mod archetype;
 mod components;
 mod entity;

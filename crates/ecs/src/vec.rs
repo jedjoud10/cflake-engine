@@ -1,31 +1,33 @@
 use std::any::Any;
 
-// A component storage that is implemented for Vec<T>
+/// A component storage that is implemented for Vec<T>.
 pub trait UntypedVec {
-    // Runtime dynamic conversions
+    /// Runtime dynamic conversions to an immutable [Any]
     fn as_any(&self) -> &dyn Any;
+
+    /// Runtime dynamic conversions to a mutable [Any]
     fn as_any_mut(&mut self) -> &mut dyn Any;
 
-    // Remove a component from the storage, and move the last element into it's place instead
+    /// Remove a component from the storage, and move the last element into it's place instead.
     fn swap_remove(&mut self, index: usize);
 
-    // Remove a component from the storage, and insert the return value into another untyped column
-    // This assumes that "other" is of the same type as Self
+    /// Remove a component from the storage, and insert the return value into another untyped column.
+    /// This assumes that "other" is of the same type as Self.
     fn swap_remove_move(&mut self, index: usize, other: &mut dyn UntypedVec);
 
-    // Reserve some allocation space for the storage
+    /// Reserve some allocation space for the storage.
     fn reserve(&mut self, additional: usize);
 
-    // Shrink the memory allocation so it takes less space
+    /// Shrink the memory allocation so it takes less space.
     fn shrink_to_fit(&mut self);
 
-    // Clear the vector completely
+    /// Clear the vector completely.
     fn clear(&mut self);
 
-    // Get the length of the vector
+    /// Get the length of the vector.
     fn len(&self) -> usize;
 
-    // This will create an empty UntypedVec using another one (to keep the trait object safe)
+    /// This will create an empty UntypedVec using another one (to keep the trait object safe).
     fn clone_default(&self) -> Box<dyn UntypedVec>;
 }
 

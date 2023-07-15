@@ -16,6 +16,7 @@ lazy_static = "1.4.0"
 pretty-type-name = "1.0.1"
 arrayvec = "0.7.2"
 log_err = "1.1.1"
+petgraph = "0.6.3"
 math = { path = "../math" }
 
 ahash = { workspace = true }

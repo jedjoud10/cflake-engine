@@ -1,8 +1,8 @@
 use super::Entity;
 use crate::{Archetype, Bundle, Component, EntityLinkings, QueryLayoutRef, Scene};
 
-// Immutable entity entries allow the user to be able to read and get some data about a specific entity
-// This data can represent the archetype of the entity or even an immutable reference to a component
+/// Immutable entity entries allow the user to be able to read and get some data about a specific entity.
+/// This data can represent the archetype of the entity or even an immutable reference to a component.
 pub struct EntryRef<'a> {
     entity: Entity,
     archetype: &'a Archetype,
@@ -22,35 +22,35 @@ impl<'a> EntryRef<'a> {
         })
     }
 
-    // Get the entity handle
+    /// Get the entity handle.
     pub fn entity(&self) -> Entity {
         self.entity
     }
 
-    // Get the entity linkings of the current entity
+    /// Get the entity linkings of the current entity.
     pub fn linkings(&self) -> EntityLinkings {
         self.linkings
     }
 
-    // Get an immutable reference to the entity's archetype
+    /// Get an immutable reference to the entity's archetype.
     pub fn archetype(&self) -> &Archetype {
         self.archetype
     }
 
-    // Get an immutable reference to a linked component
+    /// Get an immutable reference to a linked component.
     pub fn get<T: Component>(&self) -> Option<&T> {
         self.archetype()
             .components::<T>()
             .map(|col| col.get(self.linkings.index).unwrap())
     }
 
-    // Check if the entity contains the given bundle
+    /// Check if the entity contains the given bundle.
     pub fn contains<B: Bundle>(&self) -> bool {
         let bundle = B::reduce(|a, b| a | b);
         self.archetype().mask().contains(bundle)
     }
 
-    // Read certain components from the entry as if they were used in an immutable query
+    /// Read certain components from the entry as if they were used in an immutable query.
     pub fn as_query<L: QueryLayoutRef>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let search = L::reduce(|a, b| a | b).search();

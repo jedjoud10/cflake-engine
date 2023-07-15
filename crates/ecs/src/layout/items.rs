@@ -1,40 +1,50 @@
 use crate::{mask, Archetype, Component, Entity, LayoutAccess, Mask};
 
-// Immutable query slice that will be fetched from each archetype
+/// Immutable query slice that will be fetched from each archetype.
 pub trait QueryItemRef: Sized {
+    /// Immutable slice of the query item.
     type Slice<'s>: 's;
+
+    /// Immutable pointer of the query item.
     type Ptr: 'static + Copy;
+
+    /// Owned query item.
     type Owned: 'static;
 
-    // Get the layout access mask for this item
+    /// Get the layout access mask for this item.
     fn access() -> LayoutAccess;
 
-    // Get a pointer immutable archetypes
+    /// Get a pointer from an immutable archetype.
     unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr;
 
-    // Convert the pointer into a slice
+    /// Convert the pointer into a slice.
     unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s>;
 
-    // Read from a raw pointer directly
+    /// Read from a raw pointer directly.
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
-// Mutable query slice that will be fetched from each archetype
+/// Mutable query slice that will be fetched from each archetype.
 pub trait QueryItemMut: Sized {
+    /// Immutable slice of the query item.
     type Slice<'s>: 's;
+
+    /// Immutable pointer of the query item.
     type Ptr: 'static + Copy;
+
+    /// Owned query item.
     type Owned: 'static;
 
-    // Get the layout access mask for this item
+    /// Get the layout access mask for this item.
     fn access() -> LayoutAccess;
 
-    // Get a pointer from mutable archetypes
+    /// Get a pointer from a mutable archetype.
     unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr;
 
-    // Convert the pointer into a slice, and read from said slice
+    /// Convert the pointer into a slice, and read from said slice.
     unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s>;
 
-    // Read from a raw pointer directly
+    /// Read from a raw pointer directly.
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 

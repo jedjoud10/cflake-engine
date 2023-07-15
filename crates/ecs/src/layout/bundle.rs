@@ -1,14 +1,14 @@
 use crate::{mask, Archetype, Component, Mask, MaskHashMap, StateFlags, UntypedVec};
 
-// An owned layout trait will be implemented for owned tuples that contain a set of components
-// This will also handle the synchronization between the states/component columns whenever we add bundles
+/// An owned layout trait will be implemented for owned tuples that contain a set of components.
+/// This will also handle the synchronization between the states/component columns whenever we add bundles.
 pub trait Bundle: 'static {
-    // Get a combined  mask by running a lambda on each mask
+    /// Get a combined  mask by running a lambda on each mask.
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask
     where
         Self: Sized;
 
-    // Checks if this bundle is valid
+    /// Checks if this bundle is valid.
     fn is_valid() -> bool
     where
         Self: Sized,
@@ -21,9 +21,9 @@ pub trait Bundle: 'static {
         mask.count_ones() == count as u32
     }
 
-    // Push multiple elements into an archetype, returns how many we added
-    // Returns None if the bundle mask does not match with the archetype mask
-    // If moved is true, don't set the newly added components as "added" or "modified"
+    /// Push multiple elements into an archetype, returns how many we added.
+    /// Returns None if the bundle mask does not match with the archetype mask.
+    /// If moved is true, don't set the newly added components as "added" or "modified".
     fn extend_from_iter<'a>(
         archetype: &'a mut Archetype,
         moved: bool,
@@ -32,15 +32,15 @@ pub trait Bundle: 'static {
     where
         Self: Sized;
 
-    // Get the default untyped component vectors for this bundle
+    /// Get the default untyped component vectors for this bundle.
     fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>>
     where
         Self: Sized;
 }
 
-// Bundles can be boxed and cloned (this is why this is not defined as Sized) so we can use them as a base for our prefabs
+/// Bundles can be boxed and cloned (this is why this is not defined as Sized) so we can use them as a base for our prefabs.
 pub trait PrefabBundle: 'static + Bundle {
-    // Clone the prefab bundle and add it to the archetype
+    /// Clone the prefab bundle and add it to the archetype.
     fn prefabify<'a>(&self, archetype: &'a mut Archetype) -> Option<()>;
 }
 
