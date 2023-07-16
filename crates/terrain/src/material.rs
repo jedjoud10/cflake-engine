@@ -1,16 +1,19 @@
 use rendering::{
-    AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material, MultiDrawIndirectCount, NormalTexel,
-    Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, Pass,
+    AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material,
+    MultiDrawIndirectCount, NormalTexel, Pass, Renderer, SceneUniform, ShadowMap, ShadowMapping,
+    ShadowUniform,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, LayeredTexture2D, Shader, StorageAccess, VertexModule, PrimitiveConfig, WindingOrder, PushConstantLayout, ModuleVisibility, XY, Vertex, DrawIndexedIndirect, DrawIndexedIndirectBuffer, Texture,
+    BindGroup, Compiler, DrawIndexedIndirect, DrawIndexedIndirectBuffer, FragmentModule, GpuPod,
+    Graphics, LayeredTexture2D, ModuleVisibility, PrimitiveConfig, PushConstantLayout, Shader,
+    StorageAccess, Texture, Vertex, VertexModule, WindingOrder, XY,
 };
 use utils::{Storage, Time};
 
-use crate::{Terrain, TerrainSettings, PermVertices, PermTriangles, MemoryManager};
+use crate::{MemoryManager, PermTriangles, PermVertices, Terrain, TerrainSettings};
 
 // Type aliases for layered textures
 pub type LayeredAlbedoMap = LayeredTexture2D<AlbedoTexel>;
@@ -40,7 +43,11 @@ impl Material for TerrainMaterial {
     type RenderPath = MultiDrawIndirectCount;
 
     // Load the terrain material shaders and compile them
-    fn shader<P: Pass>(terrain: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+    fn shader<P: Pass>(
+        terrain: &Self::Settings<'_>,
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Option<Shader> {
         let settings = terrain.0;
         let size = terrain.0.mesher.size;
         let memory = terrain.1;
@@ -48,13 +55,13 @@ impl Material for TerrainMaterial {
             rendering::PassType::Deferred => {
                 // Load the vertex module from the assets
                 let vert = assets
-                 .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
-                 .unwrap();
+                    .load::<VertexModule>("engine/shaders/scene/terrain/terrain.vert")
+                    .unwrap();
 
                 // Load the fragment module from the assets
                 let frag = assets
-                 .load::<FragmentModule>("engine/shaders/scene/terrain/terrain.frag")
-                 .unwrap();
+                    .load::<FragmentModule>("engine/shaders/scene/terrain/terrain.frag")
+                    .unwrap();
 
                 // Define the type layouts for the UBOs
                 let mut compiler = Compiler::new(assets, graphics);
@@ -80,23 +87,23 @@ impl Material for TerrainMaterial {
                 match &settings.rendering.mode {
                     crate::TerrainRenderingMode::Blocky => {
                         compiler.use_define("derived", "");
-                    },
-                    
+                    }
+
                     crate::TerrainRenderingMode::LowPoly(mode) => match mode {
                         crate::TerrainRenderingLowPolyMode::Flat => {
                             compiler.use_define("flat", "");
                             compiler.use_define("attributes", "");
-                        },
-                        crate::TerrainRenderingLowPolyMode::Averaged => {},
+                        }
+                        crate::TerrainRenderingLowPolyMode::Averaged => {}
                     },
 
-                    crate::TerrainRenderingMode::Smooth => {},
+                    crate::TerrainRenderingMode::Smooth => {}
                 }
 
                 // Multi-draw indirect youpieee
                 compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
                     "position_scale_buffer",
-                  StorageAccess::ReadOnly,
+                    StorageAccess::ReadOnly,
                 );
 
                 compiler.use_storage_buffer::<<XY<f32> as Vertex>::Storage>(
@@ -104,14 +111,15 @@ impl Material for TerrainMaterial {
                     StorageAccess::ReadOnly,
                 );
                 compiler.use_storage_buffer::<u32>("input_triangles", StorageAccess::ReadOnly);
-                compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::ReadOnly);
+                compiler
+                    .use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::ReadOnly);
 
                 compiler.use_constant(1, memory.output_vertex_buffer_length as u32);
                 compiler.use_constant(2, memory.output_triangle_buffer_length as u32);
 
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
-            },
+            }
             rendering::PassType::Shadow => {
                 let vert = assets
                     .load::<VertexModule>("engine/shaders/scene/terrain/shadow.vert")
@@ -120,12 +128,13 @@ impl Material for TerrainMaterial {
                     .load::<FragmentModule>("engine/shaders/common/empty.frag")
                     .unwrap();
 
-                
                 // Define the type layouts for the UBOs
                 let mut compiler = Compiler::new(assets, graphics);
-                
+
                 compiler.use_constant(0, (size as f32) / (size as f32 - 4.0));
-                let layout = PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size()).unwrap();
+                let layout =
+                    PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size())
+                        .unwrap();
                 compiler.use_push_constant_layout(layout);
                 compiler.use_storage_buffer::<vek::Vec4<vek::Vec4<f32>>>(
                     "position_scale_buffer",
@@ -134,7 +143,7 @@ impl Material for TerrainMaterial {
 
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
-            },
+            }
         }
     }
 
@@ -175,11 +184,7 @@ impl Material for TerrainMaterial {
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
-        let (albedo_maps,
-            normal_maps,
-            mask_maps,
-            terrain,
-            ..) = resources;
+        let (albedo_maps, normal_maps, mask_maps, terrain, ..) = resources;
 
         // Set the sub-material textures
         if P::is_deferred_pass() {
@@ -248,30 +253,16 @@ impl Material for TerrainMaterial {
             let triangles = triangles.get(&terrain.memory.shared_triangle_buffers[*index]);
             let vertices = vertices.get(&terrain.memory.shared_positions_buffers[*index]);
             let indirect = indirect.get(&terrain.memory.culled_indexed_indirect_buffers[*index]);
-            
+
             group
-                .set_storage_buffer(
-                    "input_triangles",
-                    &triangles,
-                    ..,
-                )
+                .set_storage_buffer("input_triangles", &triangles, ..)
                 .unwrap();
 
             group
-                .set_storage_buffer(
-                    "input_vertices",
-                    &vertices,
-                    ..,
-                )
+                .set_storage_buffer("input_vertices", &vertices, ..)
                 .unwrap();
 
-            group
-                .set_storage_buffer(
-                    "indirect",
-                    &indirect,
-                    ..,
-                )
-                .unwrap();
+            group.set_storage_buffer("indirect", &indirect, ..).unwrap();
         }
 
         // Increment the index (aka the allocation index)

@@ -81,7 +81,7 @@ pub enum ViewReadError {
     NonReadable,
 
     #[error("Destination data length does not match up with region")]
-    DstLenMismatch
+    DstLenMismatch,
 }
 
 #[derive(Error, Debug)]
@@ -89,9 +89,7 @@ pub enum ViewWriteError {
     #[error("The given source region would overflow the region of the view")]
     InvalidRegion,
 
-    #[error(
-        "The view cannot be written since the texture's TextureUsages do not contain WRITE"
-    )]
+    #[error("The view cannot be written since the texture's TextureUsages do not contain WRITE")]
     NonWritable,
 
     #[error("Source data length does not match up with region")]
@@ -106,9 +104,7 @@ pub enum ViewClearError {
     #[error("The given source region would overflow the region of the view")]
     InvalidRegion,
 
-    #[error(
-        "The view cannot be cleared since the texture's TextureUsages do not contain WRITE"
-    )]
+    #[error("The view cannot be cleared since the texture's TextureUsages do not contain WRITE")]
     NonWritable,
 }
 
@@ -120,10 +116,14 @@ pub enum ViewCopyError {
     #[error("The given destination region would overflow the region of the view")]
     InvalidDstRegion,
 
-    #[error("The view cannot be copied into since the texture's TextureUsages do not contain COPY_DST")]
+    #[error(
+        "The view cannot be copied into since the texture's TextureUsages do not contain COPY_DST"
+    )]
     NonCopyDst,
 
-    #[error("The view cannot be copied from since the texture's TextureUsages do not contain COPY_SRC")]
+    #[error(
+        "The view cannot be copied from since the texture's TextureUsages do not contain COPY_SRC"
+    )]
     NonCopySrc,
 
     #[error("The subregions must have the same number of texels to be able to copy them")]

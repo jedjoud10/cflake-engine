@@ -1,26 +1,28 @@
-
-
 use arrayvec::ArrayVec;
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, CompareFunction, Compiler,
-    Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
-    ModuleVisibility, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
-    RenderPipeline, SamplerSettings, Shader, StoreOp, Texture, TextureMipMaps,
-    TextureUsage, UniformBuffer, VertexModule, WindingOrder, Buffer, SamplerWrap, Normalized, TextureViewSettings, TextureViewDimension,
+    ActiveRenderPass, ActiveRenderPipeline, Buffer, BufferMode, BufferUsage, CompareFunction,
+    Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
+    ModuleVisibility, Normalized, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
+    RenderPipeline, SamplerSettings, SamplerWrap, Shader, StoreOp, Texture, TextureMipMaps,
+    TextureUsage, TextureViewDimension, TextureViewSettings, UniformBuffer, VertexModule,
+    WindingOrder,
 };
 use math::ExplicitVertices;
 use vek::FrustumPlanes;
 
-use crate::{MeshAttributes, create_uniform_buffer};
+use crate::{create_uniform_buffer, MeshAttributes};
 
 // This is what will write to the depth texture
 pub type ShadowDepthLayout = Depth<f32>;
 pub type ShadowMap = LayeredTexture2D<ShadowDepthLayout>;
 
 // Create a cascaded depth texture with 4 layers
-fn create_depth_texture(graphics: &Graphics, resolution: u32) -> LayeredTexture2D<ShadowDepthLayout> {
+fn create_depth_texture(
+    graphics: &Graphics,
+    resolution: u32,
+) -> LayeredTexture2D<ShadowDepthLayout> {
     fn create_view_settings(layer: u32) -> TextureViewSettings {
         TextureViewSettings {
             base_mip_level: 0,
@@ -87,9 +89,9 @@ pub struct ShadowUniform {
     pub strength: f32,
     pub spread: f32,
     pub base_bias: f32,
-	pub bias_bias: f32,
+    pub bias_bias: f32,
 
-	pub bias_factor_base: f32,
+    pub bias_factor_base: f32,
     max_distance: f32,
     _padding1: f32,
     _padding2: f32,
@@ -139,7 +141,8 @@ impl ShadowMapping {
         )
         .unwrap();
 
-        let lightspace_buffer = create_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>, 4>(graphics, BufferUsage::WRITE);
+        let lightspace_buffer =
+            create_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>, 4>(graphics, BufferUsage::WRITE);
 
         Self {
             render_pass,
@@ -161,8 +164,6 @@ impl ShadowMapping {
         camera_position: vek::Vec3<f32>,
         cascade: usize,
     ) -> vek::Mat4<f32> {
-
-
         let val = self.percents[cascade] * self.distance;
         let frustum = FrustumPlanes::<f32> {
             left: -val,
@@ -172,7 +173,7 @@ impl ShadowMapping {
             near: -5000.0,
             far: 5000.0,
         };
-        
+
         // Calculate a new view matrix and set it
         let rot = vek::Mat4::from(light_rotation);
 
@@ -189,7 +190,9 @@ impl ShadowMapping {
         // Calculate light skin rizz (real) (I have gone insane)
         let lightspace = projection * view * vek::Mat4::translation_3d(-camera_position);
         self.parameters.distances[cascade] = val;
-        self.lightspace_buffer.write(&[lightspace.cols], cascade).unwrap();
+        self.lightspace_buffer
+            .write(&[lightspace.cols], cascade)
+            .unwrap();
         self.parameter_buffer.write(&[self.parameters], 0).unwrap();
         lightspace
     }

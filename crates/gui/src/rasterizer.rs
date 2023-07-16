@@ -2,10 +2,10 @@ use assets::Assets;
 use egui::{ClippedPrimitive, ImageData, TextureId, TexturesDelta};
 use graphics::{
     ActivePipeline, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferMode,
-    BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation,
-    PerVertex, PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap,
-    Shader, StoreOp, Texture, Texture2D, TextureMipMaps, TextureUsage, TriangleBuffer,
-    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW, TextureViewSettings, Texel,
+    BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Normalized, Operation, PerVertex,
+    PrimitiveConfig, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Shader, StoreOp,
+    Texel, Texture, Texture2D, TextureMipMaps, TextureUsage, TextureViewSettings, TriangleBuffer,
+    VertexBuffer, VertexConfig, VertexInput, VertexModule, Window, RGBA, XY, XYZW,
 };
 use rendering::{FinalRenderPass, FinalRenderPipeline, WindowBuffer, WindowUniform};
 
@@ -60,24 +60,22 @@ fn create_rf32_texture(
         .iter()
         .map(|x| vek::Vec4::broadcast(x * u8::MAX as f32).as_::<u8>())
         .collect::<Vec<_>>();
-    create_texture(
-        graphics,
-        extent,
-        &texels
-    )
+    create_texture(graphics, extent, &texels)
 }
 
 fn create_texture<T: Texel>(
     graphics: &Graphics,
     extent: vek::Extent2<u32>,
-    texels: &[T::Storage]
+    texels: &[T::Storage],
 ) -> Texture2D<T> {
     Texture2D::from_texels(
         graphics,
         Some(&texels),
         extent,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-        &[TextureViewSettings::whole::<<Texture2D::<T> as Texture>::Region>()],
+        &[TextureViewSettings::whole::<
+            <Texture2D<T> as Texture>::Region,
+        >()],
         Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             mag_filter: SamplerFilter::Linear,
@@ -193,7 +191,7 @@ impl Rasterizer {
                     }
                     ImageData::Color(color) => {
                         todo!()
-                    },
+                    }
                 }
             });
         }
@@ -252,7 +250,9 @@ impl Rasterizer {
                     .set_uniform_buffer("window", window_buffer, ..)
                     .unwrap();
                 group.set_sampled_texture("font", texture).unwrap();
-                group.set_sampler("font_sampler", texture.sampler().unwrap()).unwrap();
+                group
+                    .set_sampler("font_sampler", texture.sampler().unwrap())
+                    .unwrap();
             })
             .unwrap();
 

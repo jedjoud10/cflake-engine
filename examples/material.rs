@@ -18,7 +18,11 @@ impl Material for CustomMaterial {
     type Query<'a> = &'a ();
 
     // Load the respective PBR shader modules and compile them
-    fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+    fn shader<P: Pass>(
+        _settings: &Self::Settings<'_>,
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Option<Shader> {
         match P::pass_type() {
             crate::PassType::Deferred => {
                 let vert = assets
@@ -34,18 +38,14 @@ impl Material for CustomMaterial {
 
                 compiler.use_push_constant_layout(
                     PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size())
-                    .unwrap(),
+                        .unwrap(),
                 );
-            
+
                 Some(Shader::new(vert, frag, &compiler).unwrap())
-            },
+            }
 
-            crate::PassType::Shadow => {
-                None
-            },
+            crate::PassType::Shadow => None,
         }
-
-        
     }
 
     fn fetch<P: Pass>(world: &World) -> Self::Resources<'_> {
@@ -90,7 +90,9 @@ fn init(world: &mut World) {
     // Get the material id (also registers the material pipeline)
     asset!(assets, "user/shaders/custom.frag", "/examples/assets/");
     asset!(assets, "user/shaders/custom.vert", "/examples/assets/");
-    let id = pipelines.register::<CustomMaterial>(&graphics, &assets).unwrap();
+    let id = pipelines
+        .register::<CustomMaterial>(&graphics, &assets)
+        .unwrap();
 
     // Get the default meshes from the forward renderer
     let renderer = world.get::<DeferredRenderer>().unwrap();
@@ -129,7 +131,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { intensity: 1.0, color: vek::Rgb::broadcast(255)  };
+    let light = DirectionalLight {
+        intensity: 1.0,
+        color: vek::Rgb::broadcast(255),
+    };
     let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }

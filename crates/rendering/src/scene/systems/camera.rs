@@ -4,7 +4,7 @@ use coords::{Position, Rotation};
 use ecs::Scene;
 use graphics::Window;
 
-use world::{System, World, post_user};
+use world::{post_user, System, World};
 
 // Update event that will set/update the main perspective camera
 fn update(world: &mut World) {

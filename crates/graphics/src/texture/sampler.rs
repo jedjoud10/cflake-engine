@@ -39,7 +39,7 @@ pub enum SamplerMipMaps {
     },
 }
 
-// Optional compare function for sampling depth textures 
+// Optional compare function for sampling depth textures
 pub type SamplerComparison = Option<wgpu::CompareFunction>;
 pub type SamplerWrap = wgpu::AddressMode;
 pub type SamplerFilter = wgpu::FilterMode;
@@ -56,7 +56,7 @@ pub struct SamplerSettings {
     pub wrap_w: SamplerWrap,
     pub border: SamplerBorderColor,
     pub mipmaps: SamplerMipMaps,
-    pub comparison: SamplerComparison
+    pub comparison: SamplerComparison,
 }
 
 impl Default for SamplerSettings {
@@ -98,7 +98,7 @@ impl<'a, T: Texel> Sampler<'a, T> {
     pub fn mag_filter(&self) -> SamplerFilter {
         self.settings.mag_filter
     }
-    
+
     // Get the mipmapping filter
     pub fn mip_filter(&self) -> SamplerFilter {
         self.settings.mip_filter
@@ -108,17 +108,17 @@ impl<'a, T: Texel> Sampler<'a, T> {
     pub fn wrap_u(&self) -> SamplerWrap {
         self.settings.wrap_u
     }
-    
+
     // Get the wrap mode used for the Y direction
     pub fn wrap_v(&self) -> SamplerWrap {
         self.settings.wrap_v
     }
-    
+
     // Get the wrap mode used for the z direction
     pub fn wrap_w(&self) -> SamplerWrap {
         self.settings.wrap_w
     }
-    
+
     // Get the sampler border color (if fetching from border color is used within the wraps)
     pub fn border_color(&self) -> wgpu::SamplerBorderColor {
         self.settings.border
@@ -134,7 +134,8 @@ impl<'a, T: Texel> Sampler<'a, T> {
 pub fn convert_mip_map_anisotropic_clamp(mip_mapping: &SamplerMipMaps) -> u16 {
     match mip_mapping {
         SamplerMipMaps::AutoAniso => 4,
-        SamplerMipMaps::ClampedAniso { aniso_samples, .. } | SamplerMipMaps::Aniso { aniso_samples } => aniso_samples.get() as u16,
+        SamplerMipMaps::ClampedAniso { aniso_samples, .. }
+        | SamplerMipMaps::Aniso { aniso_samples } => aniso_samples.get() as u16,
         _ => 1,
     }
 }
@@ -154,18 +155,17 @@ pub fn convert_mip_map_lod_clamp(mip_mapping: &SamplerMipMaps) -> (f32, f32) {
 // If no sampler exist, this will create a completely new one
 pub fn get_or_insert_sampler(graphics: &Graphics, sampling: SamplerSettings) -> Arc<wgpu::Sampler> {
     match graphics.0.cached.samplers.entry(sampling) {
-        Entry::Occupied(occupied) => {
-            occupied.get().clone()
-        }
-        Entry::Vacant(vacant) => {            
+        Entry::Occupied(occupied) => occupied.get().clone(),
+        Entry::Vacant(vacant) => {
             let mut anisotropy_clamp = convert_mip_map_anisotropic_clamp(&sampling.mipmaps);
             let (lod_min_clamp, lod_max_clamp) = convert_mip_map_lod_clamp(&sampling.mipmaps);
             let compare = sampling.comparison;
             let border_color = Some(sampling.border);
 
-            if !matches!(sampling.mag_filter, SamplerFilter::Linear) ||
-                !matches!(sampling.min_filter, SamplerFilter::Linear) || 
-                !matches!(sampling.mip_filter, SamplerFilter::Linear) {
+            if !matches!(sampling.mag_filter, SamplerFilter::Linear)
+                || !matches!(sampling.min_filter, SamplerFilter::Linear)
+                || !matches!(sampling.mip_filter, SamplerFilter::Linear)
+            {
                 anisotropy_clamp = 1;
             }
 

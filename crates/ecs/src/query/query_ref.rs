@@ -29,10 +29,15 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub(crate) fn new_with_filter<F: QueryFilter>(scene: &'a Scene, _: Wrap<F>, ticked: bool) -> Self {
+    pub(crate) fn new_with_filter<F: QueryFilter>(
+        scene: &'a Scene,
+        _: Wrap<F>,
+        ticked: bool,
+    ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) = super::archetypes::<L, F>(scene.archetypes());
-        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
+        let bitsets =
+            super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
 
         Self {
             archetypes,

@@ -202,7 +202,6 @@ fn update(world: &mut World) {
             * vek::Quaternion::rotation_x(-pos_y * sensivity * 0.0007),
         (factor * 5.0).clamped01(),
     );
-
 }
 
 // Default camera system innit

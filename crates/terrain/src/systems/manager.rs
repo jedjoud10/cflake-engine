@@ -1,23 +1,16 @@
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
-use crate::{
-    Chunk, ChunkState, ChunkViewer, Terrain, generation_priority_heuristic,
-};
-
+use crate::{generation_priority_heuristic, Chunk, ChunkState, ChunkViewer, Terrain};
 
 use coords::{Position, Rotation, Scale};
 use ecs::{Entity, Scene};
 
-use graphics::{
-    DrawIndexedIndirectBuffer,
-};
+use graphics::DrawIndexedIndirectBuffer;
 use math::OctreeDelta;
-use physics::{RigidBody, MeshCollider, RigidBodyBuilder, MeshColliderBuilder};
-use rand::{seq::SliceRandom};
-use rayon::prelude::{ParallelIterator};
-use rendering::{
-    MultiDrawIndirectCountMesh,
-};
+use physics::{MeshCollider, MeshColliderBuilder, RigidBody, RigidBodyBuilder};
+use rand::seq::SliceRandom;
+use rayon::prelude::ParallelIterator;
+use rendering::MultiDrawIndirectCountMesh;
 use utils::{Storage, Time};
 use world::{user, System, World};
 
@@ -194,22 +187,24 @@ fn update(world: &mut World) {
                     .iter()
                     .filter(|node| node.size() == settings.mesher.size)
                     .count();
-                
+
                 // Split the entities into ones with a collider/RB and ones without
-                let mut with_colliders = Vec::<(Position, Scale, Chunk, RigidBody, MeshCollider)>::new();
-                let without_colliders: Vec::<(Position, Scale, Chunk)>;
+                let mut with_colliders =
+                    Vec::<(Position, Scale, Chunk, RigidBody, MeshCollider)>::new();
+                let without_colliders: Vec<(Position, Scale, Chunk)>;
 
                 // TODO: Make this more idiomatic
                 for i in 0..num_nodes_with_colliders {
                     let (pos, scale, mut chunk) = entities.pop().unwrap();
-                    let mesh_collider = MeshColliderBuilder::new(Vec::new(), Vec::new(), 1000.0).build();
+                    let mesh_collider =
+                        MeshColliderBuilder::new(Vec::new(), Vec::new(), 1000.0).build();
                     let rigid_body = RigidBodyBuilder::new(physics::RigidBodyType::Fixed).build();
                     chunk.collider = true;
                     with_colliders.push((pos, scale, chunk, rigid_body, mesh_collider));
                 }
 
                 without_colliders = entities;
-            
+
                 scene.extend_from_iter(without_colliders);
                 scene.extend_from_iter(with_colliders);
             } else {
@@ -258,10 +253,9 @@ fn update(world: &mut World) {
                 **viewer_position,
                 viewer_rotation.forward(),
             );
-            
+
             assert!(res.is_none());
         }
-
     }
 }
 

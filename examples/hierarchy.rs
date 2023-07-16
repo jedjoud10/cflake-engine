@@ -34,13 +34,8 @@ fn init(world: &mut World) {
     // Create a parent entity that will contain multiple children
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
-    let parent = scene.insert((
-        surface,
-        renderer,
-        Position::default(),
-        Rotation::default(),
-    ));
-    
+    let parent = scene.insert((surface, renderer, Position::default(), Rotation::default()));
+
     // Create a child entity that we will attach to the parent entity
     let surface = Surface::new(cube.clone(), material.clone(), id.clone());
     let renderer = Renderer::default();
@@ -87,7 +82,9 @@ fn update(world: &mut World) {
     let mut scene = world.get_mut::<Scene>().unwrap();
     let time = world.get::<Time>().unwrap();
 
-    for (_, rotation, relative_rotation) in scene.query_mut::<(&Parent, &mut Rotation, Option<&mut LocalRotation>)>() {
+    for (_, rotation, relative_rotation) in
+        scene.query_mut::<(&Parent, &mut Rotation, Option<&mut LocalRotation>)>()
+    {
         if let Some(relative_rotation) = relative_rotation {
             relative_rotation.rotate_x(-0.3 * time.delta().as_secs_f32());
         } else {

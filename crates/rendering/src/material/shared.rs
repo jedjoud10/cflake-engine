@@ -7,8 +7,8 @@ use math::Frustum;
 use utils::Storage;
 
 use crate::{
-    attributes, AttributeBuffer, EnvironmentMap, IndirectMesh, Mesh,
-    MultiDrawIndirectCountMesh, MultiDrawIndirectMesh,
+    attributes, AttributeBuffer, EnvironmentMap, IndirectMesh, Mesh, MultiDrawIndirectCountMesh,
+    MultiDrawIndirectMesh,
 };
 
 // These are the default settings that we pass to each material

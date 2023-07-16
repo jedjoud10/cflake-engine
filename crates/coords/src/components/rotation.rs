@@ -8,7 +8,7 @@ use std::{
 /// Rotation component that lets entities have a rotation in space.
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
-pub struct Rotation<Space: 'static>(vek::Quaternion::<f32>, PhantomData<Space>);
+pub struct Rotation<Space: 'static>(vek::Quaternion<f32>, PhantomData<Space>);
 
 impl<Space> Rotation<Space> {
     /// Create a new rotation based on the RAW quaternion components (stored in an array).
@@ -78,51 +78,51 @@ impl<Space> Debug for Rotation<Space> {
 }
 
 impl<Space> Deref for Rotation<Space> {
-    type Target = vek::Quaternion::<f32>;
+    type Target = vek::Quaternion<f32>;
 
-    fn deref(&self) -> &vek::Quaternion::<f32> {
+    fn deref(&self) -> &vek::Quaternion<f32> {
         &self.0
     }
 }
 
 impl<Space> DerefMut for Rotation<Space> {
-    fn deref_mut(&mut self) -> &mut vek::Quaternion::<f32> {
+    fn deref_mut(&mut self) -> &mut vek::Quaternion<f32> {
         &mut self.0
     }
 }
 
-impl<Space> AsRef<vek::Quaternion::<f32>> for Rotation<Space> {
-    fn as_ref(&self) -> &vek::Quaternion::<f32> {
+impl<Space> AsRef<vek::Quaternion<f32>> for Rotation<Space> {
+    fn as_ref(&self) -> &vek::Quaternion<f32> {
         &self.0
     }
 }
 
-impl<Space> AsMut<vek::Quaternion::<f32>> for Rotation<Space> {
-    fn as_mut(&mut self) -> &mut vek::Quaternion::<f32> {
+impl<Space> AsMut<vek::Quaternion<f32>> for Rotation<Space> {
+    fn as_mut(&mut self) -> &mut vek::Quaternion<f32> {
         &mut self.0
     }
 }
 
-impl<Space> From<Rotation<Space>> for vek::Quaternion::<f32> {
+impl<Space> From<Rotation<Space>> for vek::Quaternion<f32> {
     fn from(value: Rotation<Space>) -> Self {
         value.0
     }
 }
 
-impl<Space> From<&Rotation<Space>> for vek::Quaternion::<f32> {
+impl<Space> From<&Rotation<Space>> for vek::Quaternion<f32> {
     fn from(value: &Rotation<Space>) -> Self {
         value.0
     }
 }
 
-impl<Space> From<vek::Quaternion::<f32>> for Rotation<Space> {
-    fn from(q: vek::Quaternion::<f32>) -> Self {
+impl<Space> From<vek::Quaternion<f32>> for Rotation<Space> {
+    fn from(q: vek::Quaternion<f32>) -> Self {
         Self(q, PhantomData)
     }
 }
 
-impl<Space> From<&vek::Quaternion::<f32>> for Rotation<Space> {
-    fn from(q: &vek::Quaternion::<f32>) -> Self {
+impl<Space> From<&vek::Quaternion<f32>> for Rotation<Space> {
+    fn from(q: &vek::Quaternion<f32>) -> Self {
         Self(*q, PhantomData)
     }
 }

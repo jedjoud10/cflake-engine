@@ -4,7 +4,7 @@ use ecs::{Component, Entity};
 use rapier3d::prelude::*;
 use utils::Handle;
 
-use crate::{PhysicsSurface, GenericCollider};
+use crate::{GenericCollider, PhysicsSurface};
 
 // Cuboid colliders represent a cuboid in 3D space
 // The position and rotation of the cuboid will be fetched from it's Position component and Rotation component
@@ -30,13 +30,13 @@ impl CuboidCollider {
         self.mass = mass;
         self.modified.set(true);
     }
-    
+
     // Update the material used by the collider
     pub fn set_material(&mut self, material: Option<Handle<PhysicsSurface>>) {
         self.material = material;
         self.modified.set(true);
     }
-    
+
     // Update the sensor state of the collider
     pub fn set_sensor(&mut self, sensor: bool) {
         self.sensor = sensor;
@@ -52,14 +52,14 @@ impl Clone for CuboidCollider {
             handle: None,
             sensor: self.sensor,
             modified: Cell::new(false),
-            material: self.material.clone()
+            material: self.material.clone(),
         }
     }
-} 
+}
 
 impl GenericCollider for CuboidCollider {
     type RawRapierCollider = rapier3d::geometry::Cuboid;
-    
+
     #[inline(always)]
     fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
         self.handle
@@ -67,7 +67,7 @@ impl GenericCollider for CuboidCollider {
 
     #[inline(always)]
     fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
-        self.handle = Some(handle);    
+        self.handle = Some(handle);
     }
 
     #[inline(always)]
@@ -86,7 +86,9 @@ impl GenericCollider for CuboidCollider {
     }
 
     #[inline(always)]
-    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+    fn cast_rapier_collider(
+        generic: &mut rapier3d::geometry::Collider,
+    ) -> &mut Self::RawRapierCollider {
         generic.shape_mut().as_cuboid_mut().unwrap()
     }
 
@@ -97,11 +99,17 @@ impl GenericCollider for CuboidCollider {
 
     #[inline(always)]
     fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
-        Some(rapier3d::geometry::ColliderBuilder::cuboid(self.half_extent.w, self.half_extent.h, self.half_extent.d)
+        Some(
+            rapier3d::geometry::ColliderBuilder::cuboid(
+                self.half_extent.w,
+                self.half_extent.h,
+                self.half_extent.d,
+            )
             .mass(self.mass)
             .sensor(self.sensor)
             .user_data(entity.to_raw() as u128)
-            .build())
+            .build(),
+        )
     }
 
     #[inline(always)]
@@ -142,7 +150,7 @@ impl CuboidColliderBuilder {
         self
     }
 
-    // Set the physics surface material of the collider 
+    // Set the physics surface material of the collider
     pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
         self.inner.material = Some(material);
         self

@@ -58,18 +58,17 @@ impl PushConstantLayout {
     // Create a push constant layout for a vertex module
     pub fn vertex(size: usize) -> Option<Self> {
         Self::single(size, ModuleVisibility::Vertex)
-    } 
+    }
 
     // Create a push constant layout for a fragment module
     pub fn fragment(size: usize) -> Option<Self> {
         Self::single(size, ModuleVisibility::Fragment)
-    } 
+    }
 
     // Create a push constant layout for a compute module
     pub fn compute(size: usize) -> Option<Self> {
         Self::single(size, ModuleVisibility::Compute)
-    }     
-
+    }
 
     // Create a push constant layout for split vertex / fragment modules
     pub fn split(vertex: usize, fragment: usize) -> Option<Self> {
@@ -254,7 +253,9 @@ pub(super) fn map_texture_sample_type(
                     wgpu::TextureSampleType::Float { filterable: false }
                 }
             } else {
-                wgpu::TextureSampleType::Float { filterable: flags.contains(TextureFormatFeatureFlags::FILTERABLE) } 
+                wgpu::TextureSampleType::Float {
+                    filterable: flags.contains(TextureFormatFeatureFlags::FILTERABLE),
+                }
             }
         }
 
@@ -374,7 +375,7 @@ pub(super) fn map_spirv_scalar_type(
                 let flags = adapter.get_texture_format_features(format).flags;
                 let filterable = flags.contains(TextureFormatFeatureFlags::FILTERABLE);
                 wgpu::TextureSampleType::Float { filterable }
-            },
+            }
         },
         _ => panic!("Not supported"),
     }
@@ -1039,7 +1040,9 @@ fn reflect_sampled_texture(
     }
 
     // Make sure the sample type matches up
-    if *sample_type != map_spirv_scalar_type(graphics, _type.scalar_ty.clone(), *format, *comparison) {
+    if *sample_type
+        != map_spirv_scalar_type(graphics, _type.scalar_ty.clone(), *format, *comparison)
+    {
         return Err(TextureValidationError::MismatchSampleType {
             compiler: *sample_type,
             shader: map_spirv_scalar_type(graphics, _type.scalar_ty.clone(), *format, *comparison),

@@ -1,13 +1,11 @@
-
-
 use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, StorageAccess, Texel, Texture3D, Vertex, R, RG, XY, XYZW, TextureUsage,
+    ModuleVisibility, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, R, RG, XY, XYZW,
 };
 
-use crate::{create_texture3d, TempTriangles, TempVertices, TerrainSettings, TerrainRenderingMode};
+use crate::{create_texture3d, TempTriangles, TempVertices, TerrainRenderingMode, TerrainSettings};
 
 // Mesh generator that will be solely used to generate the mesh from voxels
 pub struct MeshGenerator {
@@ -72,7 +70,10 @@ impl MeshGenerator {
 
         // Set vertex generation parameters (constants)
         compiler.use_constant(0, settings.mesher.size);
-        compiler.use_constant(1, matches!(settings.rendering.mode, TerrainRenderingMode::Blocky));
+        compiler.use_constant(
+            1,
+            matches!(settings.rendering.mode, TerrainRenderingMode::Blocky),
+        );
 
         // Create the compute vertices shader
         let compute_vertices = ComputeShader::new(module, &compiler).unwrap();
@@ -105,7 +106,12 @@ impl MeshGenerator {
             temp_triangles,
             compute_vertices,
             compute_quads,
-            cached_indices: create_texture3d(graphics, settings.mesher.size, TextureUsage::STORAGE | TextureUsage::WRITE, None),
+            cached_indices: create_texture3d(
+                graphics,
+                settings.mesher.size,
+                TextureUsage::STORAGE | TextureUsage::WRITE,
+                None,
+            ),
         }
     }
 }

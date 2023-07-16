@@ -1,8 +1,8 @@
 use crate::{Extent, Graphics, ImageTexel, Texel};
 use assets::Asset;
+pub use image::imageops::FilterType;
 use image::ImageFormat;
 use thiserror::Error;
-pub use image::imageops::FilterType;
 
 // Texture resolution scale that we can use to downsample or upsample imported textures
 #[derive(Default, Copy, Clone, PartialEq)]

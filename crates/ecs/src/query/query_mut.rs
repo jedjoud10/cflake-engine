@@ -28,10 +28,15 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
     }
 
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
-    pub(crate) fn new_with_filter<F: QueryFilter>(scene: &'a mut Scene, _: Wrap<F>, ticked: bool) -> Self {
+    pub(crate) fn new_with_filter<F: QueryFilter>(
+        scene: &'a mut Scene,
+        _: Wrap<F>,
+        ticked: bool,
+    ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) = super::archetypes_mut::<L, F>(scene.archetypes_mut());
-        let bitsets = super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
+        let bitsets =
+            super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
 
         Self {
             archetypes,
@@ -105,8 +110,18 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
     fn into_iter(mut self) -> Self::IntoIter {
         for (i, archetype) in self.archetypes.iter_mut().enumerate() {
             let bitset = self.bitsets.as_ref().map(|bitset| &bitset[i]);
-            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset, false);
-            apply_mutability_states(archetype, archetype.mask() & self.access.unique(), bitset, true);
+            apply_mutability_states(
+                archetype,
+                archetype.mask() & self.access.unique(),
+                bitset,
+                false,
+            );
+            apply_mutability_states(
+                archetype,
+                archetype.mask() & self.access.unique(),
+                bitset,
+                true,
+            );
         }
 
         QueryMutIter {

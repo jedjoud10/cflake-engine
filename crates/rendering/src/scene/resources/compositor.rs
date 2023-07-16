@@ -1,12 +1,15 @@
 use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    BufferMode, BufferUsage, Compiler, FragmentModule, Graphics, LoadOp, Operation,
-    PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat, Texture2D,
-    UniformBuffer, VertexConfig, VertexModule, RGBA, Normalized, R, Depth, Texture,
+    BufferMode, BufferUsage, Compiler, Depth, FragmentModule, Graphics, LoadOp, Normalized,
+    Operation, PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat,
+    Texture, Texture2D, UniformBuffer, VertexConfig, VertexModule, R, RGBA,
 };
 
-use crate::{CameraUniform, SceneColorLayout, WindowUniform, SceneUniform, ShadowUniform, ShadowMap, ShadowDepthLayout, EnvironmentMap};
+use crate::{
+    CameraUniform, EnvironmentMap, SceneColorLayout, SceneUniform, ShadowDepthLayout, ShadowMap,
+    ShadowUniform, WindowUniform,
+};
 
 // This is what will write to the swapchain
 pub type FinalRenderPass = RenderPass<SwapchainFormat, ()>;
@@ -48,12 +51,13 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
     compiler.use_uniform_buffer::<vek::Vec4<vek::Vec4<f32>>>("shadow_lightspace_matrices");
     compiler.use_sampled_texture::<ShadowMap>("shadow_map", true);
     compiler.use_sampler::<ShadowDepthLayout>("shadow_map_sampler", true);
-    
+
     Shader::new(vertex, fragment, &compiler).unwrap()
 }
 
-
-fn load_lighting_pass(graphics: &Graphics) -> RenderPass<graphics::BGRA<graphics::Normalized<u8>>, ()> {
+fn load_lighting_pass(
+    graphics: &Graphics,
+) -> RenderPass<graphics::BGRA<graphics::Normalized<u8>>, ()> {
     let render_pass = FinalRenderPass::new(
         graphics,
         Operation {
@@ -65,7 +69,10 @@ fn load_lighting_pass(graphics: &Graphics) -> RenderPass<graphics::BGRA<graphics
     render_pass
 }
 
-fn load_lighting_pipeline(graphics: &Graphics, shader: Shader) -> RenderPipeline<graphics::BGRA<graphics::Normalized<u8>>, ()> {
+fn load_lighting_pipeline(
+    graphics: &Graphics,
+    shader: Shader,
+) -> RenderPipeline<graphics::BGRA<graphics::Normalized<u8>>, ()> {
     let pipeline = FinalRenderPipeline::new(
         graphics,
         None,
@@ -82,7 +89,6 @@ fn load_lighting_pipeline(graphics: &Graphics, shader: Shader) -> RenderPipeline
     .unwrap();
     pipeline
 }
-
 
 // What tonemapping filter we should use
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -112,7 +118,7 @@ pub enum DebugGBuffer {
     // Albedo Color
     Albedo,
 
-    // World Space Normals 
+    // World Space Normals
     Normal,
 
     // World Space Normals reconstructed using position
@@ -168,7 +174,7 @@ impl DebugGBuffer {
             5 => Self::RoughnessMask,
             6 => Self::MetallicMask,
             u32::MAX => Self::None,
-            _ => panic!()
+            _ => panic!(),
         }
     }
 
@@ -228,7 +234,7 @@ impl Default for PostProcessUniform {
             cc_wb_temperature: 6550.0,
             cc_gain: vek::Vec4::zero(),
             cc_lift: vek::Vec4::zero(),
-            cc_gamma: vek::Vec4::zero()
+            cc_gamma: vek::Vec4::zero(),
         }
     }
 }

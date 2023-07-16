@@ -220,7 +220,9 @@ impl Archetype {
     }
 
     // Try to get a mutable reference to a typed column of a specific component
-    pub(crate) fn column_mut<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn, &mut StateColumn)> {
+    pub(crate) fn column_mut<T: Component>(
+        &mut self,
+    ) -> Option<(&mut Vec<T>, &mut StateColumn, &mut StateColumn)> {
         self.untyped_column_mut::<T>()
             .map(|c| c.as_mut_::<T>().unwrap())
     }
@@ -232,7 +234,7 @@ impl Archetype {
 
     // Try to get a mutable reference to a data vector of a specific component
     pub(crate) fn components_mut<T: Component>(&mut self) -> Option<&mut Vec<T>> {
-        self.column_mut::<T>().map(|(vec, _,  _)| vec)
+        self.column_mut::<T>().map(|(vec, _, _)| vec)
     }
 
     /// Get an immutable reference to the per-frame states.
@@ -242,7 +244,8 @@ impl Archetype {
 
     // Get a mutable reference to the per-frame states
     pub(crate) fn delta_frame_states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
-        self.untyped_column_mut::<T>().map(|c| c.delta_frame_states_mut())
+        self.untyped_column_mut::<T>()
+            .map(|c| c.delta_frame_states_mut())
     }
 
     /// Get an immutable reference to the per-tick states.
@@ -252,7 +255,8 @@ impl Archetype {
 
     // Get a mutable reference to the per-tick states
     pub(crate) fn delta_tick_states_mut<T: Component>(&mut self) -> Option<&mut StateColumn> {
-        self.untyped_column_mut::<T>().map(|c| c.delta_tick_states_mut())
+        self.untyped_column_mut::<T>()
+            .map(|c| c.delta_tick_states_mut())
     }
 
     /// Get the internal table immutably.

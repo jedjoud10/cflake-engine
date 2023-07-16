@@ -1,13 +1,16 @@
-use std::{sync::{atomic::AtomicBool, Arc, mpsc::Receiver}, thread::JoinHandle};
+use std::{
+    sync::{atomic::AtomicBool, mpsc::Receiver, Arc},
+    thread::JoinHandle,
+};
 
+use crate::{create_texture3d, TerrainSettings};
 use assets::Assets;
 use graphics::{
     ActiveComputeDispatcher, BindGroup, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, PushConstants, StorageAccess, Texel,
-    Texture3D, Vertex, RG, TextureUsage, SamplerSettings, SamplerBorderColor, SamplerWrap,
+    ModuleVisibility, PushConstantLayout, PushConstants, SamplerBorderColor, SamplerSettings,
+    SamplerWrap, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, RG,
 };
 use notify::Watcher;
-use crate::{create_texture3d, TerrainSettings};
 
 // Voxel generator that will be solely used for generating voxels
 pub struct VoxelGenerator {
@@ -29,12 +32,17 @@ impl VoxelGenerator {
         let compute_voxels = ComputeShader::new(module, &compiler).unwrap();
 
         // Create the main voxel texture
-        let voxel_textures = create_texture3d(graphics, settings.mesher.size, TextureUsage::STORAGE | TextureUsage::WRITE | TextureUsage::SAMPLED, Some(SamplerSettings {
-            wrap_u: SamplerWrap::ClampToEdge,
-            wrap_v: SamplerWrap::ClampToEdge,
-            wrap_w: SamplerWrap::ClampToEdge,
-            ..Default::default()
-        }));
+        let voxel_textures = create_texture3d(
+            graphics,
+            settings.mesher.size,
+            TextureUsage::STORAGE | TextureUsage::WRITE | TextureUsage::SAMPLED,
+            Some(SamplerSettings {
+                wrap_u: SamplerWrap::ClampToEdge,
+                wrap_v: SamplerWrap::ClampToEdge,
+                wrap_w: SamplerWrap::ClampToEdge,
+                ..Default::default()
+            }),
+        );
 
         // Create a watcher that will watch the voxels compute shader file for any changes
         let hot_reload = if !assets.packed() {
@@ -42,23 +50,30 @@ impl VoxelGenerator {
             let path = assets.path("engine/shaders/terrain/voxel.glsl").unwrap();
 
             let handle = std::thread::spawn(move || {
-                let mut watcher = notify::recommended_watcher(move |event: Result<notify::Event, notify::Error>| {
-                    if let Ok(event) = event {
-                        match event.kind {
-                            notify::EventKind::Modify(_) => { tx.send(()); },
-                            _ => {}
+                let mut watcher = notify::recommended_watcher(
+                    move |event: Result<notify::Event, notify::Error>| {
+                        if let Ok(event) = event {
+                            match event.kind {
+                                notify::EventKind::Modify(_) => {
+                                    tx.send(());
+                                }
+                                _ => {}
+                            }
                         }
-                    }
-                }).unwrap();
-                watcher.watch(&path, notify::RecursiveMode::NonRecursive).unwrap();
+                    },
+                )
+                .unwrap();
+                watcher
+                    .watch(&path, notify::RecursiveMode::NonRecursive)
+                    .unwrap();
                 std::thread::sleep(std::time::Duration::from_secs(u64::MAX));
             });
-            
+
             Some((rx, handle))
         } else {
             None
         };
-    
+
         Self {
             compute_voxels,
             voxel_texture: voxel_textures,
@@ -67,7 +82,10 @@ impl VoxelGenerator {
     }
 }
 
-pub(crate) fn create_compute_voxels_compiler<'a>(assets: &'a Assets, graphics: &'a Graphics) -> Compiler<'a> {
+pub(crate) fn create_compute_voxels_compiler<'a>(
+    assets: &'a Assets,
+    graphics: &'a Graphics,
+) -> Compiler<'a> {
     // Create a simple compute shader compiler
     let mut compiler = Compiler::new(assets, graphics);
 

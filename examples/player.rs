@@ -112,7 +112,8 @@ fn init(world: &mut World) {
         Rotation::default(),
         LocalRotation::default(),
         Camera::default(),
-        surface, renderer
+        surface,
+        renderer,
     ));
 
     // Create a player entity
@@ -131,7 +132,9 @@ fn init(world: &mut World) {
             jumping: false,
         },
         CapsuleColliderBuilder::new(2.0, 0.5, 1.7).build(),
-        RigidBodyBuilder::new(RigidBodyType::Dynamic).set_locked_axes(LockedAxes::ROTATION_LOCKED).build(),
+        RigidBodyBuilder::new(RigidBodyType::Dynamic)
+            .set_locked_axes(LockedAxes::ROTATION_LOCKED)
+            .build(),
         Rotation::default(),
     ));
 
@@ -147,7 +150,19 @@ fn init(world: &mut World) {
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = SphereColliderBuilder::new(10.0, 1.0).build();
-    scene.prefabify("sphere", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
+    scene.prefabify(
+        "sphere",
+        (
+            renderer,
+            position,
+            rotation,
+            surface,
+            rigidbody,
+            collider,
+            velocity,
+            angular_velocity,
+        ),
+    );
 
     // Create a prefab that contains the cube entity and it's components
     let renderer = Renderer::default();
@@ -158,13 +173,24 @@ fn init(world: &mut World) {
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = CuboidColliderBuilder::new(10.0, vek::Extent3::broadcast(1.0)).build();
-    scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
+    scene.prefabify(
+        "cube",
+        (
+            renderer,
+            position,
+            rotation,
+            surface,
+            rigidbody,
+            collider,
+            velocity,
+            angular_velocity,
+        ),
+    );
 
     // Create a directional light
     let light = DirectionalLight::default();
     let rotation = vek::Quaternion::rotation_x(-45.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
-
 }
 
 // Update the PlayerInputs resource
@@ -188,7 +214,7 @@ fn update(world: &mut World) {
     if input.get_button(KeyboardButton::Escape).pressed() {
         *state = State::Stopped;
     }
-    
+
     // Update the velocity in the forward and backward directions
     player.forward = input.get_button("forward").held();
     player.backward = input.get_button("backward").held();
@@ -224,7 +250,7 @@ fn tick(world: &mut World) {
 
     // Local velocity
     let mut velocity = vek::Vec3::<f32>::zero();
-    
+
     // Move the character forward and backward
     velocity.z = if inputs.forward {
         -1.0
@@ -254,7 +280,9 @@ fn tick(world: &mut World) {
     };
 
     // Set the global player velocity
-    let (cc, rotation) = scene.find_mut::<(&mut CharacterController, &Rotation)>().unwrap();
+    let (cc, rotation) = scene
+        .find_mut::<(&mut CharacterController, &Rotation)>()
+        .unwrap();
 
     // Handle jumping
     if std::mem::take(&mut inputs.jump) {
@@ -267,5 +295,4 @@ fn tick(world: &mut World) {
     } else {
         cc.direction = vek::Vec3::zero();
     }
-
 }

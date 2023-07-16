@@ -11,8 +11,7 @@ fn main() {
 }
 
 fn a(system: &mut System) {
-    system
-        .insert_init(|_: &mut World| {});
+    system.insert_init(|_: &mut World| {});
 }
 
 fn b(system: &mut System) {

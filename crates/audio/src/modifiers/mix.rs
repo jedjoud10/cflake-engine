@@ -18,13 +18,16 @@ impl<A: Source, B: Source, V: Value> Source for Mix<A, B, V> {
     }
 
     fn duration(&self) -> Option<std::time::Duration> {
-        self.0.duration().zip(self.1.duration()).map(|(a, b)| a.min(b))
+        self.0
+            .duration()
+            .zip(self.1.duration())
+            .map(|(a, b)| a.min(b))
     }
 
     fn target_channels(&self) -> Option<u16> {
         let a = self.0.target_channels();
         let b = self.1.target_channels();
-        
+
         match (a, b) {
             (None, None) => None,
             (None, Some(x)) => Some(x),
@@ -32,14 +35,14 @@ impl<A: Source, B: Source, V: Value> Source for Mix<A, B, V> {
             (Some(a), Some(b)) => {
                 assert_eq!(a, b, "Target channels do not match up");
                 Some(a)
-            },
+            }
         }
     }
 
     fn target_sample_rate(&self) -> Option<u32> {
         let a = self.0.target_sample_rate();
         let b = self.1.target_sample_rate();
-        
+
         match (a, b) {
             (None, None) => None,
             (None, Some(x)) => Some(x),
@@ -47,7 +50,7 @@ impl<A: Source, B: Source, V: Value> Source for Mix<A, B, V> {
             (Some(a), Some(b)) => {
                 assert_eq!(a, b, "Target sample rate does not match up");
                 Some(a)
-            },
+            }
         }
     }
 }

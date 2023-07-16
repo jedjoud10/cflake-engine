@@ -106,7 +106,10 @@ mod shapes {
 
         #[test]
         fn point_aabb() {
-            let aabb = Aabb { min: -vek::Vec3::<f32>::one(), max: vek::Vec3::<f32>::one() };
+            let aabb = Aabb {
+                min: -vek::Vec3::<f32>::one(),
+                max: vek::Vec3::<f32>::one(),
+            };
             assert!(crate::point_aabb(&vek::Vec3::<f32>::zero(), &aabb));
             assert!(crate::point_aabb(&vek::Vec3::<f32>::one(), &aabb));
             assert!(crate::point_aabb(&-vek::Vec3::<f32>::one(), &aabb));

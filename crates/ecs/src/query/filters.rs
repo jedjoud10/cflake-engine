@@ -57,7 +57,11 @@ pub trait QueryFilter {
     fn evaluate_archetype(cached: Self::Cached, archetype: &Archetype) -> bool;
 
     /// Cache the state columns of a specific archetype
-    fn cache_columns<'a>(cached: Self::Cached, archetype: &'a Archetype, ticked: bool) -> Self::Columns<'a>;
+    fn cache_columns<'a>(
+        cached: Self::Cached,
+        archetype: &'a Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'a>;
 
     /// Evaluate a single chunk to check if all the entries within it pass the filter.
     /// When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter.
@@ -169,7 +173,10 @@ pub(crate) fn get_either_states(col: &crate::UntypedColumn, ticked: bool) -> &St
     }
 }
 
-pub(crate) fn get_either_states_mut(col: &mut crate::UntypedColumn, ticked: bool) -> &mut StateColumn {
+pub(crate) fn get_either_states_mut(
+    col: &mut crate::UntypedColumn,
+    ticked: bool,
+) -> &mut StateColumn {
     match ticked {
         true => col.delta_tick_states_mut(),
         false => col.delta_frame_states_mut(),
@@ -188,10 +195,19 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
         archetype.mask().contains(cached)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         cached
             .units()
-            .map(|unit| archetype.table().get(&unit).map(|col| get_either_states(col, ticked)))
+            .map(|unit| {
+                archetype
+                    .table()
+                    .get(&unit)
+                    .map(|col| get_either_states(col, ticked))
+            })
             .collect::<Vec<_>>()
     }
 
@@ -206,7 +222,7 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
                         .unwrap_or_default()
                 })
                 .reduce(|a, b| a & b)
-                .unwrap_or_default()
+                .unwrap_or_default(),
         )
     }
 }
@@ -223,10 +239,19 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
         archetype.mask().contains(cached)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         cached
             .units()
-            .map(|unit| archetype.table().get(&unit).map(|col| get_either_states(col, ticked)))
+            .map(|unit| {
+                archetype
+                    .table()
+                    .get(&unit)
+                    .map(|col| get_either_states(col, ticked))
+            })
             .collect::<Vec<_>>()
     }
 
@@ -241,7 +266,7 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
                         .unwrap_or_default()
                 })
                 .reduce(|a, b| a & b)
-                .unwrap_or_default()
+                .unwrap_or_default(),
         )
     }
 }
@@ -258,7 +283,12 @@ impl<L: QueryLayoutRef> QueryFilter for Contains<L> {
         archetype.mask().contains(cached)
     }
 
-    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype, _ticked: bool) -> Self::Columns<'_> {}
+    fn cache_columns(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+        _ticked: bool,
+    ) -> Self::Columns<'_> {
+    }
 
     fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> ChunkEval {
         ChunkEval::Passthrough
@@ -275,7 +305,12 @@ impl QueryFilter for Always {
         true
     }
 
-    fn cache_columns(_cached: Self::Cached, _archetype: &Archetype, _ticked: bool) -> Self::Columns<'_> {}
+    fn cache_columns(
+        _cached: Self::Cached,
+        _archetype: &Archetype,
+        _ticked: bool,
+    ) -> Self::Columns<'_> {
+    }
 
     fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> ChunkEval {
         ChunkEval::Evaluated(usize::MAX)
@@ -295,7 +330,11 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
         A::evaluate_archetype(cached.0, archetype) && B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype, ticked),
             B::cache_columns(cached.1, archetype, ticked),
@@ -321,7 +360,11 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
         A::evaluate_archetype(cached.0, archetype) || B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype, ticked),
             B::cache_columns(cached.1, archetype, ticked),
@@ -347,7 +390,11 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Xor<A, B> {
         A::evaluate_archetype(cached.0, archetype) ^ B::evaluate_archetype(cached.1, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         (
             A::cache_columns(cached.0, archetype, ticked),
             B::cache_columns(cached.1, archetype, ticked),
@@ -373,7 +420,11 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         !A::evaluate_archetype(cached, archetype)
     }
 
-    fn cache_columns(cached: Self::Cached, archetype: &Archetype, ticked: bool) -> Self::Columns<'_> {
+    fn cache_columns(
+        cached: Self::Cached,
+        archetype: &Archetype,
+        ticked: bool,
+    ) -> Self::Columns<'_> {
         A::cache_columns(cached, archetype, ticked)
     }
 

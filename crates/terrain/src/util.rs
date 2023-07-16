@@ -1,6 +1,7 @@
 use graphics::{
-    Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, Texel,
-    Texture, Texture3D, TextureMipMaps, TextureUsage, TriangleBuffer, Vertex, XY, TextureViewSettings, XYZW, SamplerSettings,
+    Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, SamplerSettings, Texel,
+    Texture, Texture3D, TextureMipMaps, TextureUsage, TextureViewSettings, TriangleBuffer, Vertex,
+    XY, XYZW,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -49,13 +50,20 @@ pub(crate) fn create_empty_buffer<T: GpuPod, const TYPE: u32>(
 }
 
 // Create a 3D storage texture with null contents with the specified size
-pub(crate) fn create_texture3d<T: Texel>(graphics: &Graphics, size: u32, usage: TextureUsage, sampling: Option<SamplerSettings>) -> Texture3D<T> {
+pub(crate) fn create_texture3d<T: Texel>(
+    graphics: &Graphics,
+    size: u32,
+    usage: TextureUsage,
+    sampling: Option<SamplerSettings>,
+) -> Texture3D<T> {
     Texture3D::<T>::from_texels(
         graphics,
         None,
         vek::Extent3::broadcast(size),
         usage,
-        &[TextureViewSettings::whole::<<Texture3D<T> as Texture>::Region>()],
+        &[TextureViewSettings::whole::<
+            <Texture3D<T> as Texture>::Region,
+        >()],
         sampling,
         TextureMipMaps::Disabled,
     )
@@ -69,25 +77,20 @@ pub(crate) fn generation_priority_heuristic(
     viewer_forward: vek::Vec3<f32>,
 ) -> f32 {
     // Favors chunks that are near the viewer
-    let mut priority =
-        (1.0 / viewer_position.distance(node_center).max(1.0)) * 10.0;
+    let mut priority = (1.0 / viewer_position.distance(node_center).max(1.0)) * 10.0;
 
     // Favors chunks that are in front of the viewer
-    priority *= viewer_forward
-        .dot((node_center - viewer_position).normalized())
-        * 5.0;
+    priority *= viewer_forward.dot((node_center - viewer_position).normalized()) * 5.0;
 
     return priority.clamp(0.0f32, 1000.0f32);
 }
 
 // Convert packed vertices to normal vertices (with scale) for collisions
-pub(crate) fn transform_vertices(
-    packed: Vec<vek::Vec4<f32>>,
-    node: Node,
-) -> Vec<vek::Vec3<f32>> {
+pub(crate) fn transform_vertices(packed: Vec<vek::Vec4<f32>>, node: Node) -> Vec<vek::Vec3<f32>> {
     let factor = node.size() as f32 / (node.size() as f32 - 4.0);
 
-    packed.into_iter()
+    packed
+        .into_iter()
         .map(|float_packed| {
             let uint_packed = float_packed.map(|x| u32::from_ne_bytes(x.to_ne_bytes()));
             let packed_cell_position = uint_packed.x;
@@ -98,11 +101,12 @@ pub(crate) fn transform_vertices(
                 let bytes = packed_cell_position.to_ne_bytes();
                 vek::Vec4::from_slice(&bytes).map(|byte| byte as f32)
             };
-            
+
             // Unpack the packed inner cell position
             let inner_position = {
                 let bytes = packed_inner_position.to_ne_bytes();
-                vek::Vec4::from_slice(&bytes).map(|byte| i8::from_ne_bytes([byte]) as f32 / 127.0f32)
+                vek::Vec4::from_slice(&bytes)
+                    .map(|byte| i8::from_ne_bytes([byte]) as f32 / 127.0f32)
             };
 
             (cell_position + inner_position).xyz() * factor

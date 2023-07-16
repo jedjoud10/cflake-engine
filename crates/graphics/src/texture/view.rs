@@ -1,7 +1,10 @@
-use std::{ops::RangeBounds, marker::PhantomData, cell::RefCell};
+use std::{cell::RefCell, marker::PhantomData, ops::RangeBounds};
 use utils::BitSet;
 
-use crate::{TextureViewDimension, Texture, Region, Extent, ViewReadError, Texel, ViewWriteError, ViewCopyError, ViewClearError, RenderTarget, ViewAsTargetError, TextureUsage};
+use crate::{
+    Extent, Region, RenderTarget, Texel, Texture, TextureUsage, TextureViewDimension,
+    ViewAsTargetError, ViewClearError, ViewCopyError, ViewReadError, ViewWriteError,
+};
 
 // The view settings that we should create for the texture
 // These will be given to the texture as an array to allow many views to be created
@@ -28,10 +31,7 @@ impl TextureViewSettings {
 }
 
 // Given the whole region of a view and an optional subregion return a valid region
-fn handle_optional_subregion<R: Region>(
-    whole: R,
-    optional: Option<R>,
-) -> Option<R> {
+fn handle_optional_subregion<R: Region>(whole: R, optional: Option<R>) -> Option<R> {
     // Make sure the "offset" doesn't cause reads outside the texture
     if let Some(subregion) = optional {
         if whole.is_larger_than(subregion) {
@@ -42,7 +42,6 @@ fn handle_optional_subregion<R: Region>(
     // Get the mip level subregion if the given one is None
     return Some(optional.unwrap_or(whole));
 }
-
 
 pub fn read<T: Texture>(
     texture: &T,
@@ -247,14 +246,7 @@ pub fn splat<T: Texture>(
     };
 
     let texels = vec![val; volume];
-    write(
-        texture,
-        view,
-        settings,
-        whole,
-        subregion,
-        &texels
-    )
+    write(texture, view, settings, whole, subregion, &texels)
 }
 
 // Singular texture view that might contain multiple layers / mips
@@ -277,22 +269,31 @@ impl<'a, T: Texture> TextureViewRef<'a, T> {
 
     // Get the view's dimensions (returns none if we are accessing multiple mips)
     pub fn dimensions(&self) -> Option<<T::Region as Region>::E> {
-        (self.levels() == 1).then(|| self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level))
+        (self.levels() == 1).then(|| {
+            self.texture
+                .dimensions()
+                .mip_level_dimensions(self.settings.base_mip_level)
+        })
     }
 
     // Get the view's region (returns none if we are accessing multiple mips)
     pub fn region(&self) -> Option<T::Region> {
-        self.dimensions().map(|d| <T::Region as Region>::from_extent(d))
+        self.dimensions()
+            .map(|d| <T::Region as Region>::from_extent(d))
     }
 
     // Get the number of visible levels in this view
     pub fn levels(&self) -> u32 {
-        self.settings.mip_level_count.unwrap_or(self.texture.levels())
+        self.settings
+            .mip_level_count
+            .unwrap_or(self.texture.levels())
     }
 
     // Get the number of visible layers in this view
     pub fn layers(&self) -> u32 {
-        self.settings.array_layer_count.unwrap_or(self.texture.layers())
+        self.settings
+            .array_layer_count
+            .unwrap_or(self.texture.layers())
     }
 }
 
@@ -317,7 +318,10 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
     // Get the view's dimensions (returns none if we are accessing multiple mips)
     pub fn dimensions(&self) -> Option<<T::Region as Region>::E> {
         (self.levels() == 1).then(|| {
-            let dims = self.texture.dimensions().mip_level_dimensions(self.settings.base_mip_level);
+            let dims = self
+                .texture
+                .dimensions()
+                .mip_level_dimensions(self.settings.base_mip_level);
             let (x, y, _) = dims.decompose().into_tuple();
             let z = self.layers();
             <<T::Region as Region>::E as Extent>::new(x, y, z)
@@ -326,17 +330,22 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
 
     // Get the view's region (returns none if we are accessing multiple mips)
     pub fn region(&self) -> Option<T::Region> {
-        self.dimensions().map(|d| <T::Region as Region>::from_extent(d))
+        self.dimensions()
+            .map(|d| <T::Region as Region>::from_extent(d))
     }
 
     // Get the number of visible levels in this view
     pub fn levels(&self) -> u32 {
-        self.settings.mip_level_count.unwrap_or(self.texture.levels())
+        self.settings
+            .mip_level_count
+            .unwrap_or(self.texture.levels())
     }
 
     // Get the number of visible layers in this view
     pub fn layers(&self) -> u32 {
-        self.settings.array_layer_count.unwrap_or(self.texture.layers())
+        self.settings
+            .array_layer_count
+            .unwrap_or(self.texture.layers())
     }
 
     // Write some texels to the texture view
@@ -354,7 +363,7 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
             src,
         )
     }
-    
+
     // Fill the view region with a repeating value specified by "val"
     pub fn splat(
         &mut self,
@@ -372,7 +381,7 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
     }
 
     // Try to use the texture view as a renderable target.
-    // This will fail if the texture isn't supported as render target 
+    // This will fail if the texture isn't supported as render target
     // or if the view's dimensions don't correspond to a 2D image
     pub fn as_render_target(&mut self) -> Result<RenderTarget<T::T>, ViewAsTargetError> {
         if !self.texture.usage().contains(TextureUsage::TARGET) {

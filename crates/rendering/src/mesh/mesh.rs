@@ -9,8 +9,8 @@ use crate::{
 use assets::Asset;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
-    Triangle, TriangleBuffer, Vertex, BufferInitializationError,
+    BufferInitializationError, BufferMode, BufferUsage, DrawCountIndirectBuffer,
+    DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer, Vertex,
 };
 use obj::TexturedVertex;
 
@@ -69,27 +69,40 @@ impl Mesh<Direct> {
         triangles: &[Triangle<u32>],
         aabb: Option<math::Aabb<f32>>,
     ) -> Result<Self, MeshInitializationError> {
-        let positions = positions.map(|slice| {
-            AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage)
-        });
-        let normals = normals.map(|slice| {
-            AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage)
-        });
-        let tangents = tangents.map(|slice| {
-            AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage)
-        });
-        let tex_coords = tex_coords.map(|slice| {
-            AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage)
-        });
+        let positions = positions
+            .map(|slice| AttributeBuffer::<Position>::from_slice(graphics, slice, mode, usage));
+        let normals = normals
+            .map(|slice| AttributeBuffer::<Normal>::from_slice(graphics, slice, mode, usage));
+        let tangents = tangents
+            .map(|slice| AttributeBuffer::<Tangent>::from_slice(graphics, slice, mode, usage));
+        let tex_coords = tex_coords
+            .map(|slice| AttributeBuffer::<TexCoord>::from_slice(graphics, slice, mode, usage));
         let triangles = Some(TriangleBuffer::from_slice(graphics, triangles, mode, usage));
 
-        let positions = positions.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
-        let normals = normals.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
-        let tangents = tangents.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
-        let tex_coords = tex_coords.transpose().map_err(MeshInitializationError::AttributeBufferInitialization)?;
-        let triangles = triangles.transpose().map_err(MeshInitializationError::TriangleBufferInitialization)?;
+        let positions = positions
+            .transpose()
+            .map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let normals = normals
+            .transpose()
+            .map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tangents = tangents
+            .transpose()
+            .map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let tex_coords = tex_coords
+            .transpose()
+            .map_err(MeshInitializationError::AttributeBufferInitialization)?;
+        let triangles = triangles
+            .transpose()
+            .map_err(MeshInitializationError::TriangleBufferInitialization)?;
 
-        Self::from_buffers(positions, normals, tangents, tex_coords, triangles.unwrap(), aabb)
+        Self::from_buffers(
+            positions,
+            normals,
+            tangents,
+            tex_coords,
+            triangles.unwrap(),
+            aabb,
+        )
     }
 
     // Create a new mesh from the attribute buffers
@@ -586,7 +599,7 @@ impl Asset for Mesh {
             tangents.as_deref(),
             tex_coords.as_deref(),
             &triangles,
-            aabb
+            aabb,
         )
         .map_err(MeshImportError::Initialization)
     }

@@ -89,7 +89,9 @@ impl Octree {
         self.nodes.push(Node {
             index: 0,
             parent: usize::MAX,
-            position: vek::Vec3::broadcast((-(2i32.pow(self.max_depth)) * self.node_size as i32) / 2),
+            position: vek::Vec3::broadcast(
+                (-(2i32.pow(self.max_depth)) * self.node_size as i32) / 2,
+            ),
             center: vek::Vec3::zero(),
             depth: 0,
             size: (2u32.pow(self.max_depth) * self.node_size),
@@ -104,7 +106,9 @@ impl Octree {
             let index = node.index;
 
             // Check if we should split the node into multiple
-            let split = targets.iter().any(|target| self.heuristic.check(target, &*node));
+            let split = targets
+                .iter()
+                .any(|target| self.heuristic.check(target, &*node));
 
             // Add the child nodes to check (this node became a parent node)
             let children = if split && node.depth < self.max_depth {

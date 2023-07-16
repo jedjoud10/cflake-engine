@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Amplify, Buffered, Easing, Fade, Value, EasingDirection, Mix, Repeat};
+use crate::{Amplify, Buffered, Easing, EasingDirection, Fade, Mix, Repeat, Value};
 
 // Given to the sources when they execute their "sample" method
 pub struct SourceInput {
@@ -55,18 +55,19 @@ pub trait Source: Sync + Send {
     }
 
     // Mix two audio sources together (simple addition)
-    fn mix<B: Source, V: Value>(self, other: B, control: V) -> Mix<Self, B, V> 
+    fn mix<B: Source, V: Value>(self, other: B, control: V) -> Mix<Self, B, V>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         Mix(self, other, V::new_storage_from(control))
     }
 
     // Repeat the given source N times after it completes execution
     // No-op if the source doesn't end
-    fn repeat_with_duration(self, times: usize) -> Repeat<Self> 
-    where 
-        Self: Sized
+    fn repeat_with_duration(self, times: usize) -> Repeat<Self>
+    where
+        Self: Sized,
     {
         Repeat(self, times)
-    } 
+    }
 }

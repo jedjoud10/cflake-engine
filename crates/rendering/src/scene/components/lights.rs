@@ -26,10 +26,10 @@ pub struct PointLight {
     // Intensity of the point light
     // TODO: Get units
     pub intensity: f32,
-    
+
     // Max light distance used for attenuation calculations
     pub radius: f32,
-    
+
     // RGB8 color of the light
     pub color: vek::Rgb<u8>,
 }

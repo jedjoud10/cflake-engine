@@ -49,7 +49,7 @@ pub type KeyboardButton = winit::event::VirtualKeyCode;
 /// Mouse button / key
 pub type MouseButton = winit::event::MouseButton;
 
-/// Gamepad button / key 
+/// Gamepad button / key
 pub type GamepadButton = gilrs::Button;
 
 /// A button that might come from the keyboard, mouse, or a gamepad

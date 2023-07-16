@@ -20,14 +20,13 @@ pub struct Physics {
 impl Physics {
     pub(crate) fn new() -> Self {
         let mut rigid_body_set = RigidBodySet::new();
-        let mut collider_set = ColliderSet::new();    
+        let mut collider_set = ColliderSet::new();
 
-
-        let mut integration_parameters = IntegrationParameters::default();        
+        let mut integration_parameters = IntegrationParameters::default();
         integration_parameters.set_inv_dt(utils::TICKS_PER_SEC as f32);
         //integration_parameters.allowed_linear_error = 0.0001;
         //integration_parameters.max_penetration_correction = 0.001;
-        
+
         let mut physics_pipeline = PhysicsPipeline::new();
         let mut island_manager = IslandManager::new();
         let mut broad_phase = BroadPhase::new();
@@ -68,10 +67,10 @@ impl Physics {
             multibody_joints,
             ccd_solver,
             query,
-            gravity
+            gravity,
         } = self;
         let gravity = crate::util::vek_vec_to_na_vec(*gravity);
-    
+
         physics_pipeline.step(
             &gravity,
             &integration_parameters,

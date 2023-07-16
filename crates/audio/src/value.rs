@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use atomic_float::AtomicF32;
 
-
-// F32 value that can be passed as parameter to sources 
+// F32 value that can be passed as parameter to sources
 pub trait Value: Sync + Send {
     type Storage: Sync + Send;
 
     fn new_storage_from(self) -> Self::Storage;
     fn cache(storage: &mut Self::Storage);
-    fn fetch(storage: &Self::Storage) -> f32; 
+    fn fetch(storage: &Self::Storage) -> f32;
 }
 
 impl Value for f32 {

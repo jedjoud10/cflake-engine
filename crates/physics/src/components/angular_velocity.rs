@@ -3,15 +3,15 @@ use vek::Quaternion;
 use ecs::Component;
 use std::{
     fmt::Debug,
-    ops::{Deref, DerefMut}, marker::PhantomData,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct AngularVelocity<Space: 'static>(vek::Vec3<f32>, PhantomData<Space>);
 
-impl<Space: 'static> AngularVelocity<Space> {
-}
+impl<Space: 'static> AngularVelocity<Space> {}
 
 impl<Space: 'static> Debug for AngularVelocity<Space> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

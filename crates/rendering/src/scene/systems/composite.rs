@@ -1,4 +1,6 @@
-use crate::{Compositor, DeferredRenderer, PostProcessUniform, ShadowMap, ShadowMapping, Environment};
+use crate::{
+    Compositor, DeferredRenderer, Environment, PostProcessUniform, ShadowMap, ShadowMapping,
+};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -30,7 +32,7 @@ fn update(world: &mut World) {
     let value = compositor.post_process;
     compositor.post_process_buffer.write(&[value], 0).unwrap();
 
-    // Get G-Buffer sampled textures 
+    // Get G-Buffer sampled textures
     let gbuffer_albedo_map = &renderer.gbuffer_albedo_texture;
     let gbuffer_normal_map = &renderer.gbuffer_normal_texture;
     let gbuffer_mask_map = &renderer.gbuffer_mask_texture;
@@ -75,13 +77,19 @@ fn update(world: &mut World) {
                 .set_sampled_texture("environment_map", &environment.environment_map)
                 .unwrap();
             group
-                .set_sampler("environment_map_sampler", environment.environment_map.sampler().unwrap())
+                .set_sampler(
+                    "environment_map_sampler",
+                    environment.environment_map.sampler().unwrap(),
+                )
                 .unwrap();
             group
                 .set_sampled_texture("ibl_diffuse_map", &environment.diffuse_ibl_map)
                 .unwrap();
             group
-                .set_sampler("ibl_diffuse_map_sampler", environment.diffuse_ibl_map.sampler().unwrap())
+                .set_sampler(
+                    "ibl_diffuse_map_sampler",
+                    environment.diffuse_ibl_map.sampler().unwrap(),
+                )
                 .unwrap();
         })
         .unwrap();
@@ -89,9 +97,15 @@ fn update(world: &mut World) {
     // Set the maps that we will sample
     active
         .set_bind_group(1, |group| {
-            group.set_sampled_texture("gbuffer_albedo_map", gbuffer_albedo_map).unwrap();
-            group.set_sampled_texture("gbuffer_normal_map", gbuffer_normal_map).unwrap();
-            group.set_sampled_texture("gbuffer_mask_map", gbuffer_mask_map).unwrap();
+            group
+                .set_sampled_texture("gbuffer_albedo_map", gbuffer_albedo_map)
+                .unwrap();
+            group
+                .set_sampled_texture("gbuffer_normal_map", gbuffer_normal_map)
+                .unwrap();
+            group
+                .set_sampled_texture("gbuffer_mask_map", gbuffer_mask_map)
+                .unwrap();
             group.set_sampled_texture("depth_map", depth_map).unwrap();
         })
         .unwrap();

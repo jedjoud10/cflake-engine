@@ -57,7 +57,6 @@ pub fn apply_vec_settings(
     }
 }
 
-
 pub fn optimize(
     optimize_vertex_cache: bool,
     optimize_vertex_fetch: bool,
@@ -75,7 +74,7 @@ pub fn optimize(
         fn decode_position(&self) -> [f32; 3] {
             [self.0.x, self.0.y, self.0.z]
         }
-    } 
+    }
     let positions = positions.as_mut().unwrap();
     let vertex_count = positions.len();
     let indices: &mut [u32] = bytemuck::cast_slice_mut(triangles);

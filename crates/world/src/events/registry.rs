@@ -1,10 +1,13 @@
 use std::{any::TypeId, time::Duration};
 
-use crate::{Caller, CallerId, Event, RegistrySortingError, Rule, StageError, StageId, SystemId, EventTimings};
-use ahash::{AHashMap};
+use crate::{
+    Caller, CallerId, Event, EventTimings, RegistrySortingError, Rule, StageError, StageId,
+    SystemId,
+};
+use ahash::AHashMap;
 
 use lazy_static::lazy_static;
-use petgraph::{Graph, visit::Topo};
+use petgraph::{visit::Topo, Graph};
 
 // Reference point stages that we will use to insert more events into the registry
 lazy_static! {
@@ -112,7 +115,8 @@ impl<C: Caller> Registry<C> {
 
             // Then insert the event
             self.events.push((stage, boxed));
-            self.timings_per_event.push(EventTimings::new(stage, C::persistent()));
+            self.timings_per_event
+                .push(EventTimings::new(stage, C::persistent()));
 
             Ok(rules)
         }
@@ -124,7 +128,8 @@ impl<C: Caller> Registry<C> {
 
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.events.sort_by_key(|(x, _)| &indices[&x.system]);
-        self.timings_per_event.sort_by_key(|x| &indices[&x.id().system]);
+        self.timings_per_event
+            .sort_by_key(|x| &indices[&x.id().system]);
 
         log::debug!(
             "Sorted {} events for {} registry",
@@ -173,15 +178,16 @@ fn sort(
     let mut graph = Graph::<SystemId, &Rule>::new();
 
     // Convert all stages into graph nodes
-    let mut nodes = map.iter().map(|node| {
-        (node.0.system, graph.add_node(node.0.system.clone()))
-    }).collect::<AHashMap<_, _>>();
-    
+    let mut nodes = map
+        .iter()
+        .map(|node| (node.0.system, graph.add_node(node.0.system.clone())))
+        .collect::<AHashMap<_, _>>();
+
     // Insert the default user system
     let sid = crate::fetch_system_id(&crate::user);
     let user = graph.add_node(sid);
     nodes.insert(sid, user);
-    
+
     // Insert the default post user system
     let sid = crate::fetch_system_id(&crate::post_user);
     let post_user = graph.add_node(sid);
@@ -189,14 +195,13 @@ fn sort(
 
     // Create the edges (rules) between the nodes (stages)
     for (node, rules) in map.iter() {
-        
         // edges follow the direction of execution
         for rule in *rules {
             let this = nodes[&node.system];
             let reference = rule.reference();
-            let reference = *nodes.get(&reference.system).ok_or_else(||
-                RegistrySortingError::MissingStage(**node, reference)
-            )?;
+            let reference = *nodes
+                .get(&reference.system)
+                .ok_or_else(|| RegistrySortingError::MissingStage(**node, reference))?;
 
             match rule {
                 // dir: a -> b.

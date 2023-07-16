@@ -164,7 +164,7 @@ pub struct Shutdown(());
 impl Caller for Shutdown {
     type DynFn = dyn FnMut(&mut World);
     type Args<'a, 'p> = &'p mut World where 'a: 'p;
-    
+
     fn persistent() -> bool {
         false
     }

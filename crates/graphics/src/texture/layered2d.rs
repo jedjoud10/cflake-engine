@@ -5,7 +5,8 @@ use smallvec::SmallVec;
 
 use crate::{
     Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture, Texture2D,
-    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings,
+    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureUsage,
+    TextureViewSettings,
 };
 
 // A layered 2D texture that contains multiple texels that are stored in multiple layers

@@ -6,7 +6,7 @@ pub enum MouseAxis {
     /// X position of the mouse
     PositionX,
 
-    /// Y position of the mouse 
+    /// Y position of the mouse
     PositionY,
 
     /// Current scroll value (integral of ScrollDelta)

@@ -6,14 +6,15 @@ use std::{
     ffi::OsStr,
     marker::PhantomData,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::{
         mpsc::{Receiver, Sender},
         Arc,
-    }, str::FromStr,
+    },
 };
 
 /// This is a handle to a specific asset that we are currently loading in asynchronously
-/// 
+///
 /// This can be used to fetch for the state of the asset and to fetch for it after it loaded completely
 pub struct AsyncHandle<A: Asset> {
     _phantom: PhantomData<A>,

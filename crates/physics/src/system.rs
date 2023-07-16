@@ -1,13 +1,21 @@
 use std::cell::Cell;
 
-use rapier3d::prelude::*;
-use utils::{Time, Storage, Handle};
+use crate::{
+    util, AngularVelocity, CapsuleCollider, CharacterController, CuboidCollider, GenericCollider,
+    MeshCollider, Physics, PhysicsSurface, RigidBody, SphereCollider, Velocity,
+};
+use crate::{
+    CurrentTickedAngularVelocity, CurrentTickedVelocity, LastTickedAngularVelocity,
+    LastTickedVelocity,
+};
+use coords::{
+    CurrentTickedPosition, CurrentTickedRotation, LastTickedPosition, LastTickedRotation,
+};
 use coords::{Position, Rotation};
-use ecs::{Scene, added, modified, Entity, Component};
-use world::{System, World, post_user, user};
-use crate::{RigidBody, Physics, SphereCollider, CuboidCollider, AngularVelocity, Velocity, MeshCollider, PhysicsSurface, CapsuleCollider, CharacterController, util, GenericCollider};
-use crate::{LastTickedVelocity, LastTickedAngularVelocity, CurrentTickedVelocity, CurrentTickedAngularVelocity};
-use coords::{LastTickedPosition, LastTickedRotation, CurrentTickedPosition, CurrentTickedRotation};
+use ecs::{added, modified, Component, Entity, Scene};
+use rapier3d::prelude::*;
+use utils::{Handle, Storage, Time};
+use world::{post_user, user, System, World};
 
 // This will spawn in the required rapier counter-part of the components
 fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) {
@@ -27,7 +35,6 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
-
         if !_type.is_fixed() && rigid_body.interpolated {
             interpolated_entities.push(*entity);
         }
@@ -39,7 +46,9 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         bodies: &mut RigidBodySet,
     ) {
         let filter = added::<&C>();
-        for (entity, component, rigid_body) in scene.query_mut_with::<(&Entity, &mut C, &RigidBody)>(filter) {
+        for (entity, component, rigid_body) in
+            scene.query_mut_with::<(&Entity, &mut C, &RigidBody)>(filter)
+        {
             let Some(handle) = rigid_body.handle else {
                 continue;
             };
@@ -48,13 +57,11 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
                 let handle = colliders.insert_with_parent(collider, handle, bodies);
                 C::set_handle(component, handle);
             }
-        }    
+        }
     }
 
     let Physics {
-        bodies,
-        colliders,
-        ..
+        bodies, colliders, ..
     } = &mut *physics;
 
     // Insert the rapier colliders
@@ -66,25 +73,22 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
     // Automatically add the ticked coord components
     for entity in interpolated_entities {
         let mut entry = scene.entry_mut(entity).unwrap();
-        
+
         let query = entry.as_query::<(&Position, &Rotation, &Velocity, &AngularVelocity)>();
 
-        if let Some((
-            position,
-            rotation,
-            velocity,
-            angular_velocity
-        )) = query {
-            entry.insert((
-                LastTickedPosition::from(**position),
-                LastTickedRotation::from(**rotation),
-                LastTickedVelocity::from(**velocity),
-                LastTickedAngularVelocity::from(**angular_velocity),
-                CurrentTickedPosition::from(**position),
-                CurrentTickedRotation::from(**rotation),
-                CurrentTickedVelocity::from(**velocity),
-                CurrentTickedAngularVelocity::from(**angular_velocity),
-            )).unwrap();
+        if let Some((position, rotation, velocity, angular_velocity)) = query {
+            entry
+                .insert((
+                    LastTickedPosition::from(**position),
+                    LastTickedRotation::from(**rotation),
+                    LastTickedVelocity::from(**velocity),
+                    LastTickedAngularVelocity::from(**angular_velocity),
+                    CurrentTickedPosition::from(**position),
+                    CurrentTickedRotation::from(**rotation),
+                    CurrentTickedVelocity::from(**velocity),
+                    CurrentTickedAngularVelocity::from(**angular_velocity),
+                ))
+                .unwrap();
         }
     }
 }
@@ -104,16 +108,11 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
         scene: &mut Scene,
         colliders: &mut ColliderSet,
         islands: &mut IslandManager,
-        bodies: &mut RigidBodySet
+        bodies: &mut RigidBodySet,
     ) {
         for removed in scene.removed_mut::<C>() {
             if let Some(handle) = removed.handle() {
-                colliders.remove(
-                    handle,
-                    islands,
-                    bodies,
-                    true,
-                );
+                colliders.remove(handle, islands, bodies, true);
             }
         }
     }
@@ -127,7 +126,7 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
                 colliders,
                 impulse_joints,
                 multibody_joints,
-                false
+                false,
             );
         }
     }
@@ -140,8 +139,18 @@ fn pre_step_despawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene
 }
 
 // This will synchronize the rapier counter-part to the data of the components
-fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfaces: &Storage<PhysicsSurface>) {
-    let query = scene.query_mut::<(&mut RigidBody, Option<&Position>, Option<&Rotation>, Option<&Velocity>, Option<&AngularVelocity>)>();
+fn pre_step_sync_rapier_to_comps(
+    physics: &mut Physics,
+    scene: &mut Scene,
+    surfaces: &Storage<PhysicsSurface>,
+) {
+    let query = scene.query_mut::<(
+        &mut RigidBody,
+        Option<&Position>,
+        Option<&Rotation>,
+        Option<&Velocity>,
+        Option<&AngularVelocity>,
+    )>();
     for (rigid_body, position, rotation, velocity, angular_velocity) in query {
         if let Some(handle) = rigid_body.handle {
             let rb = physics.bodies.get_mut(handle).unwrap();
@@ -190,18 +199,21 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
                 rb.apply_impulse_at_point(impulse, point, true);
             }
         }
-    }    
+    }
 
     // Common function that will update the inner rapier data of colliders
     fn update_rapier_colliders<C: Component + GenericCollider>(
-        scene: &mut Scene, 
+        scene: &mut Scene,
         surfaces: &Storage<PhysicsSurface>,
         physics: &mut Physics,
     ) {
         for (entity, component, rb) in scene.query_mut::<(&Entity, &mut C, &RigidBody)>() {
             if C::modified(component).take() {
                 if let Some(handle) = C::handle(component) {
-                    let physics_surface = C::material(component).as_ref().map(|x| surfaces[x]).unwrap_or_default();
+                    let physics_surface = C::material(component)
+                        .as_ref()
+                        .map(|x| surfaces[x])
+                        .unwrap_or_default();
                     let collider = physics.colliders.get_mut(handle).unwrap();
                     collider.set_friction(physics_surface.friction);
                     collider.set_restitution(physics_surface.restitution);
@@ -217,8 +229,12 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
                     log::debug!("Rebuild collider...");
                     if let Some(collider) = C::build_collider(component, entity) {
                         log::debug!("Rebuild collider2...");
-                        
-                        let handle = physics.colliders.insert_with_parent(collider, rb.handle.unwrap(), &mut physics.bodies);
+
+                        let handle = physics.colliders.insert_with_parent(
+                            collider,
+                            rb.handle.unwrap(),
+                            &mut physics.bodies,
+                        );
                         C::set_handle(component, handle)
                     }
                 }
@@ -235,7 +251,7 @@ fn pre_step_sync_rapier_to_comps(physics: &mut Physics, scene: &mut Scene, surfa
 
 // Checks all the character controllers in the world and updates them
 fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
-    for (cc, position, rotation, rb, velocity,) in scene.query_mut::<(
+    for (cc, position, rotation, rb, velocity) in scene.query_mut::<(
         &mut CharacterController,
         &Position,
         &Rotation,
@@ -243,7 +259,7 @@ fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Sce
         &mut Velocity,
     )>() {
         let direction = cc.direction.try_normalized().unwrap_or_default();
-        
+
         // Current velocity and wished velocity
         let current = vek::Vec2::new(velocity.x, velocity.z);
         let wished = vek::Vec2::new(direction.x, direction.z) * cc.max_speed;
@@ -271,7 +287,7 @@ fn tick(world: &mut World) {
     let surfaces = world.get::<Storage<PhysicsSurface>>().unwrap();
     let time = world.get::<Time>().unwrap();
     let physics = &mut *_physics;
-    let scene = &mut * _scene;
+    let scene = &mut *_scene;
 
     // Executed before the physics step
     pre_step_spawn_rapier_counterparts(physics, scene);
@@ -295,7 +311,7 @@ fn tick(world: &mut World) {
             &CurrentTickedVelocity,
             &CurrentTickedAngularVelocity,
         )>();
-    
+
         for (
             rigid_body,
             last_position,
@@ -306,7 +322,8 @@ fn tick(world: &mut World) {
             next_rotation,
             next_velocity,
             next_angular_velocity,
-        ) in query {
+        ) in query
+        {
             if !rigid_body._type.is_fixed() {
                 **last_position = **next_position;
                 **last_rotation = **next_rotation;
@@ -315,25 +332,23 @@ fn tick(world: &mut World) {
             }
         }
     }
-    
+
     // Step through the physics simulation each tick
     physics.step();
 
-    fn set_sub_tick_coords_type<TimeFrame: 'static>(scene: &mut Scene, bodies: &mut RigidBodySet, interpolated: bool) {
+    fn set_sub_tick_coords_type<TimeFrame: 'static>(
+        scene: &mut Scene,
+        bodies: &mut RigidBodySet,
+        interpolated: bool,
+    ) {
         let query = scene.query_mut::<(
             &mut RigidBody,
             &mut coords::UnmarkedPosition<coords::Global<TimeFrame>>,
             &mut coords::UnmarkedRotation<coords::Global<TimeFrame>>,
             &mut crate::UnmarkedVelocity<coords::Global<TimeFrame>>,
-            &mut crate::UnmarkedAngularVelocity<coords::Global<TimeFrame>>
+            &mut crate::UnmarkedAngularVelocity<coords::Global<TimeFrame>>,
         )>();
-        for (
-            rigid_body,
-            position,
-            rotation,
-            velocity,
-            angular_velocity
-        ) in query {
+        for (rigid_body, position, rotation, velocity, angular_velocity) in query {
             if let Some(handle) = rigid_body.handle {
                 if !rigid_body._type.is_fixed() && (rigid_body.interpolated == interpolated) {
                     let rb = bodies.get_mut(handle).unwrap();
@@ -400,25 +415,28 @@ fn update(world: &mut World) {
         current_position,
         current_rotation,
         current_velocity,
-        current_angular_velocity
-    ) in query {
+        current_angular_velocity,
+    ) in query
+    {
         if !rigid_body._type.is_fixed() && rigid_body.interpolated {
             **current_position = vek::Lerp::lerp(**last_position, **next_position, t);
             **current_rotation = vek::Slerp::slerp(**last_rotation, **next_rotation, t);
             **current_velocity = vek::Lerp::lerp(**last_velocity, **next_velocity, t);
-            **current_angular_velocity = vek::Lerp::lerp(**last_angular_velocity, **next_angular_velocity, t);
+            **current_angular_velocity =
+                vek::Lerp::lerp(**last_angular_velocity, **next_angular_velocity, t);
         }
     }
 }
 
-
 // Create the main physics system that will be responsible for stepping through the Rapier simulation
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
-    system.insert_tick(tick)
+    system
+        .insert_tick(tick)
         .after(post_user)
         .before(ecs::post_frame_or_tick);
-    system.insert_update(update)
+    system
+        .insert_update(update)
         .after(post_user)
         .before(ecs::post_frame_or_tick)
         .before(rendering::systems::rendering::system);

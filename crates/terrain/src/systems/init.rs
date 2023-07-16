@@ -1,6 +1,7 @@
 use crate::{
     ChunkCuller, ChunkManager, LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager,
-    MeshGenerator, Terrain, TerrainMaterial, TerrainSettings, PermTriangles, PermVertices, VoxelGenerator,
+    MeshGenerator, PermTriangles, PermVertices, Terrain, TerrainMaterial, TerrainSettings,
+    VoxelGenerator,
 };
 
 use assets::Assets;

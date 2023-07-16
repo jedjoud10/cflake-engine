@@ -10,8 +10,8 @@ use std::{
     },
 };
 
-use crate::Handle;
 use super::Weak;
+use crate::Handle;
 
 // Internal storage cache
 pub(super) struct Trackers {
@@ -21,7 +21,7 @@ pub(super) struct Trackers {
 }
 
 // Strongly typed utility cache that stores some values that can be fetched by a ``Handle``
-// 
+//
 pub struct Storage<T: 'static> {
     map: SlotMap<DefaultKey, Option<T>>,
     trackers: Arc<Trackers>,
@@ -69,7 +69,7 @@ impl<T: 'static> Storage<T> {
             _phantom: PhantomData,
             trackers: self.trackers.clone(),
             key,
-        } 
+        }
     }
 
     // Fill a reserved spot by a weak handle

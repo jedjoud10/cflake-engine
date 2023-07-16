@@ -1,7 +1,10 @@
-use std::{sync::{
-    atomic::{AtomicU32, Ordering},
-    Arc,
-}, time::{Duration, Instant}};
+use std::{
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
+};
 
 use crate::{AudioClip, AudioListener, Source, SourceInput};
 use atomic_float::AtomicF32;
@@ -79,8 +82,10 @@ pub(super) fn build_clip_output_stream(
         .iter()
         .cloned()
         .filter(move |config_range| {
-            let channels = channels.map(|channels| config_range.channels() == channels).unwrap_or(true);
-            
+            let channels = channels
+                .map(|channels| config_range.channels() == channels)
+                .unwrap_or(true);
+
             let (min, max) = if let Some(sample_rate) = sample_rate {
                 let max = config_range.max_sample_rate().0 >= sample_rate;
                 let min = config_range.min_sample_rate().0 <= sample_rate;
@@ -96,9 +101,7 @@ pub(super) fn build_clip_output_stream(
         })
         .map(move |p| {
             let sample_rate = sample_rate.unwrap_or(p.max_sample_rate().0);
-            p
-                .with_sample_rate(cpal::SampleRate(sample_rate))
-                .config()
+            p.with_sample_rate(cpal::SampleRate(sample_rate)).config()
         });
 
     // Pick the first config available or resample if needed
@@ -200,12 +203,7 @@ pub(super) fn build_clip_output_stream(
     };
 
     // Create the raw CPAL stream
-    build_output_raw_stream(
-        config,
-        &player.device,
-        player.volume.clone(),
-        src
-    )
+    build_output_raw_stream(config, &player.device, player.volume.clone(), src)
 }
 
 // This function will take in a stream config and a device and it will create the CPAL stream for us
@@ -229,7 +227,7 @@ pub(super) fn build_output_raw_stream(
 
             // Read the volume values from the player
             let volume = volume.load(Ordering::Relaxed);
-            
+
             // Probably could be optimized but works okay for now
             for frame in dst.chunks_mut(channels as usize) {
                 let mut channel = 0;
@@ -244,14 +242,14 @@ pub(super) fn build_output_raw_stream(
                         given_sample_rate: sample_rate,
                         duration,
                     };
-    
+
                     // Fetch the next sample
                     if let Some(value) = source.sample(&input) {
                         *sample = value * volume;
                     } else {
                         *sample = 0.0;
                     }
-    
+
                     index += 1;
                     channel += 1;
                 }

@@ -30,7 +30,7 @@ pub enum FileType {
     Log,
 }
 
-// How exactly we should serialize/deserialize the dat 
+// How exactly we should serialize/deserialize the dat
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SerdeFormat {
     // Serde will use the JSON formatter to read/write the file
@@ -179,7 +179,7 @@ impl FileManager {
                 let string = core::str::from_utf8(bytes).ok()?;
                 let value = serde_json::from_str::<T>(string).ok()?;
                 Some(value)
-            },
+            }
             SerdeFormat::RON => ron::de::from_bytes(bytes).ok(),
         }
     }
@@ -194,11 +194,12 @@ impl FileManager {
             SerdeFormat::JSON => {
                 serde_json::to_writer_pretty(writer, value).ok()?;
                 Some(())
-            },
+            }
             SerdeFormat::RON => {
-                ron::ser::to_writer_pretty(writer, value, ron::ser::PrettyConfig::default()).ok()?;
+                ron::ser::to_writer_pretty(writer, value, ron::ser::PrettyConfig::default())
+                    .ok()?;
                 Some(())
-            },
+            }
         }
     }
 
@@ -212,7 +213,7 @@ impl FileManager {
         // Read the file into a string and then add it internally
         log::debug!("Deserializing to file {:?}...", path.as_ref());
         let mut reader = self.read_file(&path, variant)?;
-        let mut buf = Vec::<u8>::new(); 
+        let mut buf = Vec::<u8>::new();
         reader.read_to_end(&mut buf).unwrap();
 
         let key = (TypeId::of::<T>(), path.as_ref().to_path_buf());
@@ -234,7 +235,7 @@ impl FileManager {
         format: SerdeFormat,
     ) -> Option<()> {
         log::debug!("Serializing to file {:?}...", path.as_ref());
-        
+
         let writer = self.write_file(&path, true, variant)?;
         Self::inner_serialize_bytes(value, writer, format)?;
 

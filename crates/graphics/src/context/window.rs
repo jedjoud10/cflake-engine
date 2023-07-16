@@ -58,9 +58,7 @@ impl Window {
     }
 
     // Get the texture render that we can render to
-    pub fn as_render_target(
-        &mut self,
-    ) -> Option<RenderTarget<SwapchainFormat>> {
+    pub fn as_render_target(&mut self) -> Option<RenderTarget<SwapchainFormat>> {
         self.presentable_texture_view
             .as_ref()
             .map(|view| RenderTarget {

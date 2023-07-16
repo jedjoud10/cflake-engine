@@ -1,6 +1,5 @@
 use crate::{Source, Value};
 
-
 // Amplify a source by a specific amount
 pub struct Amplify<V: Value, T: Source>(pub(crate) T, pub(crate) V::Storage);
 

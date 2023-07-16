@@ -1,10 +1,9 @@
 use crate::Mask;
 use slotmap::{new_key_type, KeyData};
 
-
 new_key_type! {
     /// Entities could be though of as a simple handle to some underlying data stored within the world scene.
-    /// Entities by themselves do not store any data, and they can be represented using a [u64] integer handle. 
+    /// Entities by themselves do not store any data, and they can be represented using a [u64] integer handle.
     pub struct Entity;
 }
 

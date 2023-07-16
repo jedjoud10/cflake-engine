@@ -5,9 +5,9 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 use super::{Region, Texture};
 use crate::{
-    ColorTexel, Conversion, Extent, LayeredOrigin, ViewClearError, ViewCopyError,
-    ViewReadError, ViewWriteError, Origin, RenderTarget, Texel, ViewAsTargetError,
-    TextureMipLevelError, TextureSamplerError, TextureUsage,
+    ColorTexel, Conversion, Extent, LayeredOrigin, Origin, RenderTarget, Texel,
+    TextureMipLevelError, TextureSamplerError, TextureUsage, ViewAsTargetError, ViewClearError,
+    ViewCopyError, ViewReadError, ViewWriteError,
 };
 
 // This enum tells the texture how exactly it should create it's mipmaps
@@ -140,5 +140,3 @@ pub fn generate_mip_map<T: ColorTexel, R: Region>(
 
     Some(map)
 }
-
-

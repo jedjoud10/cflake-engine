@@ -1,7 +1,7 @@
 use ecs::Entity;
 use rapier3d::prelude::QueryFilter;
 
-use crate::{Physics, util};
+use crate::{util, Physics};
 
 // Data containing what a ray hit
 #[derive(Clone, Copy)]
@@ -13,7 +13,7 @@ pub struct RayHit {
 }
 
 impl RayHit {
-    // Get the entity whose collider was hit 
+    // Get the entity whose collider was hit
     pub fn entity(&self) -> Entity {
         self.entity
     }
@@ -56,7 +56,7 @@ impl Physics {
             &ray,
             max_toi,
             solid,
-            QueryFilter::new()
+            QueryFilter::new(),
         );
 
         hit.map(|(collider, intersection)| {

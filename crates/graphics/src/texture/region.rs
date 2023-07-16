@@ -2,8 +2,8 @@ use std::{num::NonZeroU8, ops::Add};
 
 use crate::Graphics;
 
-pub use wgpu::TextureViewDimension;
 pub use wgpu::TextureDimension;
+pub use wgpu::TextureViewDimension;
 
 // Texture dimensions traits that are simply implemented for extents
 pub trait Extent: Copy + Send + Sync {
@@ -304,7 +304,9 @@ pub trait Region: Copy {
     fn is_power_of_two(extent: Self::E) -> bool {
         match Self::dimension() {
             TextureDimension::D1 => extent.width().is_power_of_two(),
-            TextureDimension::D2 => extent.width().is_power_of_two() && extent.height().is_power_of_two(),
+            TextureDimension::D2 => {
+                extent.width().is_power_of_two() && extent.height().is_power_of_two()
+            }
             TextureDimension::D3 => {
                 extent.width().is_power_of_two()
                     && extent.height().is_power_of_two()

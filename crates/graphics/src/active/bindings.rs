@@ -1,7 +1,7 @@
 use crate::{
     BindResourceLayout, Buffer, BufferUsage, GpuPod, Graphics, Id, IdVariant, ReflectedShader,
-    Sampler, SetBindGroupError, SetBindResourceError, SetBufferError, SetTextureError, Shader,
-    Texel, Texture, TextureUsage, UniformBuffer, TextureViewMut, TextureViewRef, Region,
+    Region, Sampler, SetBindGroupError, SetBindResourceError, SetBufferError, SetTextureError,
+    Shader, Texel, Texture, TextureUsage, TextureViewMut, TextureViewRef, UniformBuffer,
 };
 use ahash::AHashMap;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};

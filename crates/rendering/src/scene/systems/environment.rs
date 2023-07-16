@@ -1,26 +1,24 @@
 use assets::Assets;
 use ecs::Scene;
-use graphics::{Graphics, ComputePass, ActivePipeline, Texture, GpuPod};
+use graphics::{ActivePipeline, ComputePass, GpuPod, Graphics, Texture};
 use utils::{Storage, Time};
 use world::{user, System, World};
 
-use crate::{
-    Environment, DeferredRenderer, Pipelines, Renderer, Surface, DirectionalLight,
-};
+use crate::{DeferredRenderer, DirectionalLight, Environment, Pipelines, Renderer, Surface};
 
 // Add the envinronment resource into the world and the sky entity
 fn init(world: &mut World) {
     // Add the sky entity
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
-    
+
     // Create the environment resource that contains the cubemaps
     let environment = Environment::new(&graphics, &assets, 256);
 
     // Drop fetched resources
     drop(graphics);
     drop(assets);
-    
+
     // Ajoute la resource dans le monde
     world.insert(environment);
 }
@@ -57,23 +55,28 @@ fn render(world: &mut World) {
     // Get the base environment map to set its view
     let cubemap = &mut environment.environment_map;
     let view = cubemap.view_mut(1 + index).unwrap();
-    
+
     // Generate the base environment map
     let resolution = environment.resolution;
     let mut active = pass.bind_shader(&environment.environment_shader);
-    active.set_bind_group(0, |group| {
-        group.set_storage_texture_mut("enviro", view).unwrap();
-    }).unwrap();
-    active.set_push_constants(|pc| {
-        // Set the sun direction
-        let bytes = rotation.into_bytes();
-        pc.push(bytes, 0).unwrap();
-        
-        // Set the proj/view matrix
-        pc.push(matrix, 64).unwrap();
+    active
+        .set_bind_group(0, |group| {
+            group.set_storage_texture_mut("enviro", view).unwrap();
+        })
+        .unwrap();
+    active
+        .set_push_constants(|pc| {
+            // Set the sun direction
+            let bytes = rotation.into_bytes();
+            pc.push(bytes, 0).unwrap();
 
-    }).unwrap();
-    active.dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 1)).unwrap();
+            // Set the proj/view matrix
+            pc.push(matrix, 64).unwrap();
+        })
+        .unwrap();
+    active
+        .dispatch(vek::Vec3::new(resolution / 32, resolution / 32, 1))
+        .unwrap();
 
     // Generate the diffuse IBL map (not every frame though)
     // TODO: Smooth interpolation using next sun dir
@@ -83,15 +86,23 @@ fn render(world: &mut World) {
         let dst_cubemap = &mut environment.diffuse_ibl_map;
         let view = dst_cubemap.view_mut(1 + index).unwrap();
         let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
-        active.set_bind_group(0, |group| {
-            group.set_sampled_texture("enviro", src_cubemap).unwrap();
-            group.set_sampler("enviro_sampler", src_cubemap.sampler().unwrap()).unwrap();
-            group.set_storage_texture_mut("diffuse", view).unwrap();
-        }).unwrap();
-        active.set_push_constants(|pc| {
-            pc.push(matrix, 0).unwrap();
-        }).unwrap();
-        active.dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1)).unwrap();
+        active
+            .set_bind_group(0, |group| {
+                group.set_sampled_texture("enviro", src_cubemap).unwrap();
+                group
+                    .set_sampler("enviro_sampler", src_cubemap.sampler().unwrap())
+                    .unwrap();
+                group.set_storage_texture_mut("diffuse", view).unwrap();
+            })
+            .unwrap();
+        active
+            .set_push_constants(|pc| {
+                pc.push(matrix, 0).unwrap();
+            })
+            .unwrap();
+        active
+            .dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1))
+            .unwrap();
     }
 
     //graphics.submit(false);

@@ -2,7 +2,7 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
 use std::iter::once;
-use world::{user, System, World, post_user};
+use world::{post_user, user, System, World};
 
 use crate::{
     entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
@@ -49,7 +49,7 @@ impl Default for Scene {
             archetypes: ArchetypeSet::from_iter(once((Mask::zero(), empty))),
             removed: Default::default(),
             prefabs: AHashMap::default(),
-            ticked: false
+            ticked: false,
         }
     }
 }
@@ -318,13 +318,25 @@ pub fn common(system: &mut System) {
 // Executes shit at the start of every frame
 #[doc(hidden)]
 pub fn pre_frame_or_tick(system: &mut System) {
-    system.insert_tick(set_ticked_true).before(user).after(utils::time);
-    system.insert_update(set_ticked_false).before(user).after(utils::time);
+    system
+        .insert_tick(set_ticked_true)
+        .before(user)
+        .after(utils::time);
+    system
+        .insert_update(set_ticked_false)
+        .before(user)
+        .after(utils::time);
 }
 
-// Executes shit at the end of each frame 
+// Executes shit at the end of each frame
 #[doc(hidden)]
 pub fn post_frame_or_tick(system: &mut System) {
-    system.insert_update(reset_delta_frame_states_end).after(post_user).after(utils::time);
-    system.insert_tick(reset_delta_tick_states_end).after(post_user).after(utils::time);
+    system
+        .insert_update(reset_delta_frame_states_end)
+        .after(post_user)
+        .after(utils::time);
+    system
+        .insert_tick(reset_delta_tick_states_end)
+        .after(post_user)
+        .after(utils::time);
 }

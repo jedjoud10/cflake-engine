@@ -8,7 +8,7 @@ pub trait QueryLayoutRef {
 
     /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
-    
+
     /// Owned query tuple item.
     type OwnedTuple: 'static;
 
@@ -20,7 +20,7 @@ pub trait QueryLayoutRef {
 
     /// Convert the pointers into slices.
     unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s>;
-    
+
     /// Read from the raw pointers directly.
     unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self;
 }
@@ -32,7 +32,7 @@ pub trait QueryLayoutMut {
 
     /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
-    
+
     /// Owned query tuple item.
     type OwnedTuple: 'static;
 

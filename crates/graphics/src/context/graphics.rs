@@ -11,16 +11,14 @@ use wgpu::{
 };
 
 use crate::{
-    BindGroupLayout, BindResourceLayout, Id, ReflectedShader, SamplerSettings, SamplerWrap,
-    Snippets, StagingPool, UniformBuffer, Defines, CachedSpirvKey, CachedShaderKey,
+    BindGroupLayout, BindResourceLayout, CachedShaderKey, CachedSpirvKey, Defines, Id,
+    ReflectedShader, SamplerSettings, SamplerWrap, Snippets, StagingPool, UniformBuffer,
 };
 
 // Cached graphics data that can be reused
 pub(crate) struct Cached {
-    pub(crate) spirvs: 
-        DashMap<CachedSpirvKey, Vec<u32>>,
-    pub(crate) shaders:
-        DashMap<CachedShaderKey, (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
+    pub(crate) spirvs: DashMap<CachedSpirvKey, Vec<u32>>,
+    pub(crate) shaders: DashMap<CachedShaderKey, (Arc<wgpu::ShaderModule>, Arc<spirq::EntryPoint>)>,
     pub(crate) samplers: DashMap<SamplerSettings, Arc<Sampler>>,
     pub(crate) bind_group_layouts: DashMap<BindGroupLayout, Arc<wgpu::BindGroupLayout>>,
     pub(crate) pipeline_layouts: DashMap<ReflectedShader, Arc<wgpu::PipelineLayout>>,
@@ -117,7 +115,7 @@ impl Graphics {
         *self.0.acquires.lock() += 1;
         locked.pop().unwrap_or_else(|| {
             self.device()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
         })
     }
 
@@ -167,11 +165,15 @@ impl Graphics {
     // TODO: Should we even remove the bind group layouts in the first place??
     pub(crate) fn drop_cached_pipeline_layout(&self, reflected: &ReflectedShader) -> bool {
         let cached = &self.0.cached;
-        
-        let bind_group_layouts = reflected.bind_group_layouts.iter().filter_map(|x| x.as_ref());
+
+        let bind_group_layouts = reflected
+            .bind_group_layouts
+            .iter()
+            .filter_map(|x| x.as_ref());
 
         for bind_group_layout in bind_group_layouts {
-            let remove_bind_group_layout = cached.bind_group_layouts
+            let remove_bind_group_layout = cached
+                .bind_group_layouts
                 .get(bind_group_layout)
                 .map(|x| Arc::strong_count(x.value()) == 1)
                 .unwrap_or_default();
@@ -192,5 +194,5 @@ impl Graphics {
     pub(crate) fn drop_cached_spirv(&self, key: CachedSpirvKey) -> bool {
         let cached = &self.0.cached;
         cached.spirvs.remove(&key).is_some()
-    } 
+    }
 }

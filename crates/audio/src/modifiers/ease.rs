@@ -2,20 +2,19 @@ use std::time::Duration;
 
 use crate::Source;
 
-
 // Changes how an audio source sounds like over time
 pub enum Easing {
     // Sine easing
     Sine,
 
     // Cosine easing
-    Cosine, 
+    Cosine,
 
     // Linear easing
     Linear,
 
     // Exponential easing based on base factor
-    Expo(f32)
+    Expo(f32),
 }
 
 // Easing direction
@@ -25,7 +24,12 @@ pub enum EasingDirection {
 }
 
 // Fade using a specific easing function in a specific direction
-pub struct Fade<T: Source>(pub(crate) T, pub(crate) Easing, pub(crate) EasingDirection, pub(crate) Duration);
+pub struct Fade<T: Source>(
+    pub(crate) T,
+    pub(crate) Easing,
+    pub(crate) EasingDirection,
+    pub(crate) Duration,
+);
 
 impl<T: Source> Source for Fade<T> {
     fn cache(&mut self) {
@@ -41,7 +45,7 @@ impl<T: Source> Source for Fade<T> {
                 EasingDirection::Out => return None,
             }
         };
-        
+
         let mult = match (&self.1, &self.2) {
             // Sine easing function (linear -> ease)
             (Easing::Sine, dir) => {
@@ -51,7 +55,7 @@ impl<T: Source> Source for Fade<T> {
                     EasingDirection::In => eased,
                     EasingDirection::Out => 1.0 - eased,
                 }
-            },
+            }
 
             // Cosine easing function (ease -> linear)
             (Easing::Cosine, dir) => {
@@ -61,8 +65,8 @@ impl<T: Source> Source for Fade<T> {
                     EasingDirection::In => eased,
                     EasingDirection::Out => 1.0 - eased,
                 }
-            },
-            
+            }
+
             _ => todo!(),
         };
 

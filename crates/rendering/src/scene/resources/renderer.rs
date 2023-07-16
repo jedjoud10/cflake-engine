@@ -1,30 +1,41 @@
 use crate::{
-    AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap, SceneBuffer, TimingBuffer, WindowBuffer, create_texture2d, create_uniform_buffer, PassStats,
+    create_texture2d, create_uniform_buffer, AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap,
+    PassStats, SceneBuffer, TimingBuffer, WindowBuffer,
 };
 
 use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Depth, GpuPod,
-    Graphics, LoadOp, Operation, RenderPass, SamplerFilter,
-    SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureUsage, UniformBuffer, RGBA, BGRA, SwapchainFormat, RenderPipeline, VertexModule, FragmentModule, Compiler, Shader, VertexConfig, PrimitiveConfig, Normalized, SamplerBorderColor, TextureViewSettings, Region,
+    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Compiler, Depth,
+    FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation, PrimitiveConfig, Region,
+    RenderPass, RenderPipeline, SamplerBorderColor, SamplerFilter, SamplerMipMaps, SamplerSettings,
+    SamplerWrap, Shader, StoreOp, SwapchainFormat, Texel, Texture, Texture2D, TextureMipMaps,
+    TextureUsage, TextureViewSettings, UniformBuffer, VertexConfig, VertexModule, BGRA, RGBA,
 };
 use utils::{Handle, Storage};
 
 // Renderpass that will render the scene
-pub type SceneColorLayout = (RGBA<Normalized<u8>>, RGBA<Normalized<i8>>, RGBA<Normalized<u8>>);
+pub type SceneColorLayout = (
+    RGBA<Normalized<u8>>,
+    RGBA<Normalized<i8>>,
+    RGBA<Normalized<u8>>,
+);
 pub type SceneDepthLayout = Depth<f32>;
 
 // Create a texture that we will use for the G-Buffer
-pub(crate) fn create_gbuffer_texture<T: Texel>(graphics: &Graphics, extent: vek::Extent2<u32>) -> Texture2D<T> {
+pub(crate) fn create_gbuffer_texture<T: Texel>(
+    graphics: &Graphics,
+    extent: vek::Extent2<u32>,
+) -> Texture2D<T> {
     Texture2D::<T>::from_texels(
         graphics,
         None,
         extent,
         TextureUsage::TARGET | TextureUsage::SAMPLED,
-        &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
+        &[TextureViewSettings::whole::<
+            <Texture2D<T> as Texture>::Region,
+        >()],
         Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             comparison: None,
@@ -53,7 +64,7 @@ pub(crate) fn load_mesh(
 }
 
 // Keeps tracks of data that we use for rendering the scene
-// This will contain the G-Buffer and Depth Texture that we will use for deferred lighting 
+// This will contain the G-Buffer and Depth Texture that we will use for deferred lighting
 pub struct DeferredRenderer {
     // Main deferred render pass that we will use to render to the swapchain
     pub(crate) deferred_render_pass: RenderPass<SceneColorLayout, SceneDepthLayout>,
@@ -106,8 +117,10 @@ impl DeferredRenderer {
         mask_maps: &mut Storage<MaskMap>,
     ) -> Self {
         // Create the G-Buffer textures and depth texture
-        let gbuffer_albedo_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
-        let gbuffer_normal_texture = create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, extent);
+        let gbuffer_albedo_texture =
+            create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
+        let gbuffer_normal_texture =
+            create_gbuffer_texture::<RGBA<Normalized<i8>>>(graphics, extent);
         let gbuffer_mask_texture = create_gbuffer_texture::<RGBA<Normalized<u8>>>(graphics, extent);
         let depth_texture = create_gbuffer_texture::<Depth<f32>>(graphics, extent);
 
@@ -126,7 +139,7 @@ impl DeferredRenderer {
                 store: StoreOp::Store,
             },
         );
-        
+
         // Clear operation of the depth texture
         let depth_stencil_operations = Operation {
             load: LoadOp::Clear(1.0),
@@ -161,7 +174,7 @@ impl DeferredRenderer {
         Self {
             // Render pass, G-Buffer textures, and depth texture
             deferred_render_pass: render_pass,
-            
+
             gbuffer_albedo_texture,
             gbuffer_normal_texture,
             gbuffer_mask_texture,
@@ -179,7 +192,6 @@ impl DeferredRenderer {
             black,
             normal,
             mask,
-
 
             // No default camera
             main_camera: None,

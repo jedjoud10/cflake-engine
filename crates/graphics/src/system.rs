@@ -130,7 +130,7 @@ pub fn present(system: &mut System) {
     system
         .insert_update(|world: &mut World| {
             let mut window = world.get_mut::<Window>().unwrap();
-            let graphics = world.get::<Graphics>().unwrap(); 
+            let graphics = world.get::<Graphics>().unwrap();
             graphics.submit(false);
 
             if let Some(texture) = window.presentable_texture.take() {

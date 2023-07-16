@@ -1,13 +1,7 @@
-use std::{
-    path::{Path},
-    sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
-use crate::{
-    AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial,
-    Pipelines, SubSurface, Surface,
-};
-use ahash::{AHashMap};
+use crate::{AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial, Pipelines, SubSurface, Surface};
+use ahash::AHashMap;
 use assets::{Asset, Data};
 use base64::{
     alphabet,
@@ -16,12 +10,13 @@ use base64::{
 };
 use coords::HierarchyManager;
 use dashmap::DashMap;
-use ecs::{Scene, Entity};
+use ecs::{Entity, Scene};
 use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
     SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureScale, TextureUsage, R, RGBA, TextureViewSettings,
+    TextureImportSettings, TextureMipMaps, TextureScale, TextureUsage, TextureViewSettings, R,
+    RGBA,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
@@ -150,8 +145,7 @@ impl Asset for GltfScene {
             buffers,
             buffer_views,
             scene,
-            
-            
+
             images,
             materials,
             meshes,
@@ -183,12 +177,10 @@ impl Asset for GltfScene {
                 // Handle reading buffers from URI or raw bytes directly
                 let bytes = if let Some(uri) = buffer.uri.as_ref() {
                     const PREFIX: &'static str = "data:application/octet-stream;base64,";
-                    
+
                     if uri.starts_with(PREFIX) {
                         // Data is contained within the URI itself
-                        let data = uri
-                            .strip_prefix(PREFIX)
-                            .unwrap();
+                        let data = uri.strip_prefix(PREFIX).unwrap();
 
                         // Decode the raw base64 data
                         base64.decode(data).unwrap()
@@ -561,16 +553,19 @@ impl Asset for GltfScene {
                 .map(|scale| {
                     // Biggest scalar in the vector
                     let uniform = vek::Vec3::from_slice(&scale).reduce_partial_max();
-                    
+
                     // Non-uniform scale isn't supported in the engine
                     if scale.iter().any(|&x| x != uniform) {
-                        log::warn!("Non-uniform scale is not supported in the engine. Given scale: {:?}", scale);
+                        log::warn!(
+                            "Non-uniform scale is not supported in the engine. Given scale: {:?}",
+                            scale
+                        );
                     }
 
                     uniform
                 })
                 .unwrap_or(1.0f32);
-            
+
             // For now, we only handle mesh entities and empty entities
             let entity = if let Some(mesh_index) = node.mesh {
                 let mesh = &meshes[mesh_index.value()];
@@ -606,7 +601,7 @@ impl Asset for GltfScene {
                 match parent {
                     // Local coordinates if we have a parent
                     Some(_) => {
-                        // Add the renderable entity 
+                        // Add the renderable entity
                         context.scene.insert((
                             coords::LocalPosition::from(position),
                             coords::LocalRotation::from(rotation),
@@ -617,12 +612,11 @@ impl Asset for GltfScene {
                             surface,
                             crate::Renderer::default(),
                         ))
-                        
-                    },
+                    }
 
                     // Global coordinates if we do not have a parent
                     None => {
-                        // Add the renderable entity 
+                        // Add the renderable entity
                         context.scene.insert((
                             coords::Position::from(position),
                             coords::Rotation::from(rotation),
@@ -630,14 +624,13 @@ impl Asset for GltfScene {
                             surface,
                             crate::Renderer::default(),
                         ))
-                    },
+                    }
                 }
-
             } else {
                 match parent {
                     // Local coordinates if we have a parent
                     Some(_) => {
-                        // Add the renderable entity 
+                        // Add the renderable entity
                         context.scene.insert((
                             coords::LocalPosition::from(position),
                             coords::LocalRotation::from(rotation),
@@ -646,17 +639,17 @@ impl Asset for GltfScene {
                             coords::Rotation::default(),
                             coords::Scale::default(),
                         ))
-                    },
+                    }
 
                     // Global coordinates if we do not have a parent
                     None => {
-                        // Add the renderable entity 
+                        // Add the renderable entity
                         context.scene.insert((
                             coords::Position::from(position),
                             coords::Rotation::from(rotation),
                             coords::Scale::from(scale),
                         ))
-                    },
+                    }
                 }
             };
 
@@ -675,11 +668,19 @@ impl Asset for GltfScene {
 
         log::debug!("Loaded {} entities into the world", count);
         log::debug!("Loaded {} unique meshes into the world", meshes.len());
-        log::debug!("Loaded {} unique material instances into the world", mapped_materials.len());
-        log::debug!("Loaded {} albedo maps into the world", cached_albedo_maps.len());
-        log::debug!("Loaded {} normal maps into the world", cached_normal_maps.len());
+        log::debug!(
+            "Loaded {} unique material instances into the world",
+            mapped_materials.len()
+        );
+        log::debug!(
+            "Loaded {} albedo maps into the world",
+            cached_albedo_maps.len()
+        );
+        log::debug!(
+            "Loaded {} normal maps into the world",
+            cached_normal_maps.len()
+        );
         log::debug!("Loaded {} mask maps into the world", cached_mask_maps.len());
-
 
         Ok(GltfScene)
     }
@@ -790,25 +791,42 @@ fn sampling(
     samplers: &[gltf::json::texture::Sampler],
     sampler: Option<gltf::json::Index<gltf::json::texture::Sampler>>,
 ) -> SamplerSettings {
-
     sampler
         .map(|index| {
             let sampler = &samplers[index.value()];
 
-            let mag_filter = sampler.mag_filter.map(|x| match x.unwrap() {
-                gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
-                gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
-            }).unwrap_or(SamplerFilter::Linear);
+            let mag_filter = sampler
+                .mag_filter
+                .map(|x| match x.unwrap() {
+                    gltf::texture::MagFilter::Nearest => SamplerFilter::Nearest,
+                    gltf::texture::MagFilter::Linear => SamplerFilter::Linear,
+                })
+                .unwrap_or(SamplerFilter::Linear);
 
-            let (min_filter, mip_filter) = sampler.min_filter.map(|x| match x.unwrap() {
-                gltf::texture::MinFilter::Nearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
-                gltf::texture::MinFilter::Linear => (SamplerFilter::Linear, SamplerFilter::Nearest),
-                
-                gltf::texture::MinFilter::NearestMipmapNearest => (SamplerFilter::Nearest, SamplerFilter::Nearest),
-                gltf::texture::MinFilter::LinearMipmapNearest => (SamplerFilter::Linear, SamplerFilter::Nearest),
-                gltf::texture::MinFilter::NearestMipmapLinear => (SamplerFilter::Nearest, SamplerFilter::Linear),
-                gltf::texture::MinFilter::LinearMipmapLinear => (SamplerFilter::Linear, SamplerFilter::Linear),
-            }).unwrap_or((SamplerFilter::Linear, SamplerFilter::Linear));
+            let (min_filter, mip_filter) = sampler
+                .min_filter
+                .map(|x| match x.unwrap() {
+                    gltf::texture::MinFilter::Nearest => {
+                        (SamplerFilter::Nearest, SamplerFilter::Nearest)
+                    }
+                    gltf::texture::MinFilter::Linear => {
+                        (SamplerFilter::Linear, SamplerFilter::Nearest)
+                    }
+
+                    gltf::texture::MinFilter::NearestMipmapNearest => {
+                        (SamplerFilter::Nearest, SamplerFilter::Nearest)
+                    }
+                    gltf::texture::MinFilter::LinearMipmapNearest => {
+                        (SamplerFilter::Linear, SamplerFilter::Nearest)
+                    }
+                    gltf::texture::MinFilter::NearestMipmapLinear => {
+                        (SamplerFilter::Nearest, SamplerFilter::Linear)
+                    }
+                    gltf::texture::MinFilter::LinearMipmapLinear => {
+                        (SamplerFilter::Linear, SamplerFilter::Linear)
+                    }
+                })
+                .unwrap_or((SamplerFilter::Linear, SamplerFilter::Linear));
 
             let wrap_u = map_wrapping_mode(sampler.wrap_s.unwrap());
             let wrap_v = map_wrapping_mode(sampler.wrap_t.unwrap());
@@ -842,9 +860,7 @@ fn create_material_texture<T: Texel + ImageTexel>(
     images: &[(&[u8], &str)],
 ) -> Texture2D<T> {
     let (bytes, extension) = &images[texture.source.value()];
-    let name = texture
-        .name.as_deref()
-        .unwrap_or("Untitled Texture");
+    let name = texture.name.as_deref().unwrap_or("Untitled Texture");
 
     let data = Data::new(
         name,
@@ -856,14 +872,14 @@ fn create_material_texture<T: Texel + ImageTexel>(
 
     let sampler = sampling(samplers, texture.sampler);
 
-    
-
     Texture2D::<T>::deserialize(
         data,
         graphics,
         TextureImportSettings {
             sampling: Some(sampler),
-            views: &[TextureViewSettings::whole::<<Texture2D<T> as Texture>::Region>()],
+            views: &[TextureViewSettings::whole::<
+                <Texture2D<T> as Texture>::Region,
+            >()],
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             scale: TextureScale::Default,
             mipmaps: TextureMipMaps::Manual { mips: &[] },
@@ -891,9 +907,7 @@ fn create_material_mask_texture(
     let occlusion = occlusion.map(|i| (&images[i.source.value()], i));
 
     let metallic_roughness = metallic_roughness.map(|((bytes, extension), texture)| {
-        let name = texture
-            .name.as_deref()
-            .unwrap_or("Untitled Texture");
+        let name = texture.name.as_deref().unwrap_or("Untitled Texture");
 
         let data = Data::new(
             name,
@@ -907,9 +921,7 @@ fn create_material_mask_texture(
     });
 
     let occlusion = occlusion.map(|((bytes, extension), texture)| {
-        let name = texture
-            .name.as_deref()
-            .unwrap_or("Untitled Texture");
+        let name = texture.name.as_deref().unwrap_or("Untitled Texture");
 
         let data = Data::new(
             name,

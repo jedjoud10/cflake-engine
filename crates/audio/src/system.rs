@@ -1,4 +1,4 @@
-use crate::{AudioListener, AudioEmitter};
+use crate::{AudioEmitter, AudioListener};
 
 use ecs::Scene;
 

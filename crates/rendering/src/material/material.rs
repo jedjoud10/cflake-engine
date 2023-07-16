@@ -1,12 +1,12 @@
 use crate::{
-    DefaultMaterialResources, MeshAttributes, RenderPath, Renderer, SceneColorLayout, Direct, Pass, SubSurface,
+    DefaultMaterialResources, Direct, MeshAttributes, Pass, RenderPath, Renderer, SceneColorLayout,
+    SubSurface,
 };
 use assets::Assets;
 
-
 use graphics::{
-    BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics, PrimitiveConfig, PushConstants,
-    Shader, StencilConfig, WindingOrder, ActiveRenderPipeline,
+    ActiveRenderPipeline, BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
+    PrimitiveConfig, PushConstants, Shader, StencilConfig, WindingOrder,
 };
 
 use world::World;
@@ -21,15 +21,23 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Checks if a material can be rendered with the given render path
     // If not, this will return a warning when trying to render a mesh
-    fn is_render_path_supported<RP: RenderPath>(settings: &Self::Settings<'_>) -> bool { false }
+    fn is_render_path_supported<RP: RenderPath>(settings: &Self::Settings<'_>) -> bool {
+        false
+    }
 
     // Checks if a material can be used for rendering for a specific pass
     // If not, this will not call the following "shader()" method to setup shader
-    fn is_pass_supported<P: Pass>(settings: &Self::Settings<'_>) -> bool { false }
+    fn is_pass_supported<P: Pass>(settings: &Self::Settings<'_>) -> bool {
+        false
+    }
 
     // Create a shader for this material for a specific pass
     // You can return "None" to disable rendering for that specific pass
-    fn shader<P: Pass>(settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader>;
+    fn shader<P: Pass>(
+        settings: &Self::Settings<'_>,
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Option<Shader>;
 
     // Get the required mesh attributes that we need to render a surface
     // If a surface does not support these attributes, it will not be rendered

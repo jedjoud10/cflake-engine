@@ -1,8 +1,8 @@
 use std::cell::Cell;
 
+use crate::{GenericCollider, PhysicsSurface};
 use ecs::{Component, Entity};
 use utils::Handle;
-use crate::{PhysicsSurface, GenericCollider};
 
 // Capsule colliders represent capsules with a radius and a height in 3D space
 // The position and rotation of the capsule will be fetched from it's Position and Rotation components
@@ -29,13 +29,13 @@ impl CapsuleCollider {
         self.mass = mass;
         self.modified.set(true);
     }
-    
+
     // Update the material used by the collider
     pub fn set_material(&mut self, material: Option<Handle<PhysicsSurface>>) {
         self.material = material;
         self.modified.set(true);
     }
-    
+
     // Update the sensor state of the collider
     pub fn set_sensor(&mut self, sensor: bool) {
         self.sensor = sensor;
@@ -55,11 +55,11 @@ impl Clone for CapsuleCollider {
             handle: None,
         }
     }
-} 
+}
 
 impl GenericCollider for CapsuleCollider {
     type RawRapierCollider = rapier3d::geometry::Capsule;
-    
+
     #[inline(always)]
     fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
         self.handle
@@ -67,7 +67,7 @@ impl GenericCollider for CapsuleCollider {
 
     #[inline(always)]
     fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
-        self.handle = Some(handle);    
+        self.handle = Some(handle);
     }
 
     #[inline(always)]
@@ -86,7 +86,9 @@ impl GenericCollider for CapsuleCollider {
     }
 
     #[inline(always)]
-    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+    fn cast_rapier_collider(
+        generic: &mut rapier3d::geometry::Collider,
+    ) -> &mut Self::RawRapierCollider {
         generic.shape_mut().as_capsule_mut().unwrap()
     }
 
@@ -97,11 +99,13 @@ impl GenericCollider for CapsuleCollider {
 
     #[inline(always)]
     fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
-        Some(rapier3d::geometry::ColliderBuilder::capsule_y(self.height / 2.0, self.radius)
-            .mass(self.mass)
-            .sensor(self.sensor)
-            .user_data(entity.to_raw() as u128)
-            .build())
+        Some(
+            rapier3d::geometry::ColliderBuilder::capsule_y(self.height / 2.0, self.radius)
+                .mass(self.mass)
+                .sensor(self.sensor)
+                .user_data(entity.to_raw() as u128)
+                .build(),
+        )
     }
 
     #[inline(always)]
@@ -143,7 +147,7 @@ impl CapsuleColliderBuilder {
         self
     }
 
-    // Set the physics surface material of the collider 
+    // Set the physics surface material of the collider
     pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
         self.inner.material = Some(material);
         self

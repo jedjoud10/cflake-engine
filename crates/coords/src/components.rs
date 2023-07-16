@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
 mod position;
+mod relations;
 mod rotation;
 mod scale;
-mod relations;
 
-pub use relations::*;
 pub use position::Position as UnmarkedPosition;
+pub use relations::*;
 pub use rotation::Rotation as UnmarkedRotation;
 pub use scale::Scale as UnmarkedScale;
 

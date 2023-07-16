@@ -1,3 +1,3 @@
-mod oscilator;
 mod clip;
+mod oscilator;
 pub use oscilator::*;

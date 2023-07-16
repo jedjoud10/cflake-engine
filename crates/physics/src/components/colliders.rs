@@ -1,10 +1,10 @@
+mod capsule;
 mod cuboid;
+mod generic;
 mod mesh;
 mod sphere;
-mod capsule;
-mod generic;
-pub use generic::*;
 pub use capsule::*;
 pub use cuboid::*;
+pub use generic::*;
 pub use mesh::*;
 pub use sphere::*;

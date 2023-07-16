@@ -35,7 +35,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { intensity: 1.0, color: vek::Rgb::broadcast(255)  };
+    let light = DirectionalLight {
+        intensity: 1.0,
+        color: vek::Rgb::broadcast(255),
+    };
     let rotation = vek::Quaternion::rotation_x(-40.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }

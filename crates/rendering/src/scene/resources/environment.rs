@@ -2,18 +2,16 @@ use std::mem::size_of;
 
 use assets::Assets;
 use graphics::{
-    Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
-    LayeredTexture2D, SamplerSettings,
-    StorageAccess, Texel, Texture, TextureMipMaps, TextureUsage, RGBA, TextureViewSettings, TextureViewDimension, UniformBuffer, BufferMode, BufferUsage, ModuleVisibility, Texture2D, SamplerWrap,
+    BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
+    LayeredTexture2D, ModuleVisibility, SamplerSettings, SamplerWrap, StorageAccess, Texel,
+    Texture, Texture2D, TextureMipMaps, TextureUsage, TextureViewDimension, TextureViewSettings,
+    UniformBuffer, RGBA,
 };
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;
 
 // Create a cubemap with a specific resolution
-fn create_cubemap<T: Texel + ImageTexel>(
-    graphics: &Graphics,
-    resolution: u32,
-) -> CubeMap<T> {
+fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, resolution: u32) -> CubeMap<T> {
     fn create_view_settings(layer: u32) -> TextureViewSettings {
         TextureViewSettings {
             base_mip_level: 0,
@@ -43,7 +41,7 @@ fn create_cubemap<T: Texel + ImageTexel>(
                 base_array_layer: 0,
                 array_layer_count: None,
                 dimension: TextureViewDimension::D2Array,
-            }
+            },
         ],
         Some(SamplerSettings {
             wrap_u: SamplerWrap::ClampToEdge,
@@ -60,7 +58,7 @@ fn create_cubemap<T: Texel + ImageTexel>(
 // This also contains some settings on how we should create the procedural environment sky
 pub struct Environment {
     pub(crate) environment_map: EnvironmentMap,
-    pub(crate) diffuse_ibl_map: EnvironmentMap, 
+    pub(crate) diffuse_ibl_map: EnvironmentMap,
     pub(crate) resolution: u32,
     pub(crate) environment_shader: ComputeShader,
     pub(crate) ibl_diffuse_convolution_shader: ComputeShader,
@@ -79,7 +77,13 @@ impl Environment {
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_constant(0, resolution);
         compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
-        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4 * 4 + size_of::<f32>() * 4 * 4, ModuleVisibility::Compute).unwrap());
+        compiler.use_push_constant_layout(
+            graphics::PushConstantLayout::single(
+                size_of::<f32>() * 4 * 4 + size_of::<f32>() * 4 * 4,
+                ModuleVisibility::Compute,
+            )
+            .unwrap(),
+        );
         let environment_shader = ComputeShader::new(compute, &compiler).unwrap();
 
         // Load the diffuse IBL convolution shader
@@ -93,7 +97,13 @@ impl Environment {
         compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("diffuse", StorageAccess::WriteOnly);
         compiler.use_sampled_texture::<EnvironmentMap>("enviro", false);
         compiler.use_sampler::<RGBA<f32>>("enviro_sampler", false);
-        compiler.use_push_constant_layout(graphics::PushConstantLayout::single(size_of::<f32>() * 4 * 4, ModuleVisibility::Compute).unwrap());
+        compiler.use_push_constant_layout(
+            graphics::PushConstantLayout::single(
+                size_of::<f32>() * 4 * 4,
+                ModuleVisibility::Compute,
+            )
+            .unwrap(),
+        );
         let ibl_diffuse_convolution_shader = ComputeShader::new(compute, &compiler).unwrap();
 
         // Convert the eqilateral texture to a cubemap texture
@@ -105,10 +115,10 @@ impl Environment {
         // View matrices for the 6 different faces
         let views: [Mat4<f32>; 6] = [
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_x(), -Vec3::unit_y()), // Left
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()), // Right
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),  // Top
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_x(), -Vec3::unit_y()),  // Right
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_y(), Vec3::unit_z()),   // Top
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_y(), -Vec3::unit_z()), // Bottom
-            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()), // Back
+            Mat4::look_at_rh(Vec3::zero(), Vec3::unit_z(), -Vec3::unit_y()),  // Back
             Mat4::look_at_rh(Vec3::zero(), -Vec3::unit_z(), -Vec3::unit_y()), // Front
         ];
 
@@ -116,7 +126,7 @@ impl Environment {
         let matrices = views.map(|x| (projection * x));
 
         Self {
-            resolution, 
+            resolution,
             environment_map: create_cubemap(graphics, resolution),
 
             matrices,

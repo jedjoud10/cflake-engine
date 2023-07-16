@@ -14,7 +14,7 @@ pub enum MeshReadbackState {
 
     // The mesh data transfer begun, we are waiting for results
     PendingReadbackData,
-    
+
     // Mesh was completed readback to the CPU
     Complete,
 }
@@ -38,9 +38,7 @@ pub enum ChunkState {
     PendingReadbackData,
 
     // The chunk's mesh has been generated successfully
-    Generated {
-        empty: bool,
-    },
+    Generated { empty: bool },
 
     // The chunk needs to be removed
     PendingRemoval,
@@ -102,7 +100,7 @@ impl Chunk {
     pub fn regenerate(&mut self) {
         if let ChunkState::Generated { empty, .. } = self.state {
             self.state = ChunkState::Dirty
-        } 
+        }
     }
 
     // Get the allocation used by this chunk

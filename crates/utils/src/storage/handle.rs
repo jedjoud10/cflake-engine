@@ -43,7 +43,7 @@ impl<T: 'static> Handle<T> {
             .unwrap()
             .load(Ordering::Relaxed)
     }
-    
+
     // Get the raw key FFI for this weak handle
     pub fn as_raw(&self) -> u64 {
         slotmap::KeyData::as_ffi(self.key.data())

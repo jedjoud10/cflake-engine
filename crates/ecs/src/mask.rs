@@ -73,9 +73,9 @@ impl Mask {
     /// Check if all the bits from Other are present within Self
     /// # Example:
     /// other: 0100.
-    /// 
+    ///
     /// self:  1111.
-    /// 
+    ///
     /// true
     pub fn contains(&self, other: Self) -> bool {
         *self & other == other

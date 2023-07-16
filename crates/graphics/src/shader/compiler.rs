@@ -2,7 +2,7 @@ use crate::{
     BindResourceType, Buffer, Extent, FunctionModule, GpuPod, GpuPodInfo, Graphics, ModuleKind,
     ModuleVisibility, PushConstantLayout, ReflectedShader, Region, ShaderCompilationError,
     ShaderError, ShaderModule, ShaderReflectionError, SpecConstant, StorageAccess, Texel,
-    TexelInfo, Texture, VertexModule, TextureViewDimension,
+    TexelInfo, Texture, TextureViewDimension, VertexModule,
 };
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
@@ -14,11 +14,12 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap},
     ffi::CStr,
+    hash::{Hash, Hasher},
     marker::PhantomData,
     ops::{Bound, RangeBounds},
     path::{Path, PathBuf},
     sync::Arc,
-    time::Instant, hash::{Hash, Hasher},
+    time::Instant,
 };
 use thiserror::Error;
 use vek::serde::__private::de;
@@ -268,21 +269,18 @@ fn compile(
     let cached = graphics.0.cached.spirvs.get(&key);
     let spirv = if cached.is_none() {
         Some(compile_spirv(
-            path,
-            source,
-            defines,
-            snippets,
-            assets,
-            graphics,
-            kind,
-            optimize,
+            path, source, defines, snippets, assets, graphics, kind, optimize,
         )?)
     } else {
         None
     };
 
     // Fetch cached SPIRV binary if it was already compiled
-    let mut spirv = spirv.as_ref().map(|x| x.as_binary()).unwrap_or_else(|| &cached.as_ref().unwrap()).to_vec();
+    let mut spirv = spirv
+        .as_ref()
+        .map(|x| x.as_binary())
+        .unwrap_or_else(|| &cached.as_ref().unwrap())
+        .to_vec();
     let before = spirv.clone();
 
     // Cache the SPIRV into the shader cache if needed
@@ -362,7 +360,7 @@ fn compile_spirv(
         );
     }
     let source = lines.join("\n");
-    
+
     let mut options = shaderc::CompileOptions::new().unwrap();
     options.set_invert_y(false);
 
@@ -370,12 +368,12 @@ fn compile_spirv(
         options.set_generate_debug_info();
         options.set_optimization_level(shaderc::OptimizationLevel::Performance);
     }
-    
+
     let included = Included::default();
     options.set_include_callback(move |target, _type, current, depth| {
         include(current, _type, target, depth, assets, &snippets, &included)
     });
-    
+
     let artifact = graphics
         .0
         .shaderc

@@ -1,27 +1,24 @@
+use std::{cell::RefCell, num::NonZeroU8, rc::Rc, time::Instant};
 
-
-use std::{cell::RefCell, rc::Rc, time::Instant, num::NonZeroU8};
-
-use ahash::{AHashMap};
+use ahash::AHashMap;
 use assets::{Assets, AsyncHandle};
 
 use ecs::{Entity, Scene};
 use graphics::{
-    combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
-    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, TextureMipMaps,
-    TextureUsage, Vertex, SamplerBorderColor, TextureScale, FilterType, TextureViewSettings, Texture,
+    combine_into_layered, FilterType, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
+    SamplerBorderColor, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel,
+    Texture, TextureMipMaps, TextureScale, TextureUsage, TextureViewSettings, Vertex,
 };
 use math::{Node, Octree};
 
 use rendering::{
-    AlbedoTexel, MaskTexel, MaterialId, NormalTexel,
-    Pipelines, Renderer, SubSurface, Surface,
+    AlbedoTexel, MaskTexel, MaterialId, NormalTexel, Pipelines, Renderer, SubSurface, Surface,
 };
 use utils::{Handle, Storage};
 
 use crate::{
-    LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap,
-    MemoryManager, TerrainMaterial, TerrainSettings, TerrainSubMaterial,
+    LayeredAlbedoMap, LayeredMaskMap, LayeredNormalMap, MemoryManager, TerrainMaterial,
+    TerrainSettings, TerrainSubMaterial,
 };
 
 // Chunk manager will store a handle to the terrain material and shit needed for rendering the chunks
@@ -138,19 +135,28 @@ impl ChunkManager {
 
         // Create the global terrain renderer entity
         let global_draw_entity = scene.insert((Renderer::default(), surface));
-        
+
         // Generate the lod multipliers programatically based on the quality setting
         let splits = [0.0f32, 0.3, 0.7, 1.0];
         let percents = [1.0f32, 1.2, 1.3, 1.0];
         let max = settings.mesher.max_octree_depth as f32;
-        let mut lod = (0..settings.mesher.max_octree_depth).into_iter().map(|x| {
-            let percent = x as f32 / max;
+        let mut lod = (0..settings.mesher.max_octree_depth)
+            .into_iter()
+            .map(|x| {
+                let percent = x as f32 / max;
 
-            let i = splits.iter().enumerate().filter(|(_, &rel)| percent >= rel).map(|(i, _)| i).max().unwrap();
+                let i = splits
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, &rel)| percent >= rel)
+                    .map(|(i, _)| i)
+                    .max()
+                    .unwrap();
 
-            //percents[i] * settings.quality.clamp(0.5, 3.0)
-            1.0
-        }).collect::<Vec<f32>>();
+                //percents[i] * settings.quality.clamp(0.5, 3.0)
+                1.0
+            })
+            .collect::<Vec<f32>>();
         lod.insert(0, 1.0);
 
         // Custom octree heuristic
@@ -173,7 +179,11 @@ impl ChunkManager {
         }));
 
         // Create an octree for LOD chunk generation
-        let octree = Octree::new(settings.mesher.max_octree_depth, settings.mesher.size , heuristic);
+        let octree = Octree::new(
+            settings.mesher.max_octree_depth,
+            settings.mesher.size,
+            heuristic,
+        );
 
         // Create the chunk manager
         Self {
@@ -223,7 +233,9 @@ fn load_layered_texture<T: ImageTexel>(
             raw,
             Some(sampler),
             TextureMipMaps::Manual { mips: &[] },
-            &[TextureViewSettings::whole::<<LayeredTexture2D<T> as Texture>::Region>()],
+            &[TextureViewSettings::whole::<
+                <LayeredTexture2D<T> as Texture>::Region,
+            >()],
             TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         )
         .unwrap()

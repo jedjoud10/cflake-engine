@@ -5,8 +5,8 @@ use smallvec::SmallVec;
 
 use crate::{
     Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture,
-    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureScale,
-    TextureUsage, TextureViewSettings, TextureViewDimension,
+    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureScale, TextureUsage,
+    TextureViewDimension, TextureViewSettings,
 };
 
 // A 2D texture that contains multiple texels that have their own channels

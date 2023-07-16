@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use crate::{AudioClip, Source};
 use cpal::traits::StreamTrait;
 use ecs::Component;
-use crate::{AudioClip, Source};
 
 // An audio emmiter is a component that produces sound
 // Each audio emmiter is a CPAL stream that will be played

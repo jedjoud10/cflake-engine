@@ -4,7 +4,7 @@ use std::{convert::Infallible, path::Path, sync::Arc};
 /// File data what will be given to assets whenever we try to deserialize them.
 ///
 /// We assume that all assets are files, even though they might not be.
-/// 
+///
 /// Internally contains a [Asset Loader](crate::Assets) to allow for recursive asset loading.
 pub struct Data<'a> {
     pub(super) name: &'a str,
@@ -63,9 +63,9 @@ impl<'a> Data<'a> {
 }
 
 /// An asset that will be loaded from a single unique file
-/// 
+///
 /// Each asset can fail to load it's data
-/// 
+///
 /// This trait contains a "context" that can be passed around with the asset load settings
 pub trait Asset: Sized + 'static {
     /// Context that will be used to load the asset

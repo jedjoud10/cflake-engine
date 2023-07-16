@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{FileManager, FileType, Time};
-use world::{user, System, World, post_user};
+use world::{post_user, user, System, World};
 
 // Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
@@ -110,7 +110,7 @@ pub fn time(system: &mut System) {
                 // Decrease delta and reset interpolations
                 time.accumulator -= TICK_DELTA;
                 time.tick_interpolation = 1.0;
-            } 
+            }
 
             // LIMIT TICKS WHEN WE HAVE SPIRAL OF DEATH
             if let Some(count) = time.ticks_to_execute.as_mut() {
@@ -139,13 +139,15 @@ pub fn time(system: &mut System) {
 
 // Add the event cleaner system
 pub fn per_frame_event_clean(system: &mut System) {
-    system.insert_update(|world: &mut World| {
-        if let Some(cleaner) = crate::PER_FRAME_EVENTS_CACHE_CLEANER.get() {
-            let locked = cleaner.lock();
+    system
+        .insert_update(|world: &mut World| {
+            if let Some(cleaner) = crate::PER_FRAME_EVENTS_CACHE_CLEANER.get() {
+                let locked = cleaner.lock();
 
-            for (_, callback) in locked.iter() {
-                callback(world)
+                for (_, callback) in locked.iter() {
+                    callback(world)
+                }
             }
-        }
-    }).after(post_user);
+        })
+        .after(post_user);
 }

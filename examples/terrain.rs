@@ -22,14 +22,12 @@ fn graph(x: VoxelNode<f32>, y: VoxelNode<f32>, z: VoxelNode<f32>) -> VoxelNode<f
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
-    
+
     // Create the terrain generator's settings
     let mesher = TerrainMeshSettings::default();
     let memory = TerrainMemorySettings::default();
     let rendering = TerrainRenderingSettings::default();
-    let settings = TerrainSettings::new(
-        mesher, memory, rendering
-    ).unwrap();
+    let settings = TerrainSettings::new(mesher, memory, rendering).unwrap();
 
     // Drop (needed) to insert settings
     drop(graphics);
@@ -52,7 +50,10 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight { intensity: 1.5, color: vek::Rgb::broadcast(255)  };
+    let light = DirectionalLight {
+        intensity: 1.5,
+        color: vek::Rgb::broadcast(255),
+    };
     let rotation = vek::Quaternion::rotation_x(-20.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 
@@ -84,7 +85,19 @@ fn init(world: &mut World) {
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = CuboidColliderBuilder::new(10.0, vek::Extent3::broadcast(1.0)).build();
-    scene.prefabify("cube", (renderer, position, rotation, surface, rigidbody, collider, velocity, angular_velocity));
+    scene.prefabify(
+        "cube",
+        (
+            renderer,
+            position,
+            rotation,
+            surface,
+            rigidbody,
+            collider,
+            velocity,
+            angular_velocity,
+        ),
+    );
 }
 
 // Updates the light direction and quites from the engine

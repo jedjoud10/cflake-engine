@@ -1,14 +1,13 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct,
-    EnvironmentMap, MaskMap, Material, NormalMap, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform, Pass, SubSurface,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, EnvironmentMap, MaskMap, Material,
+    NormalMap, Pass, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, SubSurface,
 };
 
 use assets::Assets;
 
 use graphics::{
-    BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
-    PushConstants, Shader, VertexModule, ActiveRenderPipeline, Texture,
+    ActiveRenderPipeline, BindGroup, Compiler, FragmentModule, GpuPod, Graphics, ModuleVisibility,
+    PushConstantLayout, PushConstants, Shader, Texture, VertexModule,
 };
 use utils::{Handle, Storage};
 
@@ -32,7 +31,7 @@ impl Material for PbrMaterial {
     type Resources<'w> = (
         world::Read<'w, Storage<AlbedoMap>>,
         world::Read<'w, Storage<NormalMap>>,
-        world::Read<'w, Storage<MaskMap>>
+        world::Read<'w, Storage<MaskMap>>,
     );
 
     type RenderPath = Direct;
@@ -40,7 +39,11 @@ impl Material for PbrMaterial {
     type Query<'a> = &'a ();
 
     // Load the respective PBR shader modules and compile them
-    fn shader<P: Pass>(_settings: &Self::Settings<'_>, graphics: &Graphics, assets: &Assets) -> Option<Shader> {
+    fn shader<P: Pass>(
+        _settings: &Self::Settings<'_>,
+        graphics: &Graphics,
+        assets: &Assets,
+    ) -> Option<Shader> {
         match P::pass_type() {
             crate::PassType::Deferred => {
                 // Load the vertex module from the assets
@@ -73,14 +76,15 @@ impl Material for PbrMaterial {
                 compiler.use_push_constant_layout(
                     PushConstantLayout::split(
                         <vek::Vec4<vek::Vec4<f32>> as GpuPod>::size(),
-                        <vek::Rgba<f32> as GpuPod>::size() * 2 + <vek::Extent2<f32> as GpuPod>::size(),
+                        <vek::Rgba<f32> as GpuPod>::size() * 2
+                            + <vek::Extent2<f32> as GpuPod>::size(),
                     )
                     .unwrap(),
                 );
-            
+
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
-            },
+            }
             crate::PassType::Shadow => {
                 let vert = assets
                     .load::<VertexModule>("engine/shaders/scene/pbr/shadow.vert")
@@ -90,15 +94,15 @@ impl Material for PbrMaterial {
                     .unwrap();
 
                 let mut compiler = Compiler::new(assets, graphics);
-                let layout = PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2).unwrap();
+                let layout =
+                    PushConstantLayout::vertex(<vek::Vec4<vek::Vec4<f32>> as GpuPod>::size() * 2)
+                        .unwrap();
                 compiler.use_push_constant_layout(layout);
-            
+
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
-            },
+            }
         }
-
-        
     }
 
     // Fetch the texture storages
@@ -158,9 +162,15 @@ impl Material for PbrMaterial {
         group.set_sampled_texture("mask_map", mask_map).unwrap();
 
         // Set the material samplers
-        group.set_sampler("albedo_map_sampler", albedo_map.sampler().unwrap()).unwrap();
-        group.set_sampler("normal_map_sampler", normal_map.sampler().unwrap()).unwrap();
-        group.set_sampler("mask_map_sampler", mask_map.sampler().unwrap()).unwrap();
+        group
+            .set_sampler("albedo_map_sampler", albedo_map.sampler().unwrap())
+            .unwrap();
+        group
+            .set_sampler("normal_map_sampler", normal_map.sampler().unwrap())
+            .unwrap();
+        group
+            .set_sampler("mask_map_sampler", mask_map.sampler().unwrap())
+            .unwrap();
     }
 
     // Set the surface push constants
@@ -183,7 +193,9 @@ impl Material for PbrMaterial {
             let lightspace = _default.lightspace.unwrap();
             let offset = bytes.len();
             let bytes = GpuPod::into_bytes(&lightspace.cols);
-            constants.push(bytes, offset as u32, ModuleVisibility::Vertex).unwrap();
+            constants
+                .push(bytes, offset as u32, ModuleVisibility::Vertex)
+                .unwrap();
         }
 
         // The rest is fragment data for the deferred pass

@@ -1,4 +1,4 @@
-use std::{time::Duration, marker::PhantomData};
+use std::{marker::PhantomData, time::Duration};
 
 use crate::{Caller, StageId};
 
@@ -8,11 +8,16 @@ pub struct PersistentEventTimings<C: Caller> {
     min: Duration,
     max: Duration,
     _phantom: PhantomData<C>,
-} 
+}
 
 impl<C: Caller> Clone for PersistentEventTimings<C> {
     fn clone(&self) -> Self {
-        Self { samples: self.samples.clone(), min: self.min.clone(), max: self.max.clone(), _phantom: self._phantom.clone() }
+        Self {
+            samples: self.samples.clone(),
+            min: self.min.clone(),
+            max: self.max.clone(),
+            _phantom: self._phantom.clone(),
+        }
     }
 }
 
@@ -50,7 +55,11 @@ pub struct EventTimings<C: Caller> {
 
 impl<C: Caller> Clone for EventTimings<C> {
     fn clone(&self) -> Self {
-        Self { id: self.id.clone(), elapsed: self.elapsed.clone(), persistent: self.persistent.clone() }
+        Self {
+            id: self.id.clone(),
+            elapsed: self.elapsed.clone(),
+            persistent: self.persistent.clone(),
+        }
     }
 }
 
@@ -64,7 +73,7 @@ impl<C: Caller> EventTimings<C> {
                 samples: [Duration::ZERO; 8],
                 min: Duration::ZERO,
                 max: Duration::ZERO,
-                _phantom: Default::default()
+                _phantom: Default::default(),
             }),
         }
     }
@@ -73,12 +82,12 @@ impl<C: Caller> EventTimings<C> {
     pub fn id(&self) -> StageId {
         self.id
     }
-    
+
     // Get the time it took to execute the event
     pub fn elapsed(&self) -> Duration {
         self.elapsed
     }
-    
+
     // Get persistent timing data
     pub fn persistent(&self) -> Option<&PersistentEventTimings<C>> {
         self.persistent.as_ref()
@@ -91,7 +100,7 @@ impl<C: Caller> EventTimings<C> {
             persistent.samples.rotate_right(1);
             persistent.samples[0] = timing;
             persistent.max = persistent.max.max(timing);
-            persistent.min = persistent.min.min(timing); 
+            persistent.min = persistent.min.min(timing);
         }
     }
 }

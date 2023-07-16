@@ -1,8 +1,12 @@
 use crate::{
-    DefaultMaterialResources, Material, Mesh, RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface, MeshAttribute, MeshAttributes, Pass, PassStats,
+    DefaultMaterialResources, Material, Mesh, MeshAttribute, MeshAttributes, Pass, PassStats,
+    RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface,
 };
 use ecs::Scene;
-use graphics::{ActivePipeline, RenderPipeline, ColorLayout, DepthStencilLayout, ActiveRenderPipeline, ActiveRenderPass};
+use graphics::{
+    ActivePipeline, ActiveRenderPass, ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
+    RenderPipeline,
+};
 use math::ExplicitVertices;
 use utils::{Handle, Storage};
 use world::World;
@@ -67,7 +71,6 @@ pub(crate) fn set_index_buffer_attribute<
     }
 }
 
-
 // Render all the visible surfaces of a specific material type using a specific pass
 // This allows us to re-use the code for deferred pass and shadow pass albeit at a small overhead
 pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
@@ -125,11 +128,12 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     let iter = iter.filter(|((surface, renderer), _)| P::is_surface_visible(surface, renderer));
     let subsurfaces = iter.collect::<Vec<_>>();
     let visible = subsurfaces.len();
-    let subsurfaces = subsurfaces
-        .iter()
-        .flat_map(|((surface, renderer), user)| 
-            surface.subsurfaces.iter().map(move |x| ((x, renderer), user))
-        );
+    let subsurfaces = subsurfaces.iter().flat_map(|((surface, renderer), user)| {
+        surface
+            .subsurfaces
+            .iter()
+            .map(move |x| ((x, renderer), user))
+    });
 
     // Set the number of culled surfaces
     stats.culled_sub_surfaces = max - visible;
@@ -189,7 +193,9 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         // If a mesh isn't valid we have a problem, not so big but still a problem
         if !<M::RenderPath as RenderPath>::is_valid(defaults, mesh) {
-            log::warn!("Mesh invalid! Check buffers or indexed indirect count/offset (normal render pipe)");
+            log::warn!(
+                "Mesh invalid! Check buffers or indexed indirect count/offset (normal render pipe)"
+            );
             continue;
         }
 
@@ -275,12 +281,12 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
         // Draw the mesh
         <M::RenderPath as RenderPath>::draw(mesh, defaults, &mut active).unwrap();
-        
+
         // These values won't get added it if's a invalid or indirect mesh
         stats.rendered_sub_surfaces += 1;
         stats.rendered_direct_triangles_drawn +=
-            <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh)
-                .unwrap_or_default() as u64;
+            <<M as Material>::RenderPath as RenderPath>::triangle_count(mesh).unwrap_or_default()
+                as u64;
         stats.rendered_direct_vertices_drawn +=
             <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
                 as u64;

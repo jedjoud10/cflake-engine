@@ -13,7 +13,7 @@ use parking_lot::Mutex;
 use rendering::{attributes, AttributeBuffer, MultiDrawIndirectCountMesh};
 use utils::{BitSet, Handle, Storage};
 
-use crate::{create_counters, TerrainSettings, PermTriangles, PermVertices};
+use crate::{create_counters, PermTriangles, PermVertices, TerrainSettings};
 
 // Memory manager will be responsible for finding free memory and copying chunks there
 pub struct MemoryManager {
@@ -38,7 +38,7 @@ pub struct MemoryManager {
     // Vertices and triangles per allocation
     pub(crate) output_vertex_buffer_length: usize,
     pub(crate) output_triangle_buffer_length: usize,
-    
+
     // Vertices and triangles per sub allocation
     pub(crate) vertices_per_sub_allocation: u32,
     pub(crate) triangles_per_sub_allocation: u32,
@@ -63,10 +63,12 @@ pub struct MemoryManager {
     pub(crate) allocation_meshes: Vec<Handle<MultiDrawIndirectCountMesh>>,
 
     // Keeps track of the offset/counter async data of each chunk
-    pub(crate) readback_offsets_and_counters: Arc<Mutex<AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>>>,
+    pub(crate) readback_offsets_and_counters:
+        Arc<Mutex<AHashMap<Entity, (Option<vek::Vec2<u32>>, Option<vek::Vec2<u32>>)>>>,
 
     // Keeps track of the vertices/triangles async data of nearby chunks
-    pub(crate) readback_vertices_and_triangles: Arc<Mutex<AHashMap<Entity, (Option<Vec<vek::Vec4<f32>>>, Option<Vec<[u32; 3]>>)>>>,
+    pub(crate) readback_vertices_and_triangles:
+        Arc<Mutex<AHashMap<Entity, (Option<Vec<vek::Vec4<f32>>>, Option<Vec<[u32; 3]>>)>>>,
 }
 
 impl MemoryManager {
@@ -87,11 +89,11 @@ impl MemoryManager {
             graphics.device().limits().max_storage_buffer_binding_size as usize / 32;
         let mut output_triangle_buffer_length =
             graphics.device().limits().max_storage_buffer_binding_size as usize / 12;
-        
+
         // Reduce these numbers blud
         output_vertex_buffer_length /= 2;
         output_triangle_buffer_length /= 2;
-        
+
         // Get number of sub-allocation chunks for two buffer types (vertices and triangles)
         let vertex_sub_allocations_length =
             (output_vertex_buffer_length as f32) / sub_allocation_count as f32;
@@ -134,14 +136,11 @@ impl MemoryManager {
         );
 
         // Visibility bitset and GPU buffers
-        let visibility_bitsets = (0..allocation_count)
-            .map(|_| BitSet::new())
-            .collect();
+        let visibility_bitsets = (0..allocation_count).map(|_| BitSet::new()).collect();
         let visibility_buffers = create_empty_buffer_count(graphics, allocation_count);
 
         // Generated and culled positions and scalings
-        let culled_position_scaling_buffers =
-            create_empty_buffer_count(graphics, allocation_count);
+        let culled_position_scaling_buffers = create_empty_buffer_count(graphics, allocation_count);
         let generated_position_scaling_buffers =
             create_empty_buffer_count(graphics, allocation_count);
 

@@ -1,11 +1,10 @@
-use std::{rc::Rc, cell::RefCell, cmp::min};
+use std::{cell::RefCell, cmp::min, rc::Rc};
 
-use crate::{
-    ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator,
-};
+use crate::{ChunkCuller, ChunkManager, MemoryManager, MeshGenerator, VoxelGenerator};
 
 use graphics::{
-    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, TextureImportSettings, TextureScale, SamplerSettings,
+    ActiveComputeDispatcher, BindGroup, Compiler, Graphics, PushConstants, SamplerSettings,
+    TextureImportSettings, TextureScale,
 };
 
 use thiserror::Error;
@@ -50,11 +49,10 @@ impl Default for TerrainMemorySettings {
     fn default() -> Self {
         Self {
             allocation_count: 1,
-            sub_allocation_count: 1024
+            sub_allocation_count: 1024,
         }
     }
 }
-
 
 // Terrain "sub-materials" (aka layered textures) that we can load in
 // Contains the paths of the sub material textures that we will load
@@ -108,7 +106,7 @@ impl Default for TerrainRenderingSettings {
     fn default() -> Self {
         Self {
             mode: TerrainRenderingMode::LowPoly(TerrainRenderingLowPolyMode::Averaged),
-            ambient_occlusion: Some(TerrainRenderingAmbientOcclusion {  }),
+            ambient_occlusion: Some(TerrainRenderingAmbientOcclusion {}),
             submaterials: None,
         }
     }

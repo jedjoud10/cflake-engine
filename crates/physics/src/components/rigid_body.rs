@@ -3,7 +3,7 @@ pub use rapier3d::prelude::LockedAxes;
 pub use rapier3d::prelude::RigidBodyType;
 
 // A rigidbody is an object that is affect by external forces and collisions
-// It basically represents any physics object in the world scene that 
+// It basically represents any physics object in the world scene that
 #[derive(Component)]
 pub struct RigidBody {
     pub(crate) _type: RigidBodyType,
@@ -95,7 +95,7 @@ impl RigidBodyBuilder {
             torque_impulses: Vec::new(),
             forces: Vec::new(),
             forces_at_points: Vec::new(),
-            torques: Vec::new()
+            torques: Vec::new(),
         })
     }
 
@@ -110,7 +110,7 @@ impl RigidBodyBuilder {
         self.0.locked = locked;
         self
     }
-    
+
     // Set the rigidbdoy type
     pub fn set_type(mut self, _type: RigidBodyType) -> Self {
         self.0._type = _type;

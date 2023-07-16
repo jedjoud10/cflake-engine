@@ -1,12 +1,8 @@
-
-
+use crate::{DefaultMaterialResources, Material, Pass, RenderPath, Renderer, SubSurface, Surface};
 use ecs::Scene;
 use math::ExplicitVertices;
-use rayon::prelude::{
-    IntoParallelIterator, ParallelIterator,
-};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use world::World;
-use crate::{DefaultMaterialResources, Material, RenderPath, Renderer, SubSurface, Surface, Pass};
 
 // Check if an AABB intersects all the given frustum planes
 // TODO: Use space partioning algorithms to make this faster (ex. Octree)
@@ -87,18 +83,21 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
         }
 
         // A surface is culled *only* if all of it's sub-surface are not visible
-        P::set_cull_state(surface, surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
-            // Get the mesh and it's AABB
-            let mesh = <M::RenderPath as RenderPath>::get(defaults, mesh);
-            let aabb = mesh.vertices().aabb();
+        P::set_cull_state(
+            surface,
+            surface.subsurfaces.iter().all(|SubSurface { mesh, .. }| {
+                // Get the mesh and it's AABB
+                let mesh = <M::RenderPath as RenderPath>::get(defaults, mesh);
+                let aabb = mesh.vertices().aabb();
 
-            // If we have a valid AABB, check if the surface is visible within the frustum
-            if let Some(aabb) = aabb {
-                P::cull(&defaults, aabb, &renderer.matrix)
-            } else {
-                false
-            }
-        }));
+                // If we have a valid AABB, check if the surface is visible within the frustum
+                if let Some(aabb) = aabb {
+                    P::cull(&defaults, aabb, &renderer.matrix)
+                } else {
+                    false
+                }
+            }),
+        );
     }
     //iter.for_each(|(surface, renderer)| {
 

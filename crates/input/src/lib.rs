@@ -45,7 +45,10 @@ pub struct InputUserBindings {
     pub(crate) axis_bindings: AHashMap<&'static str, Axis>,
 }
 
-fn order<S, V: Serialize>(value: &AHashMap<&'static str, V>, serializer: S) -> Result<S::Ok, S::Error>
+fn order<S, V: Serialize>(
+    value: &AHashMap<&'static str, V>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -77,9 +80,7 @@ impl Input {
     pub fn bind_axis(&mut self, name: &'static str, axis: impl Into<Axis>) {
         let axis = axis.into();
         log::debug!("Binding axis {axis:?} to '{name}'");
-        self.bindings
-            .axis_bindings
-            .insert(name, axis);
+        self.bindings.axis_bindings.insert(name, axis);
     }
 
     /// Get the state of a button mapping or a key mapping.

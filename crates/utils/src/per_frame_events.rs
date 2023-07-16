@@ -4,7 +4,9 @@ use ahash::AHashMap;
 use parking_lot::Mutex;
 use world::World;
 
-pub(crate) static PER_FRAME_EVENTS_CACHE_CLEANER: OnceLock<Mutex<AHashMap<TypeId, Box<dyn Fn(&World) + Send>>>> = OnceLock::new();
+pub(crate) static PER_FRAME_EVENTS_CACHE_CLEANER: OnceLock<
+    Mutex<AHashMap<TypeId, Box<dyn Fn(&World) + Send>>>,
+> = OnceLock::new();
 
 // Simple utility to handle communications between systems
 // Design stolen from bevy event sender / receiver

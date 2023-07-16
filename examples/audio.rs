@@ -13,7 +13,7 @@ fn init(world: &mut World) {
     // Get the required resources
     let assets = world.get::<Assets>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    
+
     // Create an audio listener
     let mut player = AudioListener::new().unwrap();
     player.set_volume(0.010);
@@ -32,16 +32,15 @@ fn init(world: &mut World) {
 
     // Create a square wave
     let square = Square::new(140.0, 0.5);
-    
+
     // Amplify the audio source
-    let square = square
-        .amplify(0.4);
+    let square = square.amplify(0.4);
 
     // Apply a fade in easing effect
     let square = square.fade(
         Easing::Cosine,
         EasingDirection::In,
-        std::time::Duration::from_secs_f32(6.0)
+        std::time::Duration::from_secs_f32(6.0),
     );
 
     // Create a sine wave

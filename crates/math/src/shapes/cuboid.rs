@@ -13,7 +13,10 @@ pub struct Cuboid<T> {
 impl<T> Cuboid<T> {
     // Create a cuboid from a center and and half-extent
     pub fn new(center: vek::Vec3<T>, half_extent: vek::Extent3<T>) -> Self {
-        Self { center, half_extent }
+        Self {
+            center,
+            half_extent,
+        }
     }
 
     // Create a cube from a center and half-extent

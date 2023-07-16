@@ -3,7 +3,8 @@ use std::{
     marker::PhantomData,
     mem::transmute,
     num::{NonZeroU32, NonZeroU8},
-    sync::Arc, ops::{RangeBounds, Bound},
+    ops::{Bound, RangeBounds},
+    sync::Arc,
 };
 
 use itertools::Itertools;
@@ -11,10 +12,10 @@ use smallvec::SmallVec;
 use wgpu::{SamplerDescriptor, TextureDescriptor, TextureViewDescriptor};
 
 use crate::{
-    Extent, GpuPod, Graphics, LayeredOrigin,
-    Origin, Region, RenderTarget, Sampler, SamplerSettings, SamplerWrap, Texel, TexelSize,
-    ViewAsTargetError, TextureInitializationError, TextureMipLevelError, TextureMipMaps,
-    TextureSamplerError, TextureUsage, TextureViewDimension, TextureViewSettings, TextureViewMut, TextureViewRef,
+    Extent, GpuPod, Graphics, LayeredOrigin, Origin, Region, RenderTarget, Sampler,
+    SamplerSettings, SamplerWrap, Texel, TexelSize, TextureInitializationError,
+    TextureMipLevelError, TextureMipMaps, TextureSamplerError, TextureUsage, TextureViewDimension,
+    TextureViewMut, TextureViewRef, TextureViewSettings, ViewAsTargetError,
 };
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
@@ -175,9 +176,7 @@ pub trait Texture: Sized + 'static {
         let views = create_texture_views::<Self::T, Self::Region>(&texture, format, extent, views)?;
 
         Ok(unsafe {
-            Self::from_raw_parts(
-                graphics, texture, views, sampler, sampling, extent, usage,
-            )
+            Self::from_raw_parts(graphics, texture, views, sampler, sampling, extent, usage)
         })
     }
 
@@ -219,22 +218,26 @@ pub trait Texture: Sized + 'static {
 
     // Get a single immutable view of the texture
     fn view(&self, index: usize) -> Option<TextureViewRef<Self>> {
-        self.raw_views().get(index).map(|(view, settings)| TextureViewRef {
-            texture: self,
-            view,
-            settings
-        })
+        self.raw_views()
+            .get(index)
+            .map(|(view, settings)| TextureViewRef {
+                texture: self,
+                view,
+                settings,
+            })
     }
-    
+
     // Get a single mutable view of the texture
     fn view_mut(&mut self, index: usize) -> Option<TextureViewMut<Self>> {
-        self.raw_views().get(index).map(|(view, settings)| TextureViewMut {
-            texture: self,
-            view,
-            settings
-        })
+        self.raw_views()
+            .get(index)
+            .map(|(view, settings)| TextureViewMut {
+                texture: self,
+                view,
+                settings,
+            })
     }
-    
+
     // Try to use the whole texture as a renderable target. This will fail if the texture isn't supported as render target
     // or if it's dimensions don't correspond to a 2D image
     fn as_render_target(&mut self) -> Result<RenderTarget<Self::T>, ViewAsTargetError> {
@@ -255,7 +258,6 @@ pub trait Texture: Sized + 'static {
             view: self.view(0).unwrap().view,
         })
     }
-
 
     // Get the stored graphics context
     fn graphics(&self) -> Graphics;
@@ -350,18 +352,23 @@ fn create_texture_views<T: Texel, R: Region>(
 
     let views = views.into_iter().unique();
     let aspect = texture_aspect::<T>();
-    Ok(views.map(|setting| {
-        (texture.create_view(&wgpu::TextureViewDescriptor {
-            label: None,
-            format: Some(format),
-            dimension: Some(setting.dimension),
-            aspect,
-            base_mip_level: setting.base_mip_level,
-            mip_level_count: setting.mip_level_count,
-            base_array_layer: setting.base_array_layer,
-            array_layer_count: setting.array_layer_count,
-        }), *setting)
-    }).collect::<Vec<_>>())
+    Ok(views
+        .map(|setting| {
+            (
+                texture.create_view(&wgpu::TextureViewDescriptor {
+                    label: None,
+                    format: Some(format),
+                    dimension: Some(setting.dimension),
+                    aspect,
+                    base_mip_level: setting.base_mip_level,
+                    mip_level_count: setting.mip_level_count,
+                    base_array_layer: setting.base_array_layer,
+                    array_layer_count: setting.array_layer_count,
+                }),
+                *setting,
+            )
+        })
+        .collect::<Vec<_>>())
 }
 
 // Create an image data layout based on the extent and texel type

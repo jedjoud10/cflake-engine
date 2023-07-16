@@ -1,7 +1,8 @@
 use ecs::Component;
 use std::{
     fmt::{Debug, Display},
-    ops::{Deref, DerefMut}, marker::PhantomData,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]

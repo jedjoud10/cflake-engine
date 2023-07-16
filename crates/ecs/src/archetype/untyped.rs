@@ -9,7 +9,7 @@ pub struct UntypedColumn {
     delta_frame_states: StateColumn,
 
     // Internal delta tick states stored in the column
-    delta_tick_states: StateColumn, 
+    delta_tick_states: StateColumn,
 }
 
 impl UntypedColumn {
@@ -69,7 +69,7 @@ impl UntypedColumn {
 
     // Get a mutable reference to the per-tick states
     pub(crate) fn delta_tick_states_mut(&mut self) -> &mut StateColumn {
-        &mut self.delta_tick_states 
+        &mut self.delta_tick_states
     }
 
     /// Get an immutable reference to the components.
@@ -91,7 +91,9 @@ impl UntypedColumn {
     }
 
     // Try to cast the internally stored component vector to Vec<T> and return it as a mutable "typed column"
-    pub(crate) fn as_mut_<T: Component>(&mut self) -> Option<(&mut Vec<T>, &mut StateColumn, &mut StateColumn)> {
+    pub(crate) fn as_mut_<T: Component>(
+        &mut self,
+    ) -> Option<(&mut Vec<T>, &mut StateColumn, &mut StateColumn)> {
         let vec = self.data.as_any_mut().downcast_mut::<Vec<T>>()?;
         let delta_frame_states = &mut self.delta_frame_states;
         let delta_tick_states = &mut self.delta_tick_states;

@@ -1,9 +1,9 @@
 use std::cell::Cell;
 
+use crate::{GenericCollider, PhysicsSurface};
 use ecs::{Component, Entity};
 use rendering::Mesh;
 use utils::Handle;
-use crate::{PhysicsSurface, GenericCollider};
 
 // Mesh collider that will represent a mesh using it's triangles and vertices
 #[derive(Component)]
@@ -18,19 +18,19 @@ pub struct MeshCollider {
 }
 
 impl MeshCollider {
-    // Update the vertices and triangles used by the mesh collider 
+    // Update the vertices and triangles used by the mesh collider
     pub fn set_geometry(&mut self, vertices: Vec<vek::Vec3<f32>>, triangles: Vec<[u32; 3]>) {
         self.vertices = Some(vertices);
         self.triangles = Some(triangles);
         self.modified.set(true);
     }
-    
+
     // Update the material used by the collider
     pub fn set_material(&mut self, material: Option<Handle<PhysicsSurface>>) {
         self.material = material;
         self.modified.set(true);
     }
-    
+
     // Update the sensor state of the collider
     pub fn set_sensor(&mut self, sensor: bool) {
         self.sensor = sensor;
@@ -38,10 +38,9 @@ impl MeshCollider {
     }
 }
 
-
 impl GenericCollider for MeshCollider {
     type RawRapierCollider = rapier3d::geometry::TriMesh;
-    
+
     #[inline(always)]
     fn handle(&self) -> Option<rapier3d::geometry::ColliderHandle> {
         self.handle
@@ -49,7 +48,7 @@ impl GenericCollider for MeshCollider {
 
     #[inline(always)]
     fn set_handle(&mut self, handle: rapier3d::geometry::ColliderHandle) {
-        self.handle = Some(handle);    
+        self.handle = Some(handle);
     }
 
     #[inline(always)]
@@ -68,7 +67,9 @@ impl GenericCollider for MeshCollider {
     }
 
     #[inline(always)]
-    fn cast_rapier_collider(generic: &mut rapier3d::geometry::Collider) -> &mut Self::RawRapierCollider {
+    fn cast_rapier_collider(
+        generic: &mut rapier3d::geometry::Collider,
+    ) -> &mut Self::RawRapierCollider {
         generic.shape_mut().as_trimesh_mut().unwrap()
     }
 
@@ -81,23 +82,27 @@ impl GenericCollider for MeshCollider {
     fn build_collider(&mut self, entity: &Entity) -> Option<rapier3d::geometry::Collider> {
         let vertices = self.vertices.take()?;
         let triangles = self.triangles.take()?;
-        
+
         if vertices.len() == 0 || triangles.len() == 0 {
             return None;
         }
-        
-        let vertices: Vec<rapier3d::na::Point3<f32>> = vertices.into_iter().map(|x| crate::vek_vec_to_na_point(x)).collect::<_>();
 
-        Some(rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
-            .mass(self.mass)
-            .sensor(self.sensor)
-            .user_data(entity.to_raw() as u128)
-            .build())
+        let vertices: Vec<rapier3d::na::Point3<f32>> = vertices
+            .into_iter()
+            .map(|x| crate::vek_vec_to_na_point(x))
+            .collect::<_>();
+
+        Some(
+            rapier3d::geometry::ColliderBuilder::trimesh(vertices, triangles)
+                .mass(self.mass)
+                .sensor(self.sensor)
+                .user_data(entity.to_raw() as u128)
+                .build(),
+        )
     }
 
     #[inline(always)]
-    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {
-    }
+    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {}
 }
 
 // Builder for creating a mesh collider
@@ -133,7 +138,7 @@ impl MeshColliderBuilder {
         self
     }
 
-    // Set the physics surface material of the collider 
+    // Set the physics surface material of the collider
     pub fn set_physics_material(mut self, material: Handle<PhysicsSurface>) -> Self {
         self.inner.material = Some(material);
         self

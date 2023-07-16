@@ -1,8 +1,14 @@
+use crate::{
+    DefaultMaterialResources, Material, MeshAttributes, RenderPath, Renderer, SceneColorLayout,
+    SceneDepthLayout, ShadowDepthLayout, SubSurface, Surface,
+};
 use assets::Assets;
-use graphics::{ColorLayout, DepthStencilLayout, RenderPass, BindGroup, Graphics, Shader, PrimitiveConfig, WindingOrder, PushConstants, ActiveRenderPipeline, ActivePipeline, Depth, RenderPipeline};
+use graphics::{
+    ActivePipeline, ActiveRenderPipeline, BindGroup, ColorLayout, Depth, DepthStencilLayout,
+    Graphics, PrimitiveConfig, PushConstants, RenderPass, RenderPipeline, Shader, WindingOrder,
+};
 use math::ExplicitVertices;
 use world::World;
-use crate::{RenderPath, DefaultMaterialResources, SceneColorLayout, MeshAttributes, Renderer, SceneDepthLayout, Surface, Material, SubSurface, ShadowDepthLayout};
 
 // Render pass that will render the scene
 pub struct DeferredPass;
@@ -12,9 +18,9 @@ pub struct ShadowPass;
 
 // Type of render pass
 pub enum PassType {
-    Deferred, Shadow
+    Deferred,
+    Shadow,
 }
-
 
 // Stats about objects and surfaces drawn for any given pass
 #[derive(Default, Clone, Copy)]
@@ -48,19 +54,23 @@ pub trait Pass {
     fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool);
 
     // Cull a specific surface when rendering the objects of this pass
-    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool;
+    fn cull(
+        defaults: &DefaultMaterialResources,
+        aabb: math::Aabb<f32>,
+        mesh: &vek::Mat4<f32>,
+    ) -> bool;
 
     // Check if a surface should be visible
     fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool;
 
     // Get the pass type
-    fn pass_type() -> PassType; 
+    fn pass_type() -> PassType;
 }
 
 impl Pass for DeferredPass {
     type C = SceneColorLayout;
     type DS = SceneDepthLayout;
-    
+
     #[inline(always)]
     fn pass_type() -> PassType {
         PassType::Deferred
@@ -72,7 +82,11 @@ impl Pass for DeferredPass {
     }
 
     #[inline(always)]
-    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+    fn cull(
+        defaults: &DefaultMaterialResources,
+        aabb: math::Aabb<f32>,
+        mesh: &vek::Mat4<f32>,
+    ) -> bool {
         !crate::pipeline::intersects_frustum(&defaults.camera_frustum, aabb, mesh)
     }
 
@@ -97,7 +111,11 @@ impl Pass for ShadowPass {
     }
 
     #[inline(always)]
-    fn cull(defaults: &DefaultMaterialResources, aabb: math::Aabb<f32>, mesh: &vek::Mat4<f32>) -> bool {
+    fn cull(
+        defaults: &DefaultMaterialResources,
+        aabb: math::Aabb<f32>,
+        mesh: &vek::Mat4<f32>,
+    ) -> bool {
         !crate::pipeline::intersects_lightspace(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
     }
 

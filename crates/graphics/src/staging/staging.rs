@@ -74,38 +74,44 @@ impl StagingPool {
 
         // Try to find a free buffer
         // If that's not possible, simply create a new one
-        self.allocations.iter().enumerate().find(|(i, buffer)| {
-            let cap = buffer.size() >= capacity;
-            let mode = match mode {
-                MapMode::Read => buffer.usage().contains(read),
-                MapMode::Write => buffer.usage().contains(write),
-            };
-            let free = !self.used.get(*i, Ordering::Relaxed);
-            cap && mode && free
-        }).unwrap_or_else(|| {
-            //log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
-            
-            // Scale up the capacity (so we don't have to allocate a new block anytime soon)
-            let capacity = (capacity * 4).next_power_of_two();
-            let capacity = capacity.max(256).min(graphics.device().limits().max_buffer_size);
+        self.allocations
+            .iter()
+            .enumerate()
+            .find(|(i, buffer)| {
+                let cap = buffer.size() >= capacity;
+                let mode = match mode {
+                    MapMode::Read => buffer.usage().contains(read),
+                    MapMode::Write => buffer.usage().contains(write),
+                };
+                let free = !self.used.get(*i, Ordering::Relaxed);
+                cap && mode && free
+            })
+            .unwrap_or_else(|| {
+                //log::trace!("did not find staging buffer with the proper requirements [cap = {capacity}b, mode = {mode:?}]");
 
-            // Create the buffer descriptor for a new buffer
-            let desc = wgpu::BufferDescriptor {
-                label: Some("graphics-staging-buffer"),
-                size: capacity,
-                usage: match mode {
-                    MapMode::Read => read,
-                    MapMode::Write => write,
-                },
-                mapped_at_creation: false,
-            };
+                // Scale up the capacity (so we don't have to allocate a new block anytime soon)
+                let capacity = (capacity * 4).next_power_of_two();
+                let capacity = capacity
+                    .max(256)
+                    .min(graphics.device().limits().max_buffer_size);
 
-            // Create the new buffer
-            let buffer = graphics.device().create_buffer(&desc);
-            //log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
-            let index = self.allocations.push(buffer);
-            (index, &self.allocations[index])
-        })
+                // Create the buffer descriptor for a new buffer
+                let desc = wgpu::BufferDescriptor {
+                    label: Some("graphics-staging-buffer"),
+                    size: capacity,
+                    usage: match mode {
+                        MapMode::Read => read,
+                        MapMode::Write => write,
+                    },
+                    mapped_at_creation: false,
+                };
+
+                // Create the new buffer
+                let buffer = graphics.device().create_buffer(&desc);
+                //log::trace!("allocating new staging buffer [cap = {capacity}b, mode = {mode:?}]");
+                let index = self.allocations.push(buffer);
+                (index, &self.allocations[index])
+            })
     }
 }
 

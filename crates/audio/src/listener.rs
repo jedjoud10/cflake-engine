@@ -1,10 +1,7 @@
-use std::sync::{
-    atomic::Ordering,
-    Arc,
-};
+use std::sync::{atomic::Ordering, Arc};
 
 use atomic_float::AtomicF32;
-use cpal::traits::{HostTrait, DeviceTrait};
+use cpal::traits::{DeviceTrait, HostTrait};
 use ecs::Component;
 
 // This is a component that will be able to playback any type of audio to a specific cpal device

@@ -1,11 +1,11 @@
 use ahash::AHashMap;
 use ecs::{Entity, Scene};
 
-use physics::{RigidBody, MeshCollider};
+use physics::{MeshCollider, RigidBody};
 use utils::Time;
 use world::{System, World};
 
-use crate::{Chunk, ChunkState, Terrain, MeshReadbackState};
+use crate::{Chunk, ChunkState, MeshReadbackState, Terrain};
 
 // Begins the async readback of range data at the start of the frame
 fn readback_begin_update(world: &mut World) {
@@ -29,12 +29,13 @@ fn readback_begin_update(world: &mut World) {
     // Start doing a counter and offset async readback for the chunk of last frame
     let mut last_chunk_generated = scene
         .query_mut::<(&mut Chunk, &Entity)>()
-        .into_iter().find(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart);
+        .into_iter()
+        .find(|(chunk, _)| chunk.state == ChunkState::PendingReadbackStart);
     if let Some((chunk, &entity)) = last_chunk_generated.as_mut() {
         chunk.state = ChunkState::PendingReadbackData;
         let counters = &memory.counters;
         let offsets = &memory.offsets;
-        
+
         // Readback the counters asynchronously
         let hashmap = memory.readback_offsets_and_counters.clone();
         counters
@@ -55,8 +56,7 @@ fn readback_begin_update(world: &mut World) {
             })
             .unwrap();
     };
-    
-    
+
     // Fetch any given chunk that we can readback a mesh for (collisions only)
     if settings.mesher.collisions {
         let mesh_readback_chunk = if let Some((chunk, entity)) = last_chunk_generated.as_mut() {
@@ -109,11 +109,8 @@ fn readback_end_update(world: &mut World) {
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (manager, memory, settings) = (
-        &mut terrain.manager,
-        &mut terrain.memory,
-        &terrain.settings,
-    );
+    let (manager, memory, settings) =
+        (&mut terrain.manager, &mut terrain.memory, &terrain.settings);
 
     // Find the first entity that has both counters and offsets fetched back
     let mut hashmap = memory.readback_offsets_and_counters.lock();
@@ -123,7 +120,8 @@ fn readback_end_update(world: &mut World) {
             let a = a.as_ref()?;
             let b = b.as_ref()?;
             Some((*e, *a, *b))
-        }).next();
+        })
+        .next();
 
     if let Some((entity, offset, count)) = iter {
         hashmap.remove(&entity).unwrap();
@@ -155,13 +153,14 @@ fn readback_end_update(world: &mut World) {
 
         // Disable the range and visibility if the mesh is not valid
         if solid {
-            manager.new_visibilities.push((chunk.allocation, chunk.local_index));
+            manager
+                .new_visibilities
+                .push((chunk.allocation, chunk.local_index));
             chunk.ranges = Some(vek::Vec2::new(offset, count + offset));
         } else {
             chunk.ranges = None;
         }
     }
-
 
     // Find the first entity that has both vertices and triangles fetched back
     let mut hashmap = memory.readback_vertices_and_triangles.lock();
@@ -171,18 +170,19 @@ fn readback_end_update(world: &mut World) {
             a.as_ref()?;
             b.as_ref()?;
             Some(*e)
-        }).next();
+        })
+        .next();
     if let Some(entity) = iter {
         let (vertices, triangles) = hashmap.remove(&entity).unwrap();
         let vertices = vertices.unwrap();
         let triangles = triangles.unwrap();
-        
+
         let mut entry = scene.entry_mut(entity).unwrap();
         let mut chunk = entry.get_mut::<Chunk>().unwrap();
         let node = chunk.node.unwrap();
         chunk.mesh_readback_state = Some(MeshReadbackState::Complete);
         let collision = entry.get_mut::<MeshCollider>().unwrap();
-        
+
         let vertices = crate::util::transform_vertices(vertices, node);
         collision.set_geometry(vertices, triangles);
     }

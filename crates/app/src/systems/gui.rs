@@ -1,6 +1,6 @@
-use std::{time::Duration, any::type_name};
+use std::{any::type_name, time::Duration};
 
-use gui::egui::{Widget, Ui};
+use gui::egui::{Ui, Widget};
 
 use crate::prelude::*;
 
@@ -102,7 +102,6 @@ fn update(world: &mut World) {
         .collapsible(true)
         .default_open(false)
         .show(&gui, |ui| {
-
             // Small function that will show a table for specific event timings
             fn show_events_table<C: Caller>(
                 ui: &mut Ui,
@@ -150,27 +149,47 @@ fn update(world: &mut World) {
                         body.rows(18.0f32, timings.len().min(10), |row_index, mut row| {
                             let event = &timings[timings.len() - row_index - 1];
                             let elapsed = event.elapsed();
-                            let color = pick_stats_label_color(elapsed.as_secs_f32() / total.as_secs_f32());
+                            let color =
+                                pick_stats_label_color(elapsed.as_secs_f32() / total.as_secs_f32());
                             let color = egui::Color32::from_rgb(color.r, color.g, color.b);
-
-                            
 
                             row.col(|ui| {
                                 ui.colored_label(color, event.id().system.name);
                             });
                             row.col(|ui| {
-                                ui.colored_label(color, format!("{:.2?}ms", elapsed.as_secs_f32() * 1000.0));
+                                ui.colored_label(
+                                    color,
+                                    format!("{:.2?}ms", elapsed.as_secs_f32() * 1000.0),
+                                );
                             });
-                            
+
                             if let Some(persistent) = event.persistent() {
                                 row.col(|ui| {
-                                    ui.colored_label(color, format!("{:.2?}ms", persistent.average().as_secs_f32() * 1000.0));
+                                    ui.colored_label(
+                                        color,
+                                        format!(
+                                            "{:.2?}ms",
+                                            persistent.average().as_secs_f32() * 1000.0
+                                        ),
+                                    );
                                 });
                                 row.col(|ui| {
-                                    ui.colored_label(color, format!("{:.2?}ms", persistent.min().as_secs_f32() * 1000.0));
+                                    ui.colored_label(
+                                        color,
+                                        format!(
+                                            "{:.2?}ms",
+                                            persistent.min().as_secs_f32() * 1000.0
+                                        ),
+                                    );
                                 });
                                 row.col(|ui| {
-                                    ui.colored_label(color, format!("{:.2?}ms", persistent.max().as_secs_f32() * 1000.0));
+                                    ui.colored_label(
+                                        color,
+                                        format!(
+                                            "{:.2?}ms",
+                                            persistent.max().as_secs_f32() * 1000.0
+                                        ),
+                                    );
                                 });
                             }
                         });
@@ -305,7 +324,6 @@ fn update(world: &mut World) {
                         }
                     });
             });
-            
 
             ui.collapsing("Prefabs Table", |ui| {
                 egui::Grid::new("prefabs")
@@ -376,7 +394,6 @@ fn update(world: &mut World) {
                         ui.end_row();
                     }
                 });
-
         });
     }
 
@@ -446,7 +463,11 @@ fn update(world: &mut World) {
                     .show(ui, |ui| {
                         for (i, value) in shadowmapping.percents.iter_mut().enumerate() {
                             ui.label(format!("Cascade: {i}"));
-                            ui.add(egui::Slider::new(value, 0.0..=1.0).max_decimals(6).trailing_fill(true));
+                            ui.add(
+                                egui::Slider::new(value, 0.0..=1.0)
+                                    .max_decimals(6)
+                                    .trailing_fill(true),
+                            );
                             ui.end_row();
                         }
                     });
@@ -498,10 +519,7 @@ fn update(world: &mut World) {
                 "Material Instance Swaps: {}",
                 stats.material_instance_swap
             ));
-            ui.label(format!(
-                "Mesh Instance Swaps: {}",
-                stats.mesh_instance_swap
-            ));
+            ui.label(format!("Mesh Instance Swaps: {}", stats.mesh_instance_swap));
             ui.label(format!(
                 "Drawn sub-surfaces: {}",
                 stats.rendered_sub_surfaces
@@ -552,26 +570,29 @@ fn update(world: &mut World) {
             .show(&gui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Exposure: ");
-                    ui.add(egui::Slider::new(
-                        &mut compositor.post_process.exposure,
-                        0.001..=5.0,
-                    ).trailing_fill(true));
+                    ui.add(
+                        egui::Slider::new(&mut compositor.post_process.exposure, 0.001..=5.0)
+                            .trailing_fill(true),
+                    );
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Gamma: ");
-                    ui.add(egui::Slider::new(
-                        &mut compositor.post_process.gamma,
-                        0.01..=3.0,
-                    ).trailing_fill(true));
+                    ui.add(
+                        egui::Slider::new(&mut compositor.post_process.gamma, 0.01..=3.0)
+                            .trailing_fill(true),
+                    );
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Vignette Strength: ");
-                    ui.add(egui::Slider::new(
-                        &mut compositor.post_process.vignette_strength,
-                        0.0..=1.0,
-                    ).trailing_fill(true));
+                    ui.add(
+                        egui::Slider::new(
+                            &mut compositor.post_process.vignette_strength,
+                            0.0..=1.0,
+                        )
+                        .trailing_fill(true),
+                    );
                 });
 
                 ui.horizontal(|ui| {
@@ -590,19 +611,30 @@ fn update(world: &mut World) {
                     egui::ComboBox::from_label("tonemapping-mode")
                         .selected_text(format!("{:?}", selected_tonemapping))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::Reinhard, "Reinhard");
+                            ui.selectable_value(
+                                &mut selected_tonemapping,
+                                Tonemapping::Reinhard,
+                                "Reinhard",
+                            );
                             ui.selectable_value(
                                 &mut selected_tonemapping,
                                 Tonemapping::ReinhardJodie,
                                 "ReinhardJodie",
                             );
-                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::ACES, "ACES");
+                            ui.selectable_value(
+                                &mut selected_tonemapping,
+                                Tonemapping::ACES,
+                                "ACES",
+                            );
                             ui.selectable_value(&mut selected_tonemapping, Tonemapping::ALU, "ALU");
-                            ui.selectable_value(&mut selected_tonemapping, Tonemapping::Clamp, "Clamp");
+                            ui.selectable_value(
+                                &mut selected_tonemapping,
+                                Tonemapping::Clamp,
+                                "Clamp",
+                            );
                         });
                 });
 
-                
                 let mut selected_debug_gbuffer =
                     DebugGBuffer::from_index(compositor.post_process.debug_gbuffer);
 
@@ -612,23 +644,58 @@ fn update(world: &mut World) {
                     egui::ComboBox::from_label("gbuffer-debug-mode")
                         .selected_text(format!("{:?}", selected_debug_gbuffer))
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::None, "None");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Position, "Position");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Albedo, "Albedo");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::Normal, "Normal");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::ReconstructedNormal, "Reconstructed Normal");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::AmbientOcclusionMask, "AO Mask");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::RoughnessMask, "Roughness Mask");
-                            ui.selectable_value(&mut selected_debug_gbuffer, DebugGBuffer::MetallicMask, "Metallic Mask");
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::None,
+                                "None",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::Position,
+                                "Position",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::Albedo,
+                                "Albedo",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::Normal,
+                                "Normal",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::ReconstructedNormal,
+                                "Reconstructed Normal",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::AmbientOcclusionMask,
+                                "AO Mask",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::RoughnessMask,
+                                "Roughness Mask",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::MetallicMask,
+                                "Metallic Mask",
+                            );
                         });
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Tonemapping Strength: ");
-                    ui.add(egui::Slider::new(
-                        &mut compositor.post_process.tonemapping_strength,
-                        0.0..=1.0,
-                    ).trailing_fill(true));
+                    ui.add(
+                        egui::Slider::new(
+                            &mut compositor.post_process.tonemapping_strength,
+                            0.0..=1.0,
+                        )
+                        .trailing_fill(true),
+                    );
                 });
 
                 fn pick_vec4_color(text: &str, ui: &mut egui::Ui, vec: &mut vek::Vec4<f32>) {
@@ -636,24 +703,43 @@ fn update(world: &mut World) {
 
                     ui.horizontal(|ui| {
                         ui.label(text);
-                        egui::color_picker::color_edit_button_rgba(ui, &mut rgba, egui::color_picker::Alpha::Opaque);
+                        egui::color_picker::color_edit_button_rgba(
+                            ui,
+                            &mut rgba,
+                            egui::color_picker::Alpha::Opaque,
+                        );
                     });
 
                     vec.x = rgba.r();
                     vec.y = rgba.g();
                     vec.z = rgba.b();
-                }                
+                }
 
-                pick_vec4_color("Color Correction Gain: ", ui, &mut compositor.post_process.cc_gain);
-                pick_vec4_color("Color Correction Lift: ", ui, &mut compositor.post_process.cc_lift);
-                pick_vec4_color("Color Correction Gamma: ", ui, &mut compositor.post_process.cc_gamma);
-                
+                pick_vec4_color(
+                    "Color Correction Gain: ",
+                    ui,
+                    &mut compositor.post_process.cc_gain,
+                );
+                pick_vec4_color(
+                    "Color Correction Lift: ",
+                    ui,
+                    &mut compositor.post_process.cc_lift,
+                );
+                pick_vec4_color(
+                    "Color Correction Gamma: ",
+                    ui,
+                    &mut compositor.post_process.cc_gamma,
+                );
+
                 ui.horizontal(|ui| {
                     ui.label("Color Temperature (K): ");
-                    ui.add(egui::Slider::new(
-                        &mut compositor.post_process.cc_wb_temperature,
-                        1000f32..=12000f32,
-                    ).trailing_fill(true));
+                    ui.add(
+                        egui::Slider::new(
+                            &mut compositor.post_process.cc_wb_temperature,
+                            1000f32..=12000f32,
+                        )
+                        .trailing_fill(true),
+                    );
                 });
 
                 compositor.post_process.tonemapping_mode = selected_tonemapping.into_index();
@@ -672,15 +758,9 @@ fn update(world: &mut World) {
             .collapsible(true)
             .default_open(false)
             .show(&gui, |ui| {
-                ui.label(format!(
-                    "Total number of rigid-bodies: {}",
-                    max
-                ));
-                
-                ui.label(format!(
-                    "Number of sleeping rigid-bodies: {}",
-                    sleeping
-                ));
+                ui.label(format!("Total number of rigid-bodies: {}", max));
+
+                ui.label(format!("Number of sleeping rigid-bodies: {}", sleeping));
             });
     }
 }

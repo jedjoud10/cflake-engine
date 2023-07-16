@@ -1,9 +1,9 @@
-use crate::{DirectionalLight, DeferredRenderer};
+use crate::{DeferredRenderer, DirectionalLight};
 
 use ecs::Scene;
 use graphics::{Graphics, Window};
 
-use world::{System, World, post_user};
+use world::{post_user, System, World};
 
 // Update event that will set/update the main directional light
 fn update(world: &mut World) {
