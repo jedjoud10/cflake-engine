@@ -5,66 +5,66 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+/// Rotation component that lets entities have a rotation in space.
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct Rotation<Space: 'static>(vek::Quaternion::<f32>, PhantomData<Space>);
 
 impl<Space> Rotation<Space> {
-    // Create a new rotation based on the RAW quaternion components (stored in an array)
+    /// Create a new rotation based on the RAW quaternion components (stored in an array).
     pub fn new_xyzw_array(array: [f32; 4]) -> Self {
         Self::new_xyzw(array[0], array[1], array[2], array[3])
     }
 
-    // Creates a new rotation based on the RAW quaternion components
-    // Only use this if you know what you are doing
+    /// Creates a new rotation based on the RAW quaternion components.
     pub fn new_xyzw(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self(vek::Quaternion::<f32>::from_xyzw(x, y, z, w), PhantomData)
     }
 
-    // Calculate the forward vector (-Z)
+    /// Calculate the forward vector (-Z).
     pub fn forward(&self) -> vek::Vec3<f32> {
         vek::Mat4::from(self).mul_point(-vek::Vec3::unit_z())
     }
 
-    // Calculate the up vector (+Y)
+    /// Calculate the up vector (+Y).
     pub fn up(&self) -> vek::Vec3<f32> {
         vek::Mat4::from(self).mul_point(vek::Vec3::unit_y())
     }
 
-    // Calculate the right vector (+X)
+    /// Calculate the right vector (+X).
     pub fn right(&self) -> vek::Vec3<f32> {
         vek::Mat4::from(self).mul_point(vek::Vec3::unit_x())
     }
 
-    // Construct a rotation using an X rotation (radians)
+    /// Construct a rotation using an X rotation (radians).
     pub fn rotation_x(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_x(angle_radians), PhantomData)
     }
 
-    // Construct a rotation using a Y rotation (radians)
+    /// Construct a rotation using a Y rotation (radians).
     pub fn rotation_y(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_y(angle_radians), PhantomData)
     }
 
-    // Construct a rotation using a Z rotation (radians)
+    /// Construct a rotation using a Z rotation (radians).
     pub fn rotation_z(angle_radians: f32) -> Self {
         Self(vek::Quaternion::rotation_z(angle_radians), PhantomData)
     }
 
-    // Construct a rotation that is looking directly down (forward => (0, -1, 0))
+    /// Construct a rotation that is looking directly down (forward => (0, -1, 0)).
     pub fn looking_down() -> Self {
         let scalar: f32 = 90.0;
         Self::rotation_x(scalar.to_radians())
     }
 
-    // Construct a rotation that is looking directly up (forward => (0, 1, 0))
+    /// Construct a rotation that is looking directly up (forward => (0, 1, 0)).
     pub fn looking_up() -> Self {
         let scalar: f32 = -90.0;
         Self::rotation_x(scalar.to_radians())
     }
 
-    // Construct a rotation that is looking directly right (forward => (1, 0, 0))
-    // TODO: Not sure if this is it or if I should inver it
+    /// Construct a rotation that is looking directly right (forward => (1, 0, 0)).
+    /// TODO: Not sure if this is it or if I should invert it
     pub fn looking_right() -> Self {
         let scalar: f32 = 90.0;
         Self::rotation_y(scalar.to_radians())

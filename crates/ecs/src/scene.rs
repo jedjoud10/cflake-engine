@@ -55,7 +55,7 @@ impl Default for Scene {
 }
 
 impl Scene {
-    /// Spawn an entity with specific components.
+    /// Spawn an entity with specific components using the given [bundle](Bundle).
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
         assert!(
             B::is_valid(),
@@ -64,7 +64,7 @@ impl Scene {
         self.extend_from_iter(once(components))[0]
     }
 
-    /// Spawn a batch of entities with specific components from an iterator.
+    /// Spawn a batch of entities with specific components from an iterator that creates [bundles](Bundle).
     pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
         assert!(
             B::is_valid(),
@@ -191,37 +191,37 @@ impl Scene {
         self.entities.contains_key(entity)
     }
 
-    /// Get the immutable entity entry for a specific entity.
+    /// Get the immutable entity [entry](EntryRef) for a specific entity.
     pub fn entry(&self, entity: Entity) -> Option<EntryRef> {
         EntryRef::new(self, entity)
     }
 
-    /// Get the mutable entity entry for a specific entity.
+    /// Get the mutable entity [entry](EntryMut) for a specific entity.
     pub fn entry_mut(&mut self, entity: Entity) -> Option<EntryMut> {
         EntryMut::new(self, entity)
     }
 
-    /// Get a immutable reference to the active archetype set.
+    /// Get a immutable reference to the active [archetype set](ArchetypeSet).
     pub fn archetypes(&self) -> &ArchetypeSet {
         &self.archetypes
     }
 
-    /// Get a mutable reference to the active archetype set.
+    /// Get a mutable reference to the active [archetype set](ArchetypeSet).
     pub fn archetypes_mut(&mut self) -> &mut ArchetypeSet {
         &mut self.archetypes
     }
 
-    /// Get an immutable reference to the entity set.
+    /// Get an immutable reference to the [entity set](EntitySet).
     pub fn entities(&self) -> &EntitySet {
         &self.entities
     }
 
-    /// Get a mutable reference to the entity set.
+    /// Get a mutable reference to the [entity set](EntitySet).
     pub fn entities_mut(&mut self) -> &mut EntitySet {
         &mut self.entities
     }
 
-    /// Create a new mutable query from this scene (with no filter).
+    /// Create a new mutable [query](QueryLayoutMut) from this scene (with no filter).
     pub fn query_mut<'a, L: QueryLayoutMut>(&'a mut self) -> QueryMut<'a, '_, L> {
         assert!(
             L::is_valid(),
@@ -230,7 +230,7 @@ impl Scene {
         QueryMut::new(self)
     }
 
-    /// Create a new mutable query from this scene using a filter.
+    /// Create a new mutable [query](QueryLayoutMut) from this scene using a [filter](QueryFilter).
     pub fn query_mut_with<'a, L: QueryLayoutMut>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
@@ -242,12 +242,12 @@ impl Scene {
         QueryMut::new_with_filter(self, filter, self.ticked)
     }
 
-    /// Create a new immutable query from this scene (with no filter).
+    /// Create a new immutable [query](QueryLayoutRef) from this scene (with no filter).
     pub fn query<'a, L: QueryLayoutRef>(&'a self) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new(self)
     }
 
-    /// Create a new immutable query from this scene using a filter.
+    /// Create a new immutable [query](QueryLayoutRef) from this scene using a [filter](QueryFilter).
     pub fn query_with<'a, L: QueryLayoutRef>(
         &'a self,
         filter: Wrap<impl QueryFilter>,
@@ -309,18 +309,21 @@ fn set_ticked_false(world: &mut World) {
     scene.ticked = false;
 }
 
-/// Only used for init
+// Only used for init
+#[doc(hidden)]
 pub fn common(system: &mut System) {
     system.insert_init(init).before(user);
 }
 
-/// Executes shit at the start of every frame
+// Executes shit at the start of every frame
+#[doc(hidden)]
 pub fn pre_frame_or_tick(system: &mut System) {
     system.insert_tick(set_ticked_true).before(user).after(utils::time);
     system.insert_update(set_ticked_false).before(user).after(utils::time);
 }
 
-/// Executes shit at the end of each frame 
+// Executes shit at the end of each frame 
+#[doc(hidden)]
 pub fn post_frame_or_tick(system: &mut System) {
     system.insert_update(reset_delta_frame_states_end).after(post_user).after(utils::time);
     system.insert_tick(reset_delta_tick_states_end).after(post_user).after(utils::time);

@@ -17,11 +17,11 @@ mod private {
     }
 }
 
-// Trait that will allow us to link / unlink entities as parents and children
-// This will be implemented for the Scene struct that will handle all entities and components
+/// Trait that will allow us to link / unlink entities as parents and children.
+/// This will be implemented for the Scene struct that will handle all entities and components.
 pub trait HierarchyManager: private::HierarchyManagerInternal {
-    // Attach an entity to another entity, making a child-parent relation
-    // Returns None if the entities don't exist, or if child is already attached
+    /// Attach an entity to another entity, making a child-parent relation.
+    /// Returns None if the entities don't exist, or if child is already attached.
     fn attach(
         &mut self,
         child: Entity,
@@ -68,8 +68,8 @@ pub trait HierarchyManager: private::HierarchyManagerInternal {
         Some(())
     }
 
-    // Detach an entity from it's parent
-    // Returns None if the entities don't exist, or if the child isn't attached
+    /// Detach an entity from it's parent.
+    /// Returns None if the entities don't exist, or if the child isn't attached.
     fn detach(&mut self, child: Entity) -> Option<()> {
         let mut entry = self.entry_mut(child)?;
         assert!(entry.remove::<Child>());
@@ -289,6 +289,7 @@ fn update_hierarchy(world: &mut World) {
 }
 
 // This system will update the scene hierarchy with the proper local offsets and rotations
+#[doc(hidden)]
 pub fn hierarchy(system: &mut System) {
     system.insert_update(update_hierarchy)
         .after(post_user)

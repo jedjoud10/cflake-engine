@@ -32,7 +32,7 @@ impl ButtonState {
         matches!(self, ButtonState::Pressed)
     }
 
-    // This checks if the state is equal to State::Released
+    /// This checks if the state is equal to State::Released.
     pub fn released(&self) -> bool {
         matches!(self, ButtonState::Released)
     }

@@ -5,6 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+/// Uniform scale component that allows entities to have a scale.
 #[derive(Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct Scale<Space: 'static>(f32, PhantomData<Space>);
@@ -16,12 +17,12 @@ impl<Space> Default for Scale<Space> {
 }
 
 impl<Space> Scale<Space> {
-    // Construct a uniform scale with the given value
+    /// Construct a uniform scale with the given value.
     pub fn uniform(scale: f32) -> Self {
         Self(scale, PhantomData)
     }
 
-    // Construct a "unit" scale, aka default scale
+    /// Construct a "unit" scale, aka default scale.
     pub fn unit() -> Self {
         Self(1.0, PhantomData)
     }

@@ -5,32 +5,33 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+/// Position components that places entities in a specific point in space.
 #[derive(Default, Clone, Copy, PartialEq, Component)]
 #[repr(transparent)]
 pub struct Position<Space: 'static>(vek::Vec3<f32>, PhantomData<Space>);
 
 impl<Space> Position<Space> {
-    // Construct a position at the given X unit position
+    /// Construct a position at the given X unit position
     pub fn at_x(x: f32) -> Self {
         Self(vek::Vec3::new(x, 0.0, 0.0), PhantomData)
     }
 
-    // Construct a position at the given Y unit position
+    /// Construct a position at the given Y unit position
     pub fn at_y(y: f32) -> Self {
         Self(vek::Vec3::new(0.0, y, 0.0), PhantomData)
     }
 
-    // Construct a position at the given Z unit position
+    /// Construct a position at the given Z unit position
     pub fn at_z(z: f32) -> Self {
         Self(vek::Vec3::new(0.0, 0.0, z), PhantomData)
     }
 
-    // Construct a position at the given X, Y, Z position
+    /// Construct a position at the given X, Y, Z position
     pub fn at_xyz(x: f32, y: f32, z: f32) -> Self {
         Self((x, y, z).into(), PhantomData)
     }
 
-    // Construct a position at the given X, Y, Z position (stored in an array)
+    /// Construct a position at the given X, Y, Z position (stored in an array)
     pub fn at_xyz_array(array: [f32; 3]) -> Self {
         Self::at_xyz(array[0], array[1], array[2])
     }
