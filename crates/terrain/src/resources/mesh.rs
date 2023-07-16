@@ -2,7 +2,7 @@ use assets::Assets;
 
 use graphics::{
     Buffer, BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, R, RG, XY, XYZW,
+    ModuleVisibility, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, R, RG, XYZW,
 };
 
 use crate::{create_texture3d, TempTriangles, TempVertices, TerrainRenderingMode, TerrainSettings};

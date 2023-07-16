@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::{AudioClip, Source, SourceInput};
 
 impl Source for AudioClip {
-    fn sample(&mut self, input: &SourceInput) -> Option<f32> {
+    fn sample(&mut self, _input: &SourceInput) -> Option<f32> {
         todo!()
     }
 

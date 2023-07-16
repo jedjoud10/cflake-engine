@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Amplify, Buffered, Easing, EasingDirection, Fade, Mix, Repeat, Value};
+use crate::{Amplify, Easing, EasingDirection, Fade, Mix, Repeat, Value};
 
 // Given to the sources when they execute their "sample" method
 pub struct SourceInput {

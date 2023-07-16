@@ -1,6 +1,4 @@
-use crate::{
-    Compositor, DeferredRenderer, Environment, PostProcessUniform, ShadowMap, ShadowMapping,
-};
+use crate::{Compositor, DeferredRenderer, Environment, PostProcessUniform, ShadowMapping};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
@@ -26,7 +24,7 @@ fn update(world: &mut World) {
     let mut window = world.get_mut::<Window>().unwrap();
     let environment = world.get::<Environment>().unwrap();
     let shadow = world.get::<ShadowMapping>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
 
     // Write the post process settings to the buffer
     let value = compositor.post_process;

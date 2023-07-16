@@ -2,10 +2,9 @@ use std::mem::size_of;
 
 use assets::Assets;
 use graphics::{
-    BufferMode, BufferUsage, Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel,
-    LayeredTexture2D, ModuleVisibility, SamplerSettings, SamplerWrap, StorageAccess, Texel,
-    Texture, Texture2D, TextureMipMaps, TextureUsage, TextureViewDimension, TextureViewSettings,
-    UniformBuffer, RGBA,
+    Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel, ModuleVisibility,
+    SamplerSettings, SamplerWrap, StorageAccess, Texel, Texture, Texture2D, TextureMipMaps,
+    TextureUsage, TextureViewDimension, TextureViewSettings, RGBA,
 };
 
 pub type EnvironmentMap = CubeMap<RGBA<f32>>;

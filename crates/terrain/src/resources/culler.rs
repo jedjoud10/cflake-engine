@@ -4,7 +4,6 @@ use graphics::{
     Compiler, ComputeModule, ComputeShader, DrawIndexedIndirect, GpuPod, Graphics,
     ModuleVisibility, PushConstantLayout, StorageAccess,
 };
-use rendering::CameraUniform;
 
 // Chunk culler will be responsible for culling invisible / culled (GPU frustum culled) chunks that are not visible
 // TODO: Implement some sort of GPU occlusion culling with the "fill" state of each chunk

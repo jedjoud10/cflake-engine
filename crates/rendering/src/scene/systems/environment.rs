@@ -1,10 +1,10 @@
 use assets::Assets;
 use ecs::Scene;
 use graphics::{ActivePipeline, ComputePass, GpuPod, Graphics, Texture};
-use utils::{Storage, Time};
+use utils::Time;
 use world::{user, System, World};
 
-use crate::{DeferredRenderer, DirectionalLight, Environment, Pipelines, Renderer, Surface};
+use crate::{DeferredRenderer, DirectionalLight, Environment};
 
 // Add the envinronment resource into the world and the sky entity
 fn init(world: &mut World) {

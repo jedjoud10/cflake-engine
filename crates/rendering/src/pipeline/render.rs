@@ -1,13 +1,13 @@
 use crate::{
     DefaultMaterialResources, Material, Mesh, MeshAttribute, MeshAttributes, Pass, PassStats,
-    RenderPath, Renderer, SceneColorLayout, SceneDepthLayout, Surface,
+    RenderPath, Renderer, Surface,
 };
 use ecs::Scene;
 use graphics::{
     ActivePipeline, ActiveRenderPass, ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
     RenderPipeline,
 };
-use math::ExplicitVertices;
+
 use utils::{Handle, Storage};
 use world::World;
 
@@ -80,7 +80,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     stats: &mut PassStats,
     render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
-    let i = std::time::Instant::now();
+    let _i = std::time::Instant::now();
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
     let supported = M::attributes::<P>();
@@ -161,8 +161,8 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
         let mesh2 = &surface2.mesh;
         let mat2 = &surface2.material;
 
-        let mesh_ordering = mesh1.cmp(&mesh2);
-        let material_ordering = mat1.cmp(&mat2);
+        let mesh_ordering = mesh1.cmp(mesh2);
+        let material_ordering = mat1.cmp(mat2);
         material_ordering.then(mesh_ordering)
     });
 
@@ -202,7 +202,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
         // Set the surface group bindings
         active
             .set_bind_group(2, |group| {
-                M::set_surface_bindings::<P>(renderer, &mut resources, defaults, &user, group);
+                M::set_surface_bindings::<P>(renderer, &mut resources, defaults, user, group);
             })
             .unwrap();
 
@@ -273,7 +273,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
                     renderer,
                     &mut resources,
                     defaults,
-                    &user,
+                    user,
                     push_constants,
                 );
             })

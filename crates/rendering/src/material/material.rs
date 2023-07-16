@@ -1,12 +1,8 @@
-use crate::{
-    DefaultMaterialResources, Direct, MeshAttributes, Pass, RenderPath, Renderer, SceneColorLayout,
-    SubSurface,
-};
+use crate::{DefaultMaterialResources, MeshAttributes, Pass, RenderPath, Renderer};
 use assets::Assets;
 
 use graphics::{
-    ActiveRenderPipeline, BindGroup, BlendConfig, CompareFunction, DepthConfig, Graphics,
-    PrimitiveConfig, PushConstants, Shader, StencilConfig, WindingOrder,
+    ActiveRenderPipeline, BindGroup, Graphics, PrimitiveConfig, PushConstants, Shader, WindingOrder,
 };
 
 use world::World;
@@ -21,13 +17,13 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Checks if a material can be rendered with the given render path
     // If not, this will return a warning when trying to render a mesh
-    fn is_render_path_supported<RP: RenderPath>(settings: &Self::Settings<'_>) -> bool {
+    fn is_render_path_supported<RP: RenderPath>(_settings: &Self::Settings<'_>) -> bool {
         false
     }
 
     // Checks if a material can be used for rendering for a specific pass
     // If not, this will not call the following "shader()" method to setup shader
-    fn is_pass_supported<P: Pass>(settings: &Self::Settings<'_>) -> bool {
+    fn is_pass_supported<P: Pass>(_settings: &Self::Settings<'_>) -> bool {
         false
     }
 
@@ -60,7 +56,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     }
 
     // Fetch the required resources from the world
-    fn fetch<'w, P: Pass>(world: &'w World) -> Self::Resources<'w>;
+    fn fetch<P: Pass>(world: &World) -> Self::Resources<'_>;
 
     // Set the static bindings
     fn set_global_bindings<'r, P: Pass>(

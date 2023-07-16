@@ -32,10 +32,9 @@ impl<T: Source> Source for Repeat<T> {
     }
 
     fn duration(&self) -> Option<Duration> {
-        match self.0.duration() {
-            Some(x) => Some(Duration::from_secs_f32(x.as_secs_f32() * self.1 as f32)),
-            None => None,
-        }
+        self.0
+            .duration()
+            .map(|x| Duration::from_secs_f32(x.as_secs_f32() * self.1 as f32))
     }
 
     fn target_channels(&self) -> Option<u16> {

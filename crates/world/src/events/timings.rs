@@ -13,10 +13,10 @@ pub struct PersistentEventTimings<C: Caller> {
 impl<C: Caller> Clone for PersistentEventTimings<C> {
     fn clone(&self) -> Self {
         Self {
-            samples: self.samples.clone(),
-            min: self.min.clone(),
-            max: self.max.clone(),
-            _phantom: self._phantom.clone(),
+            samples: self.samples,
+            min: self.min,
+            max: self.max,
+            _phantom: self._phantom,
         }
     }
 }
@@ -56,8 +56,8 @@ pub struct EventTimings<C: Caller> {
 impl<C: Caller> Clone for EventTimings<C> {
     fn clone(&self) -> Self {
         Self {
-            id: self.id.clone(),
-            elapsed: self.elapsed.clone(),
+            id: self.id,
+            elapsed: self.elapsed,
             persistent: self.persistent.clone(),
         }
     }

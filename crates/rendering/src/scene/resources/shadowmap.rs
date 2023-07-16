@@ -1,18 +1,13 @@
-use arrayvec::ArrayVec;
-use assets::Assets;
 use bytemuck::{Pod, Zeroable};
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, Buffer, BufferMode, BufferUsage, CompareFunction,
-    Compiler, Depth, DepthConfig, Face, FragmentModule, GpuPod, Graphics, LayeredTexture2D, LoadOp,
-    ModuleVisibility, Normalized, Operation, PrimitiveConfig, PushConstantLayout, RenderPass,
-    RenderPipeline, SamplerSettings, SamplerWrap, Shader, StoreOp, Texture, TextureMipMaps,
-    TextureUsage, TextureViewDimension, TextureViewSettings, UniformBuffer, VertexModule,
-    WindingOrder,
+    BufferMode, BufferUsage, CompareFunction, Depth, Graphics, LayeredTexture2D, LoadOp, Operation,
+    RenderPass, SamplerSettings, SamplerWrap, StoreOp, Texture, TextureMipMaps, TextureUsage,
+    TextureViewDimension, TextureViewSettings, UniformBuffer,
 };
-use math::ExplicitVertices;
+
 use vek::FrustumPlanes;
 
-use crate::{create_uniform_buffer, MeshAttributes};
+use crate::create_uniform_buffer;
 
 // This is what will write to the depth texture
 pub type ShadowDepthLayout = Depth<f32>;

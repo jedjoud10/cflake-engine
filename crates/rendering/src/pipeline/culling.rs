@@ -1,7 +1,7 @@
 use crate::{DefaultMaterialResources, Material, Pass, RenderPath, Renderer, SubSurface, Surface};
 use ecs::Scene;
 use math::ExplicitVertices;
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use rayon::prelude::ParallelIterator;
 use world::World;
 
 // Check if an AABB intersects all the given frustum planes
@@ -92,7 +92,7 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
 
                 // If we have a valid AABB, check if the surface is visible within the frustum
                 if let Some(aabb) = aabb {
-                    P::cull(&defaults, aabb, &renderer.matrix)
+                    P::cull(defaults, aabb, &renderer.matrix)
                 } else {
                     false
                 }

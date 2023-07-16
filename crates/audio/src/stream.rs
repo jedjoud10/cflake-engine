@@ -1,12 +1,6 @@
-use std::{
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Arc,
-    },
-    time::{Duration, Instant},
-};
+use std::sync::{atomic::Ordering, Arc};
 
-use crate::{AudioClip, AudioListener, Source, SourceInput};
+use crate::{AudioListener, Source, SourceInput};
 use atomic_float::AtomicF32;
 use cpal::{traits::DeviceTrait, BuildStreamError, Stream, StreamConfig};
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};

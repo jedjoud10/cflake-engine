@@ -1,7 +1,7 @@
 use graphics::{
     Buffer, BufferMode, BufferUsage, DrawIndexedIndirect, GpuPod, Graphics, SamplerSettings, Texel,
     Texture, Texture3D, TextureMipMaps, TextureUsage, TextureViewSettings, TriangleBuffer, Vertex,
-    XY, XYZW,
+    XYZW,
 };
 use math::{Node, Octree};
 use rendering::{attributes, AttributeBuffer};
@@ -82,7 +82,7 @@ pub(crate) fn generation_priority_heuristic(
     // Favors chunks that are in front of the viewer
     priority *= viewer_forward.dot((node_center - viewer_position).normalized()) * 5.0;
 
-    return priority.clamp(0.0f32, 1000.0f32);
+    priority.clamp(0.0f32, 1000.0f32)
 }
 
 // Convert packed vertices to normal vertices (with scale) for collisions
@@ -124,7 +124,7 @@ pub(crate) fn transform_vertices(packed: Vec<vek::Vec4<f32>>, node: Node) -> Vec
 // TODO: URGENT PLEASE FIX
 pub(crate) fn find_skirts_direction(_node: &Node, _octree: &Octree) -> u32 {
     //return 0;
-    return u32::MAX;
+    u32::MAX
     /*
     let mut skirts = 0u32;
     let nodes = octree.nodes();

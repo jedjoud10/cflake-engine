@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use crate::{generation_priority_heuristic, Chunk, ChunkState, ChunkViewer, Terrain};
 
 use coords::{Position, Rotation, Scale};
@@ -19,7 +17,7 @@ fn update(world: &mut World) {
     // Tries to find a chunk viewer and the terrain generator
     let terrain = world.get_mut::<Terrain>();
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let viewer = scene.find_mut::<(&Entity, &mut ChunkViewer, &Position, &Rotation)>();
 
     // If we don't have terrain, don't do shit
@@ -33,7 +31,7 @@ fn update(world: &mut World) {
 
     // Get the terrain chunk manager and terrain settings
     let terrain = &mut *_terrain;
-    let mut manager = &mut terrain.manager;
+    let manager = &mut terrain.manager;
     let memory = &mut terrain.memory;
     let settings = &terrain.settings;
 
@@ -191,10 +189,9 @@ fn update(world: &mut World) {
                 // Split the entities into ones with a collider/RB and ones without
                 let mut with_colliders =
                     Vec::<(Position, Scale, Chunk, RigidBody, MeshCollider)>::new();
-                let without_colliders: Vec<(Position, Scale, Chunk)>;
 
                 // TODO: Make this more idiomatic
-                for i in 0..num_nodes_with_colliders {
+                for _i in 0..num_nodes_with_colliders {
                     let (pos, scale, mut chunk) = entities.pop().unwrap();
                     let mesh_collider =
                         MeshColliderBuilder::new(Vec::new(), Vec::new(), 1000.0).build();
@@ -203,7 +200,7 @@ fn update(world: &mut World) {
                     with_colliders.push((pos, scale, chunk, rigid_body, mesh_collider));
                 }
 
-                without_colliders = entities;
+                let without_colliders: Vec<(Position, Scale, Chunk)> = entities;
 
                 scene.extend_from_iter(without_colliders);
                 scene.extend_from_iter(with_colliders);

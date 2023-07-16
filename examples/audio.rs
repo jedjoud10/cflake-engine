@@ -23,8 +23,8 @@ fn init(world: &mut World) {
     asset!(assets, "user/audio/nicolas.mp3", "/examples/assets/");
 
     // Load the clips from their relative paths
-    let clip1 = assets.load::<AudioClip>("user/audio/bruh.wav").unwrap();
-    let clip2 = assets.load::<AudioClip>("user/audio/nicolas.mp3").unwrap();
+    let _clip1 = assets.load::<AudioClip>("user/audio/bruh.wav").unwrap();
+    let _clip2 = assets.load::<AudioClip>("user/audio/nicolas.mp3").unwrap();
 
     // Play both clips at the same time
     //scene.insert(AudioEmitter::new(clip1));

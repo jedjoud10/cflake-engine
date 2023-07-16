@@ -98,7 +98,7 @@ impl Chunk {
 
     // Force the regeneration of a specific chunk by setting it's state to dirty
     pub fn regenerate(&mut self) {
-        if let ChunkState::Generated { empty, .. } = self.state {
+        if let ChunkState::Generated { .. } = self.state {
             self.state = ChunkState::Dirty
         }
     }

@@ -9,7 +9,7 @@ use assets::Assets;
 use ecs::Scene;
 use graphics::{
     Depth, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics, Normalized,
-    Texture, TextureViewDimension, TriangleBuffer, Window, RGBA,
+    Texture, TriangleBuffer, Window, RGBA,
 };
 
 use utils::{Storage, Time};
@@ -19,7 +19,7 @@ use world::{post_user, user, System, WindowEvent, World};
 fn init(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
-    let mut assets = world.get_mut::<Assets>().unwrap();
+    let assets = world.get_mut::<Assets>().unwrap();
     let mut albedo_maps = Storage::<AlbedoMap>::default();
     let mut normal_maps = Storage::<NormalMap>::default();
     let mut mask_maps = Storage::<MaskMap>::default();
@@ -143,7 +143,7 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
+    let _graphics = world.get::<Graphics>().unwrap();
     let environment = world.get::<Environment>().unwrap();
 
     // Reset the stats

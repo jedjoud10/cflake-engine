@@ -7,10 +7,10 @@ use crate::{
     TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
 use assets::Asset;
-use bytemuck::{Pod, Zeroable};
+
 use graphics::{
-    BufferInitializationError, BufferMode, BufferUsage, DrawCountIndirectBuffer,
-    DrawIndexedIndirectBuffer, Graphics, Triangle, TriangleBuffer, Vertex,
+    BufferMode, BufferUsage, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, Graphics,
+    Triangle, TriangleBuffer,
 };
 use obj::TexturedVertex;
 
@@ -535,7 +535,7 @@ impl Asset for Mesh {
                 &positions,
                 normals.as_ref().unwrap(),
                 tex_coords.as_ref().unwrap(),
-                &triangles,
+                triangles,
             )
             .unwrap()
         });
@@ -598,7 +598,7 @@ impl Asset for Mesh {
             normals.as_deref(),
             tangents.as_deref(),
             tex_coords.as_deref(),
-            &triangles,
+            triangles,
             aabb,
         )
         .map_err(MeshImportError::Initialization)

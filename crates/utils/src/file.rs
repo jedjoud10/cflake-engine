@@ -221,7 +221,7 @@ impl FileManager {
         self.deserialized.insert(key, buf);
         let last = self.deserialized.get(&cloned).unwrap();
 
-        let value = Self::inner_deserialize_bytes::<T>(&last, format)?;
+        let value = Self::inner_deserialize_bytes::<T>(last, format)?;
         log::debug!("Deserialized data from {:?} successfully!", path.as_ref());
         Some(value)
     }

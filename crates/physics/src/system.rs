@@ -1,7 +1,5 @@
-use std::cell::Cell;
-
 use crate::{
-    util, AngularVelocity, CapsuleCollider, CharacterController, CuboidCollider, GenericCollider,
+    AngularVelocity, CapsuleCollider, CharacterController, CuboidCollider, GenericCollider,
     MeshCollider, Physics, PhysicsSurface, RigidBody, SphereCollider, Velocity,
 };
 use crate::{
@@ -12,9 +10,9 @@ use coords::{
     CurrentTickedPosition, CurrentTickedRotation, LastTickedPosition, LastTickedRotation,
 };
 use coords::{Position, Rotation};
-use ecs::{added, modified, Component, Entity, Scene};
+use ecs::{added, Component, Entity, Scene};
 use rapier3d::prelude::*;
-use utils::{Handle, Storage, Time};
+use utils::{Storage, Time};
 use world::{post_user, user, System, World};
 
 // This will spawn in the required rapier counter-part of the components
@@ -250,8 +248,8 @@ fn pre_step_sync_rapier_to_comps(
 }
 
 // Checks all the character controllers in the world and updates them
-fn post_step_update_character_controllers(physics: &mut Physics, scene: &mut Scene) {
-    for (cc, position, rotation, rb, velocity) in scene.query_mut::<(
+fn post_step_update_character_controllers(_physics: &mut Physics, scene: &mut Scene) {
+    for (cc, _position, _rotation, rb, velocity) in scene.query_mut::<(
         &mut CharacterController,
         &Position,
         &Rotation,
@@ -352,7 +350,7 @@ fn tick(world: &mut World) {
             if let Some(handle) = rigid_body.handle {
                 if !rigid_body._type.is_fixed() && (rigid_body.interpolated == interpolated) {
                     let rb = bodies.get_mut(handle).unwrap();
-                    let (new_position, new_rotation) = crate::isometry_to_trans_rot(&rb.position());
+                    let (new_position, new_rotation) = crate::isometry_to_trans_rot(rb.position());
                     let new_velocity = crate::na_vec_to_vek_vec(*rb.linvel());
                     let new_angular_velocity = crate::na_vec_to_vek_vec(*rb.angvel());
                     **position = new_position;

@@ -70,7 +70,7 @@ fn create_texture<T: Texel>(
 ) -> Texture2D<T> {
     Texture2D::from_texels(
         graphics,
-        Some(&texels),
+        Some(texels),
         extent,
         TextureUsage::SAMPLED | TextureUsage::COPY_DST,
         &[TextureViewSettings::whole::<
@@ -189,7 +189,7 @@ impl Rasterizer {
                     ImageData::Font(font) => {
                         create_rf32_texture(graphics, dimensions, &font.pixels)
                     }
-                    ImageData::Color(color) => {
+                    ImageData::Color(_color) => {
                         todo!()
                     }
                 }

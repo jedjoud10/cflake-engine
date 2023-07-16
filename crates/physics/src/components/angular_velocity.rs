@@ -1,5 +1,3 @@
-use vek::Quaternion;
-
 use ecs::Component;
 use std::{
     fmt::Debug,

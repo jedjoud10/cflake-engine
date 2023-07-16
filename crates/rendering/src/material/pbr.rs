@@ -1,6 +1,6 @@
 use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, EnvironmentMap, MaskMap, Material,
-    NormalMap, Pass, Renderer, SceneUniform, ShadowMap, ShadowMapping, ShadowUniform, SubSurface,
+    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap, Material, NormalMap, Pass,
+    Renderer,
 };
 
 use assets::Assets;
@@ -115,7 +115,7 @@ impl Material for PbrMaterial {
 
     // Set the static bindings that will never change
     fn set_global_bindings<'r, P: Pass>(
-        resources: &'r mut Self::Resources<'_>,
+        _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
@@ -177,7 +177,7 @@ impl Material for PbrMaterial {
     fn set_push_constants<'r, 'w, P: Pass>(
         &self,
         renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
+        _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         _query: &Self::Query<'w>,
         constants: &mut PushConstants<ActiveRenderPipeline<P::C, P::DS>>,

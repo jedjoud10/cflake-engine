@@ -1,7 +1,6 @@
-use ahash::AHashMap;
 use ecs::{Entity, Scene};
 
-use physics::{MeshCollider, RigidBody};
+use physics::MeshCollider;
 use utils::Time;
 use world::{System, World};
 
@@ -9,7 +8,7 @@ use crate::{Chunk, ChunkState, MeshReadbackState, Terrain};
 
 // Begins the async readback of range data at the start of the frame
 fn readback_begin_update(world: &mut World) {
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
     let Ok(terrain) = world.get_mut::<Terrain>() else {
         return;
@@ -109,7 +108,7 @@ fn readback_end_update(world: &mut World) {
     // Decompose the terrain into its subresources
     let mut _terrain = terrain;
     let terrain = &mut *_terrain;
-    let (manager, memory, settings) =
+    let (manager, memory, _settings) =
         (&mut terrain.manager, &mut terrain.memory, &terrain.settings);
 
     // Find the first entity that has both counters and offsets fetched back
@@ -178,7 +177,7 @@ fn readback_end_update(world: &mut World) {
         let triangles = triangles.unwrap();
 
         let mut entry = scene.entry_mut(entity).unwrap();
-        let mut chunk = entry.get_mut::<Chunk>().unwrap();
+        let chunk = entry.get_mut::<Chunk>().unwrap();
         let node = chunk.node.unwrap();
         chunk.mesh_readback_state = Some(MeshReadbackState::Complete);
         let collision = entry.get_mut::<MeshCollider>().unwrap();

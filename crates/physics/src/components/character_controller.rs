@@ -1,7 +1,5 @@
 use ecs::Component;
 
-use crate::Physics;
-
 // A character controller component that can be added onto a kinematic body to simulate character physics
 #[derive(Component)]
 pub struct CharacterController {

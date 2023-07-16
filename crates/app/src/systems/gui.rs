@@ -1,6 +1,6 @@
-use std::{any::type_name, time::Duration};
+use std::time::Duration;
 
-use gui::egui::{Ui, Widget};
+use gui::egui::Ui;
 
 use crate::prelude::*;
 
@@ -144,7 +144,7 @@ fn update(world: &mut World) {
                             });
                         }
                     })
-                    .body(|mut body| {
+                    .body(|body| {
                         timings.sort_by_key(|x| x.elapsed().as_micros());
                         body.rows(18.0f32, timings.len().min(10), |row_index, mut row| {
                             let event = &timings[timings.len() - row_index - 1];
@@ -343,7 +343,7 @@ fn update(world: &mut World) {
     // Terrain stats
     if let Ok(mut terrain) = world.get_mut::<Terrain>() {
         egui::Window::new("Terrain").frame(frame).show(&gui, |ui| {
-            let settings = &mut terrain.settings;
+            let _settings = &mut terrain.settings;
             let pending = scene
                 .query::<&Chunk>()
                 .into_iter()
@@ -748,7 +748,7 @@ fn update(world: &mut World) {
     }
 
     // Physics stats
-    if let Ok(mut physics) = world.get_mut::<Physics>() {
+    if let Ok(_physics) = world.get_mut::<Physics>() {
         let rigidbodies = scene.query::<&RigidBody>();
         let max = rigidbodies.len();
         let sleeping = rigidbodies.into_iter().filter(|x| x.is_sleeping()).count();

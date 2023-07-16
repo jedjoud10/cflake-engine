@@ -18,7 +18,7 @@ impl Value for f32 {
         self
     }
 
-    fn cache(storage: &mut Self::Storage) {}
+    fn cache(_storage: &mut Self::Storage) {}
 
     fn fetch(storage: &Self::Storage) -> f32 {
         *storage

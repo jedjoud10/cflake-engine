@@ -7,11 +7,9 @@ use assets::Assets;
 
 use ecs::Entity;
 use graphics::{
-    ActiveRenderPass, ActiveRenderPipeline, BufferMode, BufferUsage, Compiler, Depth,
-    FragmentModule, GpuPod, Graphics, LoadOp, Normalized, Operation, PrimitiveConfig, Region,
-    RenderPass, RenderPipeline, SamplerBorderColor, SamplerFilter, SamplerMipMaps, SamplerSettings,
-    SamplerWrap, Shader, StoreOp, SwapchainFormat, Texel, Texture, Texture2D, TextureMipMaps,
-    TextureUsage, TextureViewSettings, UniformBuffer, VertexConfig, VertexModule, BGRA, RGBA,
+    BufferUsage, Depth, Graphics, LoadOp, Normalized, Operation, RenderPass, SamplerBorderColor,
+    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, StoreOp, Texel, Texture,
+    Texture2D, TextureMipMaps, TextureUsage, TextureViewSettings, RGBA,
 };
 use utils::{Handle, Storage};
 

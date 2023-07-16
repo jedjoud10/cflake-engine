@@ -14,9 +14,8 @@ use ecs::{Entity, Scene};
 use gltf::json::accessor::{ComponentType, Type};
 use graphics::{
     texture2d_from_raw, BufferMode, BufferUsage, Graphics, ImageTexel, Normalized, RawTexels,
-    SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D,
-    TextureImportSettings, TextureMipMaps, TextureScale, TextureUsage, TextureViewSettings, R,
-    RGBA,
+    SamplerFilter, SamplerSettings, SamplerWrap, Texel, Texture, Texture2D, TextureImportSettings,
+    TextureMipMaps, TextureScale, TextureUsage, TextureViewSettings, R, RGBA,
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
@@ -176,7 +175,7 @@ impl Asset for GltfScene {
             .map(|buffer| {
                 // Handle reading buffers from URI or raw bytes directly
                 let bytes = if let Some(uri) = buffer.uri.as_ref() {
-                    const PREFIX: &'static str = "data:application/octet-stream;base64,";
+                    const PREFIX: &str = "data:application/octet-stream;base64,";
 
                     if uri.starts_with(PREFIX) {
                         // Data is contained within the URI itself
@@ -452,9 +451,9 @@ impl Asset for GltfScene {
                         }
 
                         let mut temp_positions = Some(positions.as_mut_slice());
-                        let mut temp_normals = normals.as_mut().map(|x| x.as_mut_slice());
-                        let mut temp_tangents = tangents.as_mut().map(|x| x.as_mut_slice());
-                        let mut temp_tex_coords = tex_coords.as_mut().map(|x| x.as_mut_slice());
+                        let mut temp_normals = normals.as_deref_mut();
+                        let mut temp_tangents = tangents.as_deref_mut();
+                        let mut temp_tex_coords = tex_coords.as_deref_mut();
 
                         // Optimize the mesh after we load it
                         super::optimize(
@@ -533,7 +532,7 @@ impl Asset for GltfScene {
 
         // Iterate until there are no more nodes to pass through
         while let Some((node, parent)) = {
-            if eval.len() > 0 {
+            if !eval.is_empty() {
                 Some(eval.remove(0))
             } else {
                 None

@@ -22,7 +22,7 @@ pub struct RigidBody {
 impl Clone for RigidBody {
     fn clone(&self) -> Self {
         Self {
-            _type: self._type.clone(),
+            _type: self._type,
             sleeping: false,
             handle: None,
             interpolated: self.interpolated,

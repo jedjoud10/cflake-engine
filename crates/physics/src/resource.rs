@@ -19,24 +19,24 @@ pub struct Physics {
 
 impl Physics {
     pub(crate) fn new() -> Self {
-        let mut rigid_body_set = RigidBodySet::new();
-        let mut collider_set = ColliderSet::new();
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
 
         let mut integration_parameters = IntegrationParameters::default();
         integration_parameters.set_inv_dt(utils::TICKS_PER_SEC as f32);
         //integration_parameters.allowed_linear_error = 0.0001;
         //integration_parameters.max_penetration_correction = 0.001;
 
-        let mut physics_pipeline = PhysicsPipeline::new();
-        let mut island_manager = IslandManager::new();
-        let mut broad_phase = BroadPhase::new();
-        let mut narrow_phase = NarrowPhase::new();
-        let mut impulse_joint_set = ImpulseJointSet::new();
-        let mut multibody_joint_set = MultibodyJointSet::new();
-        let mut ccd_solver = CCDSolver::new();
-        let mut query = QueryPipeline::new();
-        let physics_hooks = ();
-        let event_handler = ();
+        let physics_pipeline = PhysicsPipeline::new();
+        let island_manager = IslandManager::new();
+        let broad_phase = BroadPhase::new();
+        let narrow_phase = NarrowPhase::new();
+        let impulse_joint_set = ImpulseJointSet::new();
+        let multibody_joint_set = MultibodyJointSet::new();
+        let ccd_solver = CCDSolver::new();
+        let query = QueryPipeline::new();
+        ();
+        ();
 
         Self {
             bodies: rigid_body_set,
@@ -73,7 +73,7 @@ impl Physics {
 
         physics_pipeline.step(
             &gravity,
-            &integration_parameters,
+            integration_parameters,
             islands,
             broad_phase,
             narrow_phase,

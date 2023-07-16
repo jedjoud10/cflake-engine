@@ -48,12 +48,10 @@ impl Material for CustomMaterial {
         }
     }
 
-    fn fetch<P: Pass>(world: &World) -> Self::Resources<'_> {
-        ()
-    }
+    fn fetch<P: Pass>(_world: &World) -> Self::Resources<'_> {}
 
     fn set_global_bindings<'r, P: Pass>(
-        resources: &'r mut Self::Resources<'_>,
+        _resources: &'r mut Self::Resources<'_>,
         group: &mut BindGroup<'r>,
         default: &DefaultMaterialResources<'r>,
     ) {
@@ -65,7 +63,7 @@ impl Material for CustomMaterial {
     fn set_push_constants<'r, 'w, P: Pass>(
         &self,
         renderer: &Renderer,
-        resources: &'r mut Self::Resources<'w>,
+        _resources: &'r mut Self::Resources<'w>,
         _default: &DefaultMaterialResources<'r>,
         _query: &Self::Query<'w>,
         constants: &mut PushConstants<ActiveRenderPipeline<P::C, P::DS>>,

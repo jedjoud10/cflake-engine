@@ -1,6 +1,6 @@
 use crate::{Source, SourceInput, Value};
-use atomic_float::AtomicF32;
-use std::{marker::PhantomData, sync::Arc, time::Duration};
+
+use std::time::Duration;
 
 pub struct Sine<V: Value>(V::Storage);
 pub struct Square<V1: Value, V2: Value>(V1::Storage, V2::Storage);

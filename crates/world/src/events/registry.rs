@@ -180,7 +180,7 @@ fn sort(
     // Convert all stages into graph nodes
     let mut nodes = map
         .iter()
-        .map(|node| (node.0.system, graph.add_node(node.0.system.clone())))
+        .map(|node| (node.0.system, graph.add_node(node.0.system)))
         .collect::<AHashMap<_, _>>();
 
     // Insert the default user system
@@ -201,7 +201,7 @@ fn sort(
             let reference = rule.reference();
             let reference = *nodes
                 .get(&reference.system)
-                .ok_or_else(|| RegistrySortingError::MissingStage(**node, reference))?;
+                .ok_or(RegistrySortingError::MissingStage(**node, reference))?;
 
             match rule {
                 // dir: a -> b.
@@ -220,7 +220,7 @@ fn sort(
     let mut counter = 0;
     while let Some(node) = topo.next(&graph) {
         let balls = nodes.iter().find(|x| *x.1 == node).unwrap();
-        output.insert(balls.0.clone(), counter);
+        output.insert(*balls.0, counter);
         counter += 1;
     }
 

@@ -51,7 +51,7 @@ impl<T: 'static> Storage<T> {
             .insert(key, AtomicU32::new(1));
 
         Handle {
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
             trackers: self.trackers.clone(),
             key,
         }

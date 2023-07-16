@@ -45,8 +45,8 @@ impl SphereCollider {
 impl Clone for SphereCollider {
     fn clone(&self) -> Self {
         Self {
-            radius: self.radius.clone(),
-            mass: self.mass.clone(),
+            radius: self.radius,
+            mass: self.mass,
             modified: Cell::new(false),
             material: self.material.clone(),
             sensor: self.sensor,

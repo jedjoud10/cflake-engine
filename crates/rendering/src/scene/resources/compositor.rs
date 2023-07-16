@@ -3,12 +3,12 @@ use bytemuck::{Pod, Zeroable};
 use graphics::{
     BufferMode, BufferUsage, Compiler, Depth, FragmentModule, Graphics, LoadOp, Normalized,
     Operation, PrimitiveConfig, RenderPass, RenderPipeline, Shader, StoreOp, SwapchainFormat,
-    Texture, Texture2D, UniformBuffer, VertexConfig, VertexModule, R, RGBA,
+    Texture2D, UniformBuffer, VertexConfig, VertexModule, RGBA,
 };
 
 use crate::{
-    CameraUniform, EnvironmentMap, SceneColorLayout, SceneUniform, ShadowDepthLayout, ShadowMap,
-    ShadowUniform, WindowUniform,
+    CameraUniform, EnvironmentMap, SceneUniform, ShadowDepthLayout, ShadowMap, ShadowUniform,
+    WindowUniform,
 };
 
 // This is what will write to the swapchain
@@ -58,22 +58,21 @@ fn load_lighting_shader(assets: &Assets, graphics: &Graphics) -> Shader {
 fn load_lighting_pass(
     graphics: &Graphics,
 ) -> RenderPass<graphics::BGRA<graphics::Normalized<u8>>, ()> {
-    let render_pass = FinalRenderPass::new(
+    FinalRenderPass::new(
         graphics,
         Operation {
             load: LoadOp::Clear(vek::Vec4::broadcast(0)),
             store: StoreOp::Store,
         },
         (),
-    );
-    render_pass
+    )
 }
 
 fn load_lighting_pipeline(
     graphics: &Graphics,
     shader: Shader,
 ) -> RenderPipeline<graphics::BGRA<graphics::Normalized<u8>>, ()> {
-    let pipeline = FinalRenderPipeline::new(
+    FinalRenderPipeline::new(
         graphics,
         None,
         None,
@@ -86,8 +85,7 @@ fn load_lighting_pipeline(
         },
         &shader,
     )
-    .unwrap();
-    pipeline
+    .unwrap()
 }
 
 // What tonemapping filter we should use

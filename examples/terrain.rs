@@ -45,7 +45,7 @@ fn init(world: &mut World) {
             far: 18000.0,
             ..Default::default()
         },
-        ChunkViewer::default(),
+        ChunkViewer,
         CameraController::default(),
     ));
 

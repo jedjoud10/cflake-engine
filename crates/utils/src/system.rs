@@ -115,7 +115,7 @@ pub fn time(system: &mut System) {
             // LIMIT TICKS WHEN WE HAVE SPIRAL OF DEATH
             if let Some(count) = time.ticks_to_execute.as_mut() {
                 const MIN_FPS: u32 = 32;
-                const MAX_TICKS_BEFORE_SLOWDOWN: u32 = (TICKS_PER_SEC as u32) / MIN_FPS;
+                const MAX_TICKS_BEFORE_SLOWDOWN: u32 = TICKS_PER_SEC / MIN_FPS;
                 const MAX_TICKS_DURING_SLOWDOWN: u32 = 1;
 
                 if count.get() > MAX_TICKS_BEFORE_SLOWDOWN {

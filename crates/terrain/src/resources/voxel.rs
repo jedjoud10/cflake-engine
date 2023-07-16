@@ -1,14 +1,10 @@
-use std::{
-    sync::{atomic::AtomicBool, mpsc::Receiver, Arc},
-    thread::JoinHandle,
-};
+use std::{sync::mpsc::Receiver, thread::JoinHandle};
 
 use crate::{create_texture3d, TerrainSettings};
 use assets::Assets;
 use graphics::{
-    ActiveComputeDispatcher, BindGroup, Compiler, ComputeModule, ComputeShader, GpuPod, Graphics,
-    ModuleVisibility, PushConstantLayout, PushConstants, SamplerBorderColor, SamplerSettings,
-    SamplerWrap, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, RG,
+    Compiler, ComputeModule, ComputeShader, GpuPod, Graphics, ModuleVisibility, PushConstantLayout,
+    SamplerSettings, SamplerWrap, StorageAccess, Texel, Texture3D, TextureUsage, Vertex, RG,
 };
 use notify::Watcher;
 

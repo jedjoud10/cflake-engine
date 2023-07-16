@@ -4,8 +4,7 @@ use graphics::{
     Graphics,
 };
 
-use rendering::{DeferredRenderer, ShadowMap, ShadowMapping};
-use utils::{Storage, Time};
+use utils::Storage;
 use world::{System, World};
 
 use crate::{Chunk, ChunkState, Terrain};

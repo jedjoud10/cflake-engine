@@ -1,17 +1,16 @@
 use rendering::{
-    AlbedoTexel, CameraUniform, DefaultMaterialResources, EnvironmentMap, MaskTexel, Material,
-    MultiDrawIndirectCount, NormalTexel, Pass, Renderer, SceneUniform, ShadowMap, ShadowMapping,
-    ShadowUniform,
+    AlbedoTexel, CameraUniform, DefaultMaterialResources, MaskTexel, Material,
+    MultiDrawIndirectCount, NormalTexel, Pass, Renderer,
 };
 
 use assets::Assets;
 
 use graphics::{
     BindGroup, Compiler, DrawIndexedIndirect, DrawIndexedIndirectBuffer, FragmentModule, GpuPod,
-    Graphics, LayeredTexture2D, ModuleVisibility, PrimitiveConfig, PushConstantLayout, Shader,
-    StorageAccess, Texture, Vertex, VertexModule, WindingOrder, XY,
+    Graphics, LayeredTexture2D, ModuleVisibility, PushConstantLayout, Shader, StorageAccess,
+    Texture, Vertex, VertexModule, XY,
 };
-use utils::{Storage, Time};
+use utils::Storage;
 
 use crate::{MemoryManager, PermTriangles, PermVertices, Terrain, TerrainSettings};
 
@@ -255,14 +254,14 @@ impl Material for TerrainMaterial {
             let indirect = indirect.get(&terrain.memory.culled_indexed_indirect_buffers[*index]);
 
             group
-                .set_storage_buffer("input_triangles", &triangles, ..)
+                .set_storage_buffer("input_triangles", triangles, ..)
                 .unwrap();
 
             group
-                .set_storage_buffer("input_vertices", &vertices, ..)
+                .set_storage_buffer("input_vertices", vertices, ..)
                 .unwrap();
 
-            group.set_storage_buffer("indirect", &indirect, ..).unwrap();
+            group.set_storage_buffer("indirect", indirect, ..).unwrap();
         }
 
         // Increment the index (aka the allocation index)

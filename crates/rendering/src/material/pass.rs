@@ -1,14 +1,9 @@
 use crate::{
-    DefaultMaterialResources, Material, MeshAttributes, RenderPath, Renderer, SceneColorLayout,
-    SceneDepthLayout, ShadowDepthLayout, SubSurface, Surface,
+    DefaultMaterialResources, Material, Renderer, SceneColorLayout, SceneDepthLayout,
+    ShadowDepthLayout, Surface,
 };
-use assets::Assets;
-use graphics::{
-    ActivePipeline, ActiveRenderPipeline, BindGroup, ColorLayout, Depth, DepthStencilLayout,
-    Graphics, PrimitiveConfig, PushConstants, RenderPass, RenderPipeline, Shader, WindingOrder,
-};
-use math::ExplicitVertices;
-use world::World;
+
+use graphics::{ColorLayout, DepthStencilLayout};
 
 // Render pass that will render the scene
 pub struct DeferredPass;

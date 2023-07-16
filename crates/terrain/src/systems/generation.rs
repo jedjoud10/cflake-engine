@@ -13,7 +13,7 @@ use world::{System, World};
 // Look in the world for any chunks that need their mesh generated and generate it
 fn update(world: &mut World) {
     let graphics = world.get::<Graphics>().unwrap();
-    let time = world.get::<Time>().unwrap();
+    let _time = world.get::<Time>().unwrap();
     let _terrain = world.get_mut::<Terrain>();
 
     // If we don't have terrain, don't do shit

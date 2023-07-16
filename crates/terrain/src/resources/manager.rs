@@ -1,13 +1,12 @@
-use std::{cell::RefCell, num::NonZeroU8, rc::Rc, time::Instant};
+use std::{cell::RefCell, rc::Rc};
 
 use ahash::AHashMap;
 use assets::{Assets, AsyncHandle};
 
 use ecs::{Entity, Scene};
 use graphics::{
-    combine_into_layered, FilterType, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels,
-    SamplerBorderColor, SamplerFilter, SamplerMipMaps, SamplerSettings, SamplerWrap, Texel,
-    Texture, TextureMipMaps, TextureScale, TextureUsage, TextureViewSettings, Vertex,
+    combine_into_layered, GpuPod, Graphics, ImageTexel, LayeredTexture2D, RawTexels, Texel,
+    Texture, TextureMipMaps, TextureUsage, TextureViewSettings, Vertex,
 };
 use math::{Node, Octree};
 
@@ -89,17 +88,17 @@ impl ChunkManager {
         rayon::scope(|scope| {
             // Create a layered texture 2D that contains the diffuse maps
             scope.spawn(|_| {
-                layered_albedo_map = load_layered_texture(&settings, graphics, raw_albedo_texels);
+                layered_albedo_map = load_layered_texture(settings, graphics, raw_albedo_texels);
             });
 
             // Create a layered texture 2D that contains the normal maps
             scope.spawn(|_| {
-                layered_normal_map = load_layered_texture(&settings, graphics, raw_normal_texels);
+                layered_normal_map = load_layered_texture(settings, graphics, raw_normal_texels);
             });
 
             // Create a layered texture 2D that contains the mask maps
             scope.spawn(|_| {
-                layered_mask_map = load_layered_texture(&settings, graphics, raw_mask_texels);
+                layered_mask_map = load_layered_texture(settings, graphics, raw_mask_texels);
             });
         });
 
@@ -138,14 +137,13 @@ impl ChunkManager {
 
         // Generate the lod multipliers programatically based on the quality setting
         let splits = [0.0f32, 0.3, 0.7, 1.0];
-        let percents = [1.0f32, 1.2, 1.3, 1.0];
+        let _percents = [1.0f32, 1.2, 1.3, 1.0];
         let max = settings.mesher.max_octree_depth as f32;
         let mut lod = (0..settings.mesher.max_octree_depth)
-            .into_iter()
             .map(|x| {
                 let percent = x as f32 / max;
 
-                let i = splits
+                let _i = splits
                     .iter()
                     .enumerate()
                     .filter(|(_, &rel)| percent >= rel)

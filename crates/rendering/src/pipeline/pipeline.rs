@@ -1,12 +1,12 @@
 use crate::{
-    DefaultMaterialResources, DeferredPass, Material, MeshAttributes, Pass, PassStats,
-    SceneColorLayout, SceneDepthLayout, ShadowDepthLayout, ShadowPass,
+    DefaultMaterialResources, DeferredPass, Material, Pass, PassStats, SceneColorLayout,
+    SceneDepthLayout, ShadowDepthLayout, ShadowPass,
 };
 
 use assets::Assets;
 use graphics::{
-    ActiveRenderPass, CompareFunction, DepthConfig, Face, Graphics, PipelineInitializationError,
-    PrimitiveConfig, RenderPipeline, Shader, WindingOrder,
+    ActiveRenderPass, CompareFunction, DepthConfig, Graphics, PipelineInitializationError,
+    RenderPipeline, Shader,
 };
 use std::marker::PhantomData;
 

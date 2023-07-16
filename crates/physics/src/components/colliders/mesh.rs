@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 use crate::{GenericCollider, PhysicsSurface};
 use ecs::{Component, Entity};
-use rendering::Mesh;
+
 use utils::Handle;
 
 // Mesh collider that will represent a mesh using it's triangles and vertices
@@ -83,13 +83,13 @@ impl GenericCollider for MeshCollider {
         let vertices = self.vertices.take()?;
         let triangles = self.triangles.take()?;
 
-        if vertices.len() == 0 || triangles.len() == 0 {
+        if vertices.is_empty() || triangles.is_empty() {
             return None;
         }
 
         let vertices: Vec<rapier3d::na::Point3<f32>> = vertices
             .into_iter()
-            .map(|x| crate::vek_vec_to_na_point(x))
+            .map(crate::vek_vec_to_na_point)
             .collect::<_>();
 
         Some(
@@ -102,7 +102,7 @@ impl GenericCollider for MeshCollider {
     }
 
     #[inline(always)]
-    fn set_custom_rapier_collider_settings(&self, custom: &mut Self::RawRapierCollider) {}
+    fn set_custom_rapier_collider_settings(&self, _custom: &mut Self::RawRapierCollider) {}
 }
 
 // Builder for creating a mesh collider
@@ -112,7 +112,7 @@ pub struct MeshColliderBuilder {
 
 impl MeshColliderBuilder {
     // Create a new mesh collider builder
-    pub fn new(vertices: Vec<vek::Vec3<f32>>, triangles: Vec<[u32; 3]>, mass: f32) -> Self {
+    pub fn new(_vertices: Vec<vek::Vec3<f32>>, _triangles: Vec<[u32; 3]>, mass: f32) -> Self {
         Self {
             inner: MeshCollider {
                 vertices: None,

@@ -103,7 +103,7 @@ fn init(world: &mut World) {
 fn update(world: &mut World) {
     let mut state = world.get_mut::<State>().unwrap();
     let input = world.get::<Input>().unwrap();
-    let mut scene = world.get_mut::<Scene>().unwrap();
+    let _scene = world.get_mut::<Scene>().unwrap();
 
     // Exit the game when the user pressed Escape
     if input.get_button(KeyboardButton::Escape).pressed() {

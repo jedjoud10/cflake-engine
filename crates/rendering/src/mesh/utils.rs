@@ -62,9 +62,9 @@ pub fn optimize(
     optimize_vertex_fetch: bool,
     optimize_overdraw: bool,
     positions: &mut Option<&mut [RawPosition]>,
-    normals: &mut Option<&mut [RawNormal]>,
-    tangents: &mut Option<&mut [RawTangent]>,
-    tex_coords: &mut Option<&mut [RawTexCoord]>,
+    _normals: &mut Option<&mut [RawNormal]>,
+    _tangents: &mut Option<&mut [RawTangent]>,
+    _tex_coords: &mut Option<&mut [RawTexCoord]>,
     triangles: &mut [Triangle<u32>],
 ) {
     #[derive(Pod, Zeroable, Copy, Clone)]
@@ -78,11 +78,11 @@ pub fn optimize(
     let positions = positions.as_mut().unwrap();
     let vertex_count = positions.len();
     let indices: &mut [u32] = bytemuck::cast_slice_mut(triangles);
-    let vertices = bytemuck::cast_slice_mut::<vek::Vec4<f32>, PosWrapper>(*positions);
+    let vertices = bytemuck::cast_slice_mut::<vek::Vec4<f32>, PosWrapper>(positions);
 
     if optimize_vertex_cache {
         // Oopsies!! This is supposed to take a mutable slice!! I LOVE POTENTIAL UB!!!
-        meshopt::optimize_vertex_cache_in_place(&indices, vertex_count);
+        meshopt::optimize_vertex_cache_in_place(indices, vertex_count);
 
         if optimize_overdraw {
             meshopt::optimize_overdraw_in_place_decoder(indices, vertices, 1.05f32);
