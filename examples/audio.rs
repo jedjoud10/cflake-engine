@@ -5,7 +5,6 @@ fn main() {
     App::default()
         .set_app_name("cflake engine audio example")
         .insert_init(init)
-        .insert_update(update)
         .execute();
 }
 
@@ -17,7 +16,7 @@ fn init(world: &mut World) {
     
     // Create an audio listener
     let mut player = AudioListener::new().unwrap();
-    player.set_volume(0.25);
+    player.set_volume(0.010);
     scene.insert(player);
 
     asset!(assets, "user/audio/bruh.wav", "/examples/assets/");
@@ -31,21 +30,27 @@ fn init(world: &mut World) {
     //scene.insert(AudioEmitter::new(clip1));
     //scene.insert(AudioEmitter::new(clip2));
 
-    let arc = std::sync::Arc::new(AtomicF32::new(1.0));
-    let source = Sine::sine(440.0)
-        .amplify(arc.clone());
+    // Create a square wave
+    let square = Square::new(140.0, 0.5);
+    
+    // Amplify the audio source
+    let square = square
+        .amplify(0.4);
+
+    // Apply a fade in easing effect
+    let square = square.fade(
+        Easing::Cosine,
+        EasingDirection::In,
+        std::time::Duration::from_secs_f32(6.0)
+    );
+
+    // Create a sine wave
+    let sine = Sine::new(220.0);
+
+    // Create a source that mixes them both
+    let source = square.mix(sine, 0.4);
+
+    // Add the audio emitter into the world
     let emitter = AudioEmitter::new(source);
     scene.insert(emitter);
-
-    drop(scene);
-    drop(assets);
-    world.insert(arc);
-}
-
-// Update amplification
-fn update(world: &mut World) {
-    let frequency = world.get::<std::sync::Arc<AtomicF32>>().unwrap();
-    let time = world.get::<Time>().unwrap();
-    let sin = time.startup().elapsed().as_secs_f32().sin() * 0.5 + 0.5;
-    frequency.store(sin, std::sync::atomic::Ordering::Relaxed);
 }

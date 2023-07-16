@@ -238,6 +238,7 @@ pub(super) fn build_output_raw_stream(
 
                     // Create the source input used by the source trait
                     let input = SourceInput {
+                        channels,
                         channel,
                         index,
                         given_sample_rate: sample_rate,

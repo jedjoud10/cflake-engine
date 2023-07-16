@@ -99,14 +99,12 @@ impl Material for TerrainMaterial {
                   StorageAccess::ReadOnly,
                 );
 
-                /*
                 compiler.use_storage_buffer::<<XY<f32> as Vertex>::Storage>(
                     "input_vertices",
                     StorageAccess::ReadOnly,
                 );
                 compiler.use_storage_buffer::<u32>("input_triangles", StorageAccess::ReadOnly);
                 compiler.use_storage_buffer::<DrawIndexedIndirect>("indirect", StorageAccess::ReadOnly);
-                */
 
                 compiler.use_constant(1, memory.output_vertex_buffer_length as u32);
                 compiler.use_constant(2, memory.output_triangle_buffer_length as u32);
@@ -251,7 +249,6 @@ impl Material for TerrainMaterial {
             let vertices = vertices.get(&terrain.memory.shared_positions_buffers[*index]);
             let indirect = indirect.get(&terrain.memory.culled_indexed_indirect_buffers[*index]);
             
-            /*
             group
                 .set_storage_buffer(
                     "input_triangles",
@@ -275,7 +272,6 @@ impl Material for TerrainMaterial {
                     ..,
                 )
                 .unwrap();
-            */
         }
 
         // Increment the index (aka the allocation index)

@@ -303,7 +303,7 @@ fn render(world: &mut World) {
         let i = time.frame_count() as usize % 6;
 
         if i < 4 {
-            //render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
+            render_shadows_pipelines(&mut _shadowmap, &mut default, directional_light_rotation, camera_position, &mut renderer.shadow_pass_stats, i, &pipelines, world);
         }
 
 

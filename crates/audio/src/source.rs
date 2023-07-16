@@ -1,10 +1,11 @@
 use std::time::Duration;
 
-use crate::{Amplify, Buffered, Easing, Fade, FadeIn, FadeOut, Value};
+use crate::{Amplify, Buffered, Easing, Fade, Value, EasingDirection, Mix, Repeat};
 
 // Given to the sources when they execute their "sample" method
 pub struct SourceInput {
     pub channel: u16,
+    pub channels: u16,
     pub index: usize,
     pub given_sample_rate: u32,
     pub duration: f32,
@@ -35,6 +36,7 @@ pub trait Source: Sync + Send {
         Amplify(self, V::new_storage_from(volume))
     }
 
+    /*
     // Buffers the audio output with a specific buffer size
     fn buffered(self, buffer_size: usize) -> Buffered<Self>
     where
@@ -42,20 +44,29 @@ pub trait Source: Sync + Send {
     {
         todo!()
     }
+    */
 
-    // Creates a fade in effect
-    fn fade_in(self, easing: Easing) -> Fade<Self, FadeIn>
+    // Creates a fade in/out effect
+    fn fade(self, easing: Easing, direction: EasingDirection, duration: Duration) -> Fade<Self>
     where
         Self: Sized,
     {
-        todo!()
+        Fade(self, easing, direction, duration)
     }
 
-    // Creates a fade out effect
-    fn fade_out(self, easing: Easing) -> Fade<Self, FadeOut>
+    // Mix two audio sources together (simple addition)
+    fn mix<B: Source, V: Value>(self, other: B, control: V) -> Mix<Self, B, V> 
     where
-        Self: Sized,
-    {
-        todo!()
+        Self: Sized {
+        Mix(self, other, V::new_storage_from(control))
     }
+
+    // Repeat the given source N times after it completes execution
+    // No-op if the source doesn't end
+    fn repeat_with_duration(self, times: usize) -> Repeat<Self> 
+    where 
+        Self: Sized
+    {
+        Repeat(self, times)
+    } 
 }

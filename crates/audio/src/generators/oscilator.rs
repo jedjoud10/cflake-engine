@@ -7,14 +7,14 @@ pub struct Square<V1: Value, V2: Value>(V1::Storage, V2::Storage);
 
 impl<V: Value> Sine<V> {
     // Create a new sine waveform oscillator 
-    pub fn sine(frequency: V) -> Self {
+    pub fn new(frequency: V) -> Self {
         Self(V::new_storage_from(frequency))
     }
 }
 
 impl<V1: Value, V2: Value> Square<V1, V2> {
     // Create a new square waveform oscillator
-    pub fn square(frequency: V1, duty: V2) -> Self {
+    pub fn new(frequency: V1, duty: V2) -> Self {
         Self(
             V1::new_storage_from(frequency),
             V2::new_storage_from(duty)

@@ -1,6 +1,10 @@
 mod amplify;
 mod buffered;
 mod ease;
+mod mix;
+mod repeat;
+pub use repeat::*;
+pub use mix::*;
 pub use amplify::*;
 pub use buffered::*;
 pub use ease::*;

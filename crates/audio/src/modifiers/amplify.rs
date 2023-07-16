@@ -6,6 +6,7 @@ pub struct Amplify<V: Value, T: Source>(pub(crate) T, pub(crate) V::Storage);
 
 impl<T: Source, V: Value> Source for Amplify<V, T> {
     fn cache(&mut self) {
+        self.0.cache();
         V::cache(&mut self.1);
     }
 
