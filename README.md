@@ -1,7 +1,8 @@
 # 🚧🚧🚧 **UNDER HEAVY DEVELOPMENT** 🚧🚧🚧
 
-
 # cFlake Engine
+
+[![Rust](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml/badge.svg)](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml)
 
 
 cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 2 years as a personal project.
@@ -9,10 +10,10 @@ Currently, cFlake engine is under heavy development (***very*** WIP) and is stil
 
 # Main features of cFlake:
 * 7 World Event Variants, Systems, and Resources all accessible within the **World** struct
-* Deterministic event sorting through multiple stages 
+* Deterministic event sorting through multiple stages with the help of petgraph
 * Archetypal multithreaded ECS built to be used in conjunction with the World Events and Systems
 * Custom Graphics API built on top of WGPU
-* GPU Voxel Generation and Octree Terrain
+* GPU Voxel Generation and Octree Terrain, with async CPU readback support
 * Asynchronous asset loader using Rayon threads
 * Input handling with gamepad support (gilrs) and keybinding serialization / deserialization
 * Custom sound support through CPAL
@@ -129,15 +130,15 @@ For now, these are the types of assets that are loadable/deseriazable by default
 Input is currently being handled using a custom wrapper around ``gilrs`` and ``Winit's Events``. You can "bind" or "map" a keyboard button or mouse click to a specific binding and then check each frame if it had been pressed, released, or been held (which means the user did not let go of it since last frame). The ``Input`` resource cannot be used within ``Tick`` events since it relies on frame to frame data, and ``Tick`` events can execute each multiple times per frame or none at all. If you wish to run frame-rate indepedent logic using the tick system you must fetch the inputs using a separate update system and save those inputs persistently, either using entities or resources, then fetch them in your tick method to apply them.
 
 # Examples Controls
-Move Camera: WASD,
-Move Camera Up: Space,
-Move Camera Down: Left Control,
-Increase Camera Base Speed: Left Shift,
-Reset Camera Location: R,
-Zoom in / Zoom out: Z, X (respectively)
-Toggle Camera Controller: H,
-Camera Rotation: Mouse Up/Down/Left/Right
-Toggle UI: P
+* Toggle debug UI: P
+* Move Camera: WASD,
+* Move Camera Up: Space,
+* Move Camera Down: Left Control,
+* Increase Camera Base Speed: Left Shift,
+* Reset Camera Location: R,
+* Zoom in / Zoom out: Z, X (respectively)
+* Toggle Camera Controller: H,
+* Camera Rotation: Mouse Up/Down/Left/Right
 
 # Thanks to:
 * Lionel Stanway (MoldyToeMan)
