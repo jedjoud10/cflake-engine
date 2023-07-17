@@ -9,6 +9,7 @@ mod source;
 mod stream;
 mod system;
 mod value;
+pub use cpal;
 pub use atomic_float::AtomicF32;
 pub use clip::*;
 pub use emitter::*;

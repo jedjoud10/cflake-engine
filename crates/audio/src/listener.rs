@@ -1,5 +1,5 @@
 use std::sync::{atomic::Ordering, Arc};
-
+use parking_lot::RwLock;
 use atomic_float::AtomicF32;
 use cpal::traits::{DeviceTrait, HostTrait};
 use ecs::Component;
@@ -8,15 +8,26 @@ use ecs::Component;
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
 #[derive(Component)]
 pub struct AudioListener {
-    pub(crate) device: cpal::Device,
-    pub(crate) host: cpal::Host,
-    pub(crate) supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
-    pub(crate) volume: Arc<AtomicF32>,
+    // CPAL stuff 
+    pub device: cpal::Device,
+    pub host: cpal::Host,
+    pub supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
+
+    // Global audio listener volume
+    pub volume: Arc<AtomicF32>,
+
+    // Distance between the ears of the listener in meters
+    pub ear_distance: f32,
+
+    // Ear positions
+    pub(crate) ear_positions: [Arc<RwLock<vek::Vec3<f32>>>; 2],
 }
 
 impl AudioListener {
     // Create an audio player that uses the default host device
-    pub fn new() -> Option<Self> {
+    pub fn new(
+        ear_distance: f32,
+    ) -> Option<Self> {
         // Fetch the CPAL device
         let host = cpal::default_host();
         let device = host.default_output_device()?;
@@ -46,6 +57,8 @@ impl AudioListener {
             device,
             volume: Arc::new(AtomicF32::new(1.0)),
             supported_output_configs,
+            ear_distance,
+            ear_positions: std::array::from_fn(|_| Arc::new(RwLock::new(vek::Vec3::zero()))),
         })
     }
 

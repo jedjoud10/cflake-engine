@@ -295,9 +295,7 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
-        let i = time.frame_count() as usize % 6;
-
-        if i < 4 {
+        for i in 0..4 {
             render_shadows_pipelines(
                 &mut _shadowmap,
                 &mut default,

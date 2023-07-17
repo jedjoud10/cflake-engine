@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use crate::Source;
 use cpal::traits::StreamTrait;
 use ecs::Component;
+use parking_lot::RwLock;
 
 // An audio emmiter is a component that produces sound
 // Each audio emmiter is a CPAL stream that will be played
@@ -12,26 +15,40 @@ pub struct AudioEmitter {
     // These two fields get validated whenever we start playing the audio stream
     pub(crate) stream: Option<cpal::Stream>,
 
+    // Potential position of the audio emitter
+    pub(crate) position: Option<Arc<RwLock<vek::Vec3<f32>>>>,
+
     // Is the audio stream currently playing?
     pub(crate) playing: bool,
 }
 
 impl AudioEmitter {
-    // Create a new audio source to play, and automatically play it on start
+    // Create a new audio emitter to play, and automatically play it on start
     pub fn new(source: impl Source + 'static) -> Self {
         Self {
             source: Some(Box::new(source)),
             stream: None,
             playing: true,
+            position: None,
         }
     }
 
-    // Check if the audio source is currently playing
+    // Create a new positional audio emitter with a position
+    pub fn positional(source: impl Source + 'static) -> Self {
+        Self {
+            source: Some(Box::new(source.amplify(0.2))),
+            stream: None,
+            playing: true,
+            position: None,
+        }
+    }
+
+    // Check if the audio emitter is currently playing
     pub fn is_playing(&self) -> bool {
         self.stream.is_some() && self.playing
     }
 
-    // Toggles the play/resume state of the audio source
+    // Toggles the play/resume state of the audio emitter
     pub fn toggle(&mut self) {
         if self.playing {
             self.pause()
@@ -40,7 +57,7 @@ impl AudioEmitter {
         }
     }
 
-    // Pause the audio source. No-op if it's already paused
+    // Pause the audio emitter. No-op if it's already paused
     pub fn pause(&mut self) {
         if self.playing {
             self.playing = false;
@@ -50,7 +67,7 @@ impl AudioEmitter {
         }
     }
 
-    // Resume the audio source. No-op if it's already playing
+    // Resume the audio emitter. No-op if it's already playing
     pub fn resume(&mut self) {
         if !self.playing {
             self.playing = true;

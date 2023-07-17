@@ -11,9 +11,11 @@ utils = { path = "../utils" }
 world = { path = "../world" }
 math = { path = "../math" }
 ecs = { path = "../ecs" }
+coords = { path = "../coords" }
 cpal = "0.14.0"
 rubato = "0.12.0"
 hrtf = "0.8.0"
+atomic-traits = "0.3.0"
 wav = "1.0.0"
 rayon = "1.7.0"
 minimp3 = "0.5.1"

@@ -11,24 +11,12 @@ fn main() {
 // First function that gets executed when the engine starts
 fn init(world: &mut World) {
     // Get the required resources
-    let assets = world.get::<Assets>().unwrap();
     let mut scene = world.get_mut::<Scene>().unwrap();
 
     // Create an audio listener
-    let mut player = AudioListener::new().unwrap();
+    let mut player = AudioListener::new(0.1).unwrap();
     player.set_volume(0.010);
-    scene.insert(player);
-
-    asset!(assets, "user/audio/bruh.wav", "/examples/assets/");
-    asset!(assets, "user/audio/nicolas.mp3", "/examples/assets/");
-
-    // Load the clips from their relative paths
-    let _clip1 = assets.load::<AudioClip>("user/audio/bruh.wav").unwrap();
-    let _clip2 = assets.load::<AudioClip>("user/audio/nicolas.mp3").unwrap();
-
-    // Play both clips at the same time
-    //scene.insert(AudioEmitter::new(clip1));
-    //scene.insert(AudioEmitter::new(clip2));
+    scene.insert((player, Position::default(), Rotation::default()));
 
     // Create a square wave
     let square = Square::new(140.0, 0.5);
@@ -51,5 +39,13 @@ fn init(world: &mut World) {
 
     // Add the audio emitter into the world
     let emitter = AudioEmitter::new(source);
-    scene.insert(emitter);
+    scene.insert((emitter, Position::default()));
+}
+
+// Update the position of the audio emitter
+fn update(world: &mut World) {
+    let time = world.get::<Time>().unwrap();
+    let mut scene = world.get_mut::<Scene>().unwrap();
+    let (emitter, position) = scene.find_mut::<(&AudioEmitter, &mut Position)>().unwrap();
+    *position = Position::at_x(time.startup().elapsed().as_secs_f32().sin() * 10.0);
 }

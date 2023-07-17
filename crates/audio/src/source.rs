@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Amplify, Easing, EasingDirection, Fade, Mix, Repeat, Value};
+use crate::{Amplify, Easing, EasingDirection, Fade, Mix, Repeat, Value, ChannelAmplify, Positional};
 
 // Given to the sources when they execute their "sample" method
 pub struct SourceInput {
@@ -28,12 +28,21 @@ pub trait Source: Sync + Send {
     // Sample rate we would like to use. Might not be what we get to use at the end
     fn target_sample_rate(&self) -> Option<u32>;
 
-    // Amplification (volume) modified
-    fn amplify<V: Value>(self, volume: V) -> Amplify<V, Self>
+    // Amplification modifier for volume control (global)
+    fn amplify<V: Value<f32>>(self, volume: V) -> Amplify<V, Self>
     where
         Self: Sized,
     {
         Amplify(self, V::new_storage_from(volume))
+    }
+
+    // Multi channel amplification for volume control (per channel)
+    // TODO: Find better name for this nyo cap
+    fn channel_amplify<const C: usize, V: Value<f32>>(self, volumes: [V; C]) -> ChannelAmplify<C, V, Self>
+    where   
+        Self: Sized,
+    {
+        ChannelAmplify(self, volumes.map(|volume| V::new_storage_from(volume)))
     }
 
     /*
@@ -46,6 +55,17 @@ pub trait Source: Sync + Send {
     }
     */
 
+    // Positional audio effect based on listener and emitter values
+    fn positional<
+        L: Value<vek::Vec3<f32>>,
+        E: Value<vek::Vec3<f32>>
+    >(self, ears: [L; 2], emitter: E) -> Positional<L, E, Self>
+    where
+        Self: Sized {
+        let ears = ears.map(|x| L::new_storage_from(x));
+        Positional(self, E::new_storage_from(emitter), ears, [1.0f32, 1.0f32])
+    }
+
     // Creates a fade in/out effect
     fn fade(self, easing: Easing, direction: EasingDirection, duration: Duration) -> Fade<Self>
     where
@@ -55,7 +75,7 @@ pub trait Source: Sync + Send {
     }
 
     // Mix two audio sources together (simple addition)
-    fn mix<B: Source, V: Value>(self, other: B, control: V) -> Mix<Self, B, V>
+    fn mix<B: Source, V: Value<f32>>(self, other: B, control: V) -> Mix<Self, B, V>
     where
         Self: Sized,
     {

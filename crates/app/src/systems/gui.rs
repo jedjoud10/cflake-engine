@@ -108,7 +108,8 @@ fn update(world: &mut World) {
                 total: Duration,
                 timings: &mut Vec<EventTimings<C>>,
             ) {
-                let mut table = egui_extras::TableBuilder::new(ui)
+                ui.push_id(fetch_caller_id::<C>().name, |ui| {
+                    let mut table = egui_extras::TableBuilder::new(ui)
                     .striped(true)
                     .resizable(false)
                     .vscroll(true)
@@ -194,6 +195,7 @@ fn update(world: &mut World) {
                             }
                         });
                     })
+                });
             }
 
             // Show event timings for init, update, and tick registries
@@ -212,19 +214,19 @@ fn update(world: &mut World) {
             ui.label(format!("Stalls: {stalls}"));
             ui.label(format!("Stg Buffers: {staging_buffers}"));
 
-            ui.heading("Cached Graphics Data");
+            ui.heading("Cached Graphics Data: ");
             ui.label(format!("Shaders: {cached_shaders}"));
             ui.label(format!("Samplers: {cached_samplers}"));
             ui.label(format!("Pipeline Layouts: {cached_pipeline_layouts}"));
             ui.label(format!("Bind Group Layouts: {cached_bind_group_layouts}"));
             ui.label(format!("Bind Group: {cached_bind_groups}"));
 
-            ui.heading("Graphics Processor");
+            ui.heading("Graphics Processor: ");
             ui.label(format!("Name: {name}"));
             ui.label(format!("Backend: {backend:#?}"));
             ui.label(format!("Type: {device:#?}"));
 
-            ui.heading("WGPU Raw Data Types");
+            ui.heading("WGPU Raw Data Types: ");
             ui.label(format!("Adapters: {}", adapters));
             ui.label(format!("Devices: {}", devices));
             ui.label(format!("Pipeline Layouts: {}", pipeline_layouts));
@@ -244,34 +246,19 @@ fn update(world: &mut World) {
     egui::Window::new("General Performance")
         .frame(frame)
         .show(&gui, |ui| {
-            let last_delta = time.delta().as_secs_f32();
-            let last_ticks_to_exec = time.ticks_to_execute().map(|x| x.get()).unwrap_or(0) as f32;
-            let mut out_delta = 0.0;
-            let mut out_ticks_to_exec = 0.0;
-            ui.memory_mut(|memory| {
-                let indeed = memory
-                    .data
-                    .get_temp_mut_or_insert_with(egui::Id::new(0), || last_delta);
-                *indeed = *indeed * 0.99 + last_delta * 0.01;
-                out_delta = *indeed;
-
-                let indeed2 = memory
-                    .data
-                    .get_temp_mut_or_insert_with(egui::Id::new(1), || last_ticks_to_exec);
-                *indeed2 = *indeed2 * 0.99 + last_ticks_to_exec * 0.01;
-                out_ticks_to_exec = *indeed2;
-            });
+            let delta = time.delta().as_secs_f32();
+            let ticks_to_exec = time.ticks_to_execute().map(|x| x.get()).unwrap_or(0) as f32;
 
             let since = time.startup().elapsed().as_secs_f32();
             ui.label(format!("Seconds since startup: {:.3}", since));
 
-            let ms = out_delta * 1000.0;
+            let ms = delta * 1000.0;
             ui.label(format!("Delta (ms/f): {:.3}", ms));
 
-            let fps = 1.0 / out_delta;
+            let fps = 1.0 / delta;
             ui.label(format!("FPS (f/s): {:.0}", fps));
 
-            let ticks = out_ticks_to_exec;
+            let ticks = ticks_to_exec;
             ui.label(format!("Ticks to execute: {:.3}", ticks));
 
             ui.label(format!("Tick-rate: {:.3} t/s", utils::TICKS_PER_SEC))
@@ -761,6 +748,64 @@ fn update(world: &mut World) {
                 ui.label(format!("Total number of rigid-bodies: {}", max));
 
                 ui.label(format!("Number of sleeping rigid-bodies: {}", sleeping));
+            });
+    }
+
+    // Audio stats
+    if let Some((listener, opt_position, opt_rotation)) = scene.find::<(&AudioListener, Option<&Position>, Option<&Rotation>)>() {
+        egui::Window::new("CPAL Audio Listener")
+            .frame(frame)
+            .collapsible(true)
+            .default_open(false)
+            .show(&gui, |ui| {
+                ui.label(format!("Audio Device: {:?}", cpal::traits::DeviceTrait::name(&listener.device)));
+
+                let table = egui_extras::TableBuilder::new(ui)
+                    .striped(true)
+                    .resizable(false)
+                    .vscroll(true)
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                    .column(egui_extras::Column::initial(100.0))
+                    .column(egui_extras::Column::initial(100.0))
+                    .column(egui_extras::Column::initial(100.0))
+                    .column(egui_extras::Column::initial(100.0));
+
+                let table = table.header(20.0, |mut header| {
+                    header.col(|ui| {
+                        ui.strong("Channels");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Min sample rate");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Max sample rate");
+                    });
+                    header.col(|ui| {
+                        ui.strong("Sample format");
+                    });
+                });
+
+                table.body(|mut body| {
+                    body.rows(20.0, listener.supported_output_configs.len(), |i, mut row| {
+                        let config_range = &listener.supported_output_configs[i];
+                        
+                        row.col(|ui| {
+                            ui.label(config_range.channels().to_string());
+                        });
+
+                        row.col(|ui| {
+                            ui.label(config_range.min_sample_rate().0.to_string());
+                        });
+
+                        row.col(|ui| {
+                            ui.label(config_range.max_sample_rate().0.to_string());
+                        });
+
+                        row.col(|ui| {
+                            ui.label(format!("{:?}", config_range.sample_format()));
+                        });
+                    })
+                })
             });
     }
 }

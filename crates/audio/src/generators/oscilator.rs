@@ -2,24 +2,24 @@ use crate::{Source, SourceInput, Value};
 
 use std::time::Duration;
 
-pub struct Sine<V: Value>(V::Storage);
-pub struct Square<V1: Value, V2: Value>(V1::Storage, V2::Storage);
+pub struct Sine<V: Value<f32>>(V::Storage);
+pub struct Square<V1: Value<f32>, V2: Value<f32>>(V1::Storage, V2::Storage);
 
-impl<V: Value> Sine<V> {
+impl<V: Value<f32>> Sine<V> {
     // Create a new sine waveform oscillator
     pub fn new(frequency: V) -> Self {
         Self(V::new_storage_from(frequency))
     }
 }
 
-impl<V1: Value, V2: Value> Square<V1, V2> {
+impl<V1: Value<f32>, V2: Value<f32>> Square<V1, V2> {
     // Create a new square waveform oscillator
     pub fn new(frequency: V1, duty: V2) -> Self {
         Self(V1::new_storage_from(frequency), V2::new_storage_from(duty))
     }
 }
 
-impl<V: Value> Source for Sine<V> {
+impl<V: Value<f32>> Source for Sine<V> {
     fn cache(&mut self) {
         V::cache(&mut self.0)
     }
@@ -42,7 +42,7 @@ impl<V: Value> Source for Sine<V> {
     }
 }
 
-impl<V1: Value, V2: Value> Source for Square<V1, V2> {
+impl<V1: Value<f32>, V2: Value<f32>> Source for Square<V1, V2> {
     fn cache(&mut self) {
         V1::cache(&mut self.0);
         V2::cache(&mut self.1);

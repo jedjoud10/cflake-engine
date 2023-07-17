@@ -43,7 +43,7 @@ pub struct TerrainMemorySettings {
 impl Default for TerrainMemorySettings {
     fn default() -> Self {
         Self {
-            allocation_count: 1,
+            allocation_count: 4,
             sub_allocation_count: 1024,
         }
     }

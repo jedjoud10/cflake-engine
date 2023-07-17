@@ -72,7 +72,7 @@ impl Ord for SystemId {
 }
 
 // Combine two types of IDS
-pub(crate) fn combine_ids(system: &SystemId, caller: &CallerId) -> StageId {
+pub fn combine_ids(system: &SystemId, caller: &CallerId) -> StageId {
     StageId {
         caller: *caller,
         system: *system,
@@ -80,7 +80,7 @@ pub(crate) fn combine_ids(system: &SystemId, caller: &CallerId) -> StageId {
 }
 
 // Get the caller ID of a specific caller type
-pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
+pub fn fetch_caller_id<C: Caller>() -> CallerId {
     let id = TypeId::of::<C>();
     crate::RESERVED_CALLER_TYPE_IDS
         .iter()
@@ -93,7 +93,7 @@ pub(crate) fn fetch_caller_id<C: Caller>() -> CallerId {
 }
 
 // Get the system ID of a specific system (simple generic function)
-pub(crate) fn fetch_system_id<S: FnOnce(&mut System) + 'static>(_: &S) -> SystemId {
+pub fn fetch_system_id<S: FnOnce(&mut System) + 'static>(_: &S) -> SystemId {
     SystemId {
         name: type_name::<S>(),
         id: TypeId::of::<S>(),

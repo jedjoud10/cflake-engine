@@ -3,6 +3,8 @@ mod buffered;
 mod ease;
 mod mix;
 mod repeat;
+mod positional;
+pub use positional::*;
 pub use amplify::*;
 pub use buffered::*;
 pub use ease::*;

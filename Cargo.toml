@@ -34,7 +34,7 @@ shaderc-build-from-source = ["app/shaderc-build-from-source"]
 
 [workspace.dependencies]
 log = "0.4.17"
-vek = "0.15.6"
+vek = "0.16.1"
 ahash = "0.7.6"
 parking_lot = "0.12.0"
 lazy_static = "1.4.0"
