@@ -9,6 +9,9 @@ pub struct Renderer {
 
     // Is the model currently enabled for rendering (this ignores if the model is culled or not)
     pub visible: bool,
+    // Is this renderer static or dynamic
+    // If this renderer is static, shadowmaps will not update each frame for said renderer
+    //pub dynamic: bool,
 }
 
 impl Default for Renderer {
@@ -16,6 +19,7 @@ impl Default for Renderer {
         Self {
             matrix: vek::Mat4::identity(),
             visible: true,
+            //dynamic: true,
         }
     }
 }

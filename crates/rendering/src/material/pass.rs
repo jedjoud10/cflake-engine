@@ -1,6 +1,6 @@
 use crate::{
     DefaultMaterialResources, Material, Renderer, SceneColorLayout, SceneDepthLayout,
-    ShadowDepthLayout, Surface,
+    ShadowDepthLayout, Surface, CullResult,
 };
 
 use graphics::{ColorLayout, DepthStencilLayout};
@@ -46,17 +46,25 @@ pub trait Pass {
     }
 
     // Set the cull state of a specific surface
-    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool);
+    fn set_cull_state<M: Material>(
+        defaults: &DefaultMaterialResources,
+        surface: &mut Surface<M>,
+        culled: CullResult,
+    );
 
     // Cull a specific surface when rendering the objects of this pass
     fn cull(
         defaults: &DefaultMaterialResources,
         aabb: math::Aabb<f32>,
         mesh: &vek::Mat4<f32>,
-    ) -> bool;
+    ) -> CullResult;
 
     // Check if a surface should be visible
-    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool;
+    fn is_surface_visible<M: Material>(
+        defaults: &DefaultMaterialResources,
+        surface: &Surface<M>,
+        renderer: &Renderer,
+    ) -> bool;
 
     // Get the pass type
     fn pass_type() -> PassType;
@@ -72,8 +80,16 @@ impl Pass for DeferredPass {
     }
 
     #[inline(always)]
-    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
-        surface.culled = culled;
+    fn set_cull_state<M: Material>(
+        _defaults: &DefaultMaterialResources,
+        surface: &mut Surface<M>,
+        culled: CullResult,
+    ) {
+        surface.culled = match culled {
+            CullResult::Intersect => true,
+            CullResult::Culled => false,
+            CullResult::Visible => true,
+        };
     }
 
     #[inline(always)]
@@ -81,12 +97,16 @@ impl Pass for DeferredPass {
         defaults: &DefaultMaterialResources,
         aabb: math::Aabb<f32>,
         mesh: &vek::Mat4<f32>,
-    ) -> bool {
-        !crate::pipeline::intersects_frustum(&defaults.camera_frustum, aabb, mesh)
+    ) -> CullResult {
+        crate::pipeline::cull_against_frustum(&defaults.camera_frustum, aabb, mesh)
     }
 
     #[inline(always)]
-    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
+    fn is_surface_visible<M: Material>(
+        _defaults: &DefaultMaterialResources,
+        surface: &Surface<M>,
+        renderer: &Renderer,
+    ) -> bool {
         !surface.culled && surface.visible && renderer.visible
     }
 }
@@ -101,8 +121,31 @@ impl Pass for ShadowPass {
     }
 
     #[inline(always)]
-    fn set_cull_state<M: Material>(surface: &mut Surface<M>, culled: bool) {
-        surface.shadow_culled = culled;
+    fn set_cull_state<M: Material>(
+        defaults: &DefaultMaterialResources,
+        surface: &mut Surface<M>,
+        culled: CullResult,
+    ) {
+        let cascade = defaults.shadow_cascade.unwrap();
+        if cascade == 0 {
+            surface.shadow_culled = 0;
+        }
+
+        // If it is already culled don't do shit
+        if ((surface.shadow_culled >> cascade as u8) & 1) == 1 {
+            return;
+        }
+
+        match culled {
+            // Not culled, still visible
+            CullResult::Intersect => surface.shadow_culled &= !(1 << cascade),
+            
+            // Still visible for this cascade, culled for other ones
+            CullResult::Visible => surface.shadow_culled = utils::enable_in_range::<u8>(cascade+1, 4),
+            
+            // Culled completely for this cascade
+            CullResult::Culled => surface.shadow_culled |= 1 << cascade,
+        }
     }
 
     #[inline(always)]
@@ -110,12 +153,18 @@ impl Pass for ShadowPass {
         defaults: &DefaultMaterialResources,
         aabb: math::Aabb<f32>,
         mesh: &vek::Mat4<f32>,
-    ) -> bool {
-        !crate::pipeline::intersects_lightspace(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
+    ) -> CullResult {
+        crate::pipeline::cull_against_lightspace_matrix(defaults.lightspace.as_ref().unwrap(), aabb, mesh)
     }
 
     #[inline(always)]
-    fn is_surface_visible<M: Material>(surface: &Surface<M>, renderer: &Renderer) -> bool {
-        !surface.shadow_culled && surface.visible && renderer.visible
+    fn is_surface_visible<M: Material>(
+        defaults: &DefaultMaterialResources,
+        surface: &Surface<M>,
+        renderer: &Renderer,
+    ) -> bool {
+        let cascade = defaults.shadow_cascade.unwrap();
+        let culled = ((surface.shadow_culled >> cascade as u8) & 1) == 0;
+        culled && surface.visible && renderer.visible
     }
 }

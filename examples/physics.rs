@@ -131,7 +131,6 @@ fn init(world: &mut World) {
     );
 
     // Create a movable camera
-    let collider = SphereColliderBuilder::new(1.0, 1.0).build();
     scene.insert((
         Position::default(),
         Rotation::default(),
@@ -139,8 +138,6 @@ fn init(world: &mut World) {
         AngularVelocity::default(),
         Camera::default(),
         CameraController::default(),
-        RigidBodyBuilder::new(RigidBodyType::Fixed).build(),
-        collider,
     ));
 
     // Create a directional light

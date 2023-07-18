@@ -110,91 +110,92 @@ fn update(world: &mut World) {
             ) {
                 ui.push_id(fetch_caller_id::<C>().name, |ui| {
                     let mut table = egui_extras::TableBuilder::new(ui)
-                    .striped(true)
-                    .resizable(false)
-                    .vscroll(true)
-                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                    .column(egui_extras::Column::initial(800.0))
-                    .column(egui_extras::Column::initial(100.0));
-
-                if C::persistent() {
-                    table = table
-                        .column(egui_extras::Column::initial(100.0))
-                        .column(egui_extras::Column::initial(100.0))
+                        .striped(true)
+                        .resizable(false)
+                        .vscroll(true)
+                        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                        .column(egui_extras::Column::initial(800.0))
                         .column(egui_extras::Column::initial(100.0));
-                }
 
-                table
-                    .header(20.0, |mut header| {
-                        header.col(|ui| {
-                            ui.strong("Name");
-                        });
-                        header.col(|ui| {
-                            ui.strong("Elapsed (ms)");
-                        });
+                    if C::persistent() {
+                        table = table
+                            .column(egui_extras::Column::initial(100.0))
+                            .column(egui_extras::Column::initial(100.0))
+                            .column(egui_extras::Column::initial(100.0));
+                    }
 
-                        if C::persistent() {
+                    table
+                        .header(20.0, |mut header| {
                             header.col(|ui| {
-                                ui.strong("Avg (ms)");
+                                ui.strong("Name");
                             });
                             header.col(|ui| {
-                                ui.strong("Min (ms)");
-                            });
-                            header.col(|ui| {
-                                ui.strong("Max (ms)");
-                            });
-                        }
-                    })
-                    .body(|body| {
-                        timings.sort_by_key(|x| x.elapsed().as_micros());
-                        body.rows(18.0f32, timings.len().min(10), |row_index, mut row| {
-                            let event = &timings[timings.len() - row_index - 1];
-                            let elapsed = event.elapsed();
-                            let color =
-                                pick_stats_label_color(elapsed.as_secs_f32() / total.as_secs_f32());
-                            let color = egui::Color32::from_rgb(color.r, color.g, color.b);
-
-                            row.col(|ui| {
-                                ui.colored_label(color, event.id().system.name);
-                            });
-                            row.col(|ui| {
-                                ui.colored_label(
-                                    color,
-                                    format!("{:.2?}ms", elapsed.as_secs_f32() * 1000.0),
-                                );
+                                ui.strong("Elapsed (ms)");
                             });
 
-                            if let Some(persistent) = event.persistent() {
-                                row.col(|ui| {
-                                    ui.colored_label(
-                                        color,
-                                        format!(
-                                            "{:.2?}ms",
-                                            persistent.average().as_secs_f32() * 1000.0
-                                        ),
-                                    );
+                            if C::persistent() {
+                                header.col(|ui| {
+                                    ui.strong("Avg (ms)");
                                 });
-                                row.col(|ui| {
-                                    ui.colored_label(
-                                        color,
-                                        format!(
-                                            "{:.2?}ms",
-                                            persistent.min().as_secs_f32() * 1000.0
-                                        ),
-                                    );
+                                header.col(|ui| {
+                                    ui.strong("Min (ms)");
                                 });
-                                row.col(|ui| {
-                                    ui.colored_label(
-                                        color,
-                                        format!(
-                                            "{:.2?}ms",
-                                            persistent.max().as_secs_f32() * 1000.0
-                                        ),
-                                    );
+                                header.col(|ui| {
+                                    ui.strong("Max (ms)");
                                 });
                             }
-                        });
-                    })
+                        })
+                        .body(|body| {
+                            timings.sort_by_key(|x| x.elapsed().as_micros());
+                            body.rows(18.0f32, timings.len().min(10), |row_index, mut row| {
+                                let event = &timings[timings.len() - row_index - 1];
+                                let elapsed = event.elapsed();
+                                let color = pick_stats_label_color(
+                                    elapsed.as_secs_f32() / total.as_secs_f32(),
+                                );
+                                let color = egui::Color32::from_rgb(color.r, color.g, color.b);
+
+                                row.col(|ui| {
+                                    ui.colored_label(color, event.id().system.name);
+                                });
+                                row.col(|ui| {
+                                    ui.colored_label(
+                                        color,
+                                        format!("{:.2?}ms", elapsed.as_secs_f32() * 1000.0),
+                                    );
+                                });
+
+                                if let Some(persistent) = event.persistent() {
+                                    row.col(|ui| {
+                                        ui.colored_label(
+                                            color,
+                                            format!(
+                                                "{:.2?}ms",
+                                                persistent.average().as_secs_f32() * 1000.0
+                                            ),
+                                        );
+                                    });
+                                    row.col(|ui| {
+                                        ui.colored_label(
+                                            color,
+                                            format!(
+                                                "{:.2?}ms",
+                                                persistent.min().as_secs_f32() * 1000.0
+                                            ),
+                                        );
+                                    });
+                                    row.col(|ui| {
+                                        ui.colored_label(
+                                            color,
+                                            format!(
+                                                "{:.2?}ms",
+                                                persistent.max().as_secs_f32() * 1000.0
+                                            ),
+                                        );
+                                    });
+                                }
+                            });
+                        })
                 });
             }
 
@@ -752,13 +753,18 @@ fn update(world: &mut World) {
     }
 
     // Audio stats
-    if let Some((listener, opt_position, opt_rotation)) = scene.find::<(&AudioListener, Option<&Position>, Option<&Rotation>)>() {
+    if let Some((listener, opt_position, opt_rotation)) =
+        scene.find::<(&AudioListener, Option<&Position>, Option<&Rotation>)>()
+    {
         egui::Window::new("CPAL Audio Listener")
             .frame(frame)
             .collapsible(true)
             .default_open(false)
             .show(&gui, |ui| {
-                ui.label(format!("Audio Device: {:?}", cpal::traits::DeviceTrait::name(&listener.device)));
+                ui.label(format!(
+                    "Audio Device: {:?}",
+                    cpal::traits::DeviceTrait::name(&listener.device)
+                ));
 
                 let table = egui_extras::TableBuilder::new(ui)
                     .striped(true)
@@ -786,25 +792,29 @@ fn update(world: &mut World) {
                 });
 
                 table.body(|mut body| {
-                    body.rows(20.0, listener.supported_output_configs.len(), |i, mut row| {
-                        let config_range = &listener.supported_output_configs[i];
-                        
-                        row.col(|ui| {
-                            ui.label(config_range.channels().to_string());
-                        });
+                    body.rows(
+                        20.0,
+                        listener.supported_output_configs.len(),
+                        |i, mut row| {
+                            let config_range = &listener.supported_output_configs[i];
 
-                        row.col(|ui| {
-                            ui.label(config_range.min_sample_rate().0.to_string());
-                        });
+                            row.col(|ui| {
+                                ui.label(config_range.channels().to_string());
+                            });
 
-                        row.col(|ui| {
-                            ui.label(config_range.max_sample_rate().0.to_string());
-                        });
+                            row.col(|ui| {
+                                ui.label(config_range.min_sample_rate().0.to_string());
+                            });
 
-                        row.col(|ui| {
-                            ui.label(format!("{:?}", config_range.sample_format()));
-                        });
-                    })
+                            row.col(|ui| {
+                                ui.label(config_range.max_sample_rate().0.to_string());
+                            });
+
+                            row.col(|ui| {
+                                ui.label(format!("{:?}", config_range.sample_format()));
+                            });
+                        },
+                    )
                 })
             });
     }

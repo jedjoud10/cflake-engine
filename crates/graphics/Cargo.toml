@@ -12,7 +12,7 @@ math = { path = "../math" }
 utils = { path = "../utils" }
 
 # Phobos and Window creation
-wgpu = { git = "https://github.com/gfx-rs/wgpu.git", default-features = false, features = ["vulkan-portability", "expose-ids"] }
+wgpu = { git = "https://github.com/jedjoud10/wgpu.git", default-features = false, features = ["vulkan-portability", "expose-ids"] }
 spirq = "0.6.3"
 spirv = "0.2.0"
 winit = "0.28.0"

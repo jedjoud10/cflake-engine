@@ -32,7 +32,9 @@ pub struct Surface<M: Material> {
 
     // Shadow parameters
     pub shadow_caster: bool,
-    pub shadow_culled: bool,
+
+    // If an object is completely within the frustum of the cascade then it is a waste to render it for the larger cascades as well
+    pub shadow_culled: u8,
 
     // Needed to force the user to initialize the material
     pub id: MaterialId<M>,
@@ -60,7 +62,22 @@ impl<M: Material> Surface<M> {
             culled: false,
             id,
             shadow_caster: true,
-            shadow_culled: false,
+            shadow_culled: u8::MAX,
+        }
+    }
+
+    // Create a new visible surface from multiple subsurfaces
+    pub fn from_iter(
+        subsurfaces: impl IntoIterator<Item = SubSurface<M>>,
+        id: MaterialId<M>,
+    ) -> Self {
+        Self {
+            subsurfaces: subsurfaces.into_iter().collect::<_>(),
+            visible: true,
+            culled: false,
+            shadow_caster: true,
+            shadow_culled: u8::MAX,
+            id,
         }
     }
 }

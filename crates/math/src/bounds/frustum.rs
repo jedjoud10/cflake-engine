@@ -24,6 +24,11 @@ impl<T: Real> FrustumPlane<T> {
 pub struct Frustum<T: Real>([FrustumPlane<T>; 6]);
 
 impl<T: Real> Frustum<T> {
+    // Get an immutable reference to the frustum planes
+    pub fn planes(&self) -> &[FrustumPlane<T>; 6] {
+        &self.0
+    }
+
     // Get an immutable iterator over the frustum planes
     pub fn iter(&self) -> impl ExactSizeIterator<Item = &FrustumPlane<T>> {
         self.0.iter()

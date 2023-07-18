@@ -1,7 +1,11 @@
 use crate::{Source, Value};
 
 // Mix two audio sources together using a control value
-pub struct Mix<A: Source, B: Source, V: Value<f32>>(pub(crate) A, pub(crate) B, pub(crate) V::Storage);
+pub struct Mix<A: Source, B: Source, V: Value<f32>>(
+    pub(crate) A,
+    pub(crate) B,
+    pub(crate) V::Storage,
+);
 
 impl<A: Source, B: Source, V: Value<f32>> Source for Mix<A, B, V> {
     fn cache(&mut self) {

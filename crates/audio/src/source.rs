@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use crate::{Amplify, Easing, EasingDirection, Fade, Mix, Repeat, Value, ChannelAmplify, Positional};
+use crate::{
+    Amplify, ChannelAmplify, Easing, EasingDirection, Fade, Mix, Positional, Repeat, Value,
+};
 
 // Given to the sources when they execute their "sample" method
 pub struct SourceInput {
@@ -38,8 +40,11 @@ pub trait Source: Sync + Send {
 
     // Multi channel amplification for volume control (per channel)
     // TODO: Find better name for this nyo cap
-    fn channel_amplify<const C: usize, V: Value<f32>>(self, volumes: [V; C]) -> ChannelAmplify<C, V, Self>
-    where   
+    fn channel_amplify<const C: usize, V: Value<f32>>(
+        self,
+        volumes: [V; C],
+    ) -> ChannelAmplify<C, V, Self>
+    where
         Self: Sized,
     {
         ChannelAmplify(self, volumes.map(|volume| V::new_storage_from(volume)))
@@ -56,12 +61,14 @@ pub trait Source: Sync + Send {
     */
 
     // Positional audio effect based on listener and emitter values
-    fn positional<
-        L: Value<vek::Vec3<f32>>,
-        E: Value<vek::Vec3<f32>>
-    >(self, ears: [L; 2], emitter: E) -> Positional<L, E, Self>
+    fn positional<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>>(
+        self,
+        ears: [L; 2],
+        emitter: E,
+    ) -> Positional<L, E, Self>
     where
-        Self: Sized {
+        Self: Sized,
+    {
         let ears = ears.map(|x| L::new_storage_from(x));
         Positional(self, E::new_storage_from(emitter), ears, [1.0f32, 1.0f32])
     }

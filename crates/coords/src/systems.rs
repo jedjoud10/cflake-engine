@@ -266,7 +266,7 @@ fn update_hierarchy(world: &mut World) {
 }
 
 // This system will update the scene hierarchy with the proper local offsets and rotations
-#[doc(hidden)]
+
 pub fn hierarchy(system: &mut System) {
     system
         .insert_update(update_hierarchy)

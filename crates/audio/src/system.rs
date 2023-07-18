@@ -11,7 +11,9 @@ fn update(world: &mut World) {
     // Don't do anything if we don't have an audio player
     let (listener, listener_position, listener_rotation) = match listener {
         Some((listener, Some(position), Some(rotation))) => (listener, position, rotation),
-        None => { return; },
+        None => {
+            return;
+        }
         _ => {
             log::error!("Audio listener missing Position component or Rotation component");
             return;
@@ -21,8 +23,8 @@ fn update(world: &mut World) {
     // Update ear positions
     let left = -listener_rotation.right() * listener.ear_distance;
     let right = listener_rotation.right() * listener.ear_distance;
-    *listener.ear_positions[0].write() = left + **listener_position; 
-    *listener.ear_positions[1].write() = right + **listener_position; 
+    *listener.ear_positions[0].write() = left + **listener_position;
+    *listener.ear_positions[1].write() = right + **listener_position;
 
     // Iterate through all the audio sources that have been changed or added
     let filter = ecs::added::<&AudioEmitter>() | ecs::modified::<&AudioEmitter>();

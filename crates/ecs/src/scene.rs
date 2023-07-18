@@ -309,34 +309,35 @@ fn set_ticked_false(world: &mut World) {
     scene.ticked = false;
 }
 
-// Only used for init
-#[doc(hidden)]
+/// Only used for init
 pub fn common(system: &mut System) {
     system.insert_init(init).before(user);
 }
 
-// Executes shit at the start of every frame
-#[doc(hidden)]
+/// Executes shit at the start of every frame
 pub fn pre_frame_or_tick(system: &mut System) {
     system
         .insert_tick(set_ticked_true)
         .before(user)
-        .after(utils::time);
+        .after(utils::time)
+        .before(post_frame_or_tick);
     system
         .insert_update(set_ticked_false)
         .before(user)
-        .after(utils::time);
+        .after(utils::time)
+        .before(post_frame_or_tick);
 }
 
-// Executes shit at the end of each frame
-#[doc(hidden)]
+/// Executes shit at the end of each frame
 pub fn post_frame_or_tick(system: &mut System) {
     system
         .insert_update(reset_delta_frame_states_end)
         .after(post_user)
-        .after(utils::time);
+        .after(utils::time)
+        .after(pre_frame_or_tick);
     system
         .insert_tick(reset_delta_tick_states_end)
         .after(post_user)
-        .after(utils::time);
+        .after(utils::time)
+        .after(pre_frame_or_tick);
 }

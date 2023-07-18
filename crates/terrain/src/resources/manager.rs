@@ -123,14 +123,7 @@ impl ChunkManager {
         });
 
         // Create one whole "terrain" surface
-        let surface = Surface {
-            subsurfaces: subsurfaces.collect(),
-            visible: true,
-            culled: false,
-            shadow_caster: true,
-            shadow_culled: false,
-            id: id.clone(),
-        };
+        let surface = Surface::from_iter(subsurfaces, id);
 
         // Create the global terrain renderer entity
         let global_draw_entity = scene.insert((Renderer::default(), surface));

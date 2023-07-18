@@ -1,4 +1,4 @@
-use crate::{Value, Source};
+use crate::{Source, Value};
 
 pub struct Positional<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Source>(
     pub(crate) T,
@@ -10,7 +10,7 @@ pub struct Positional<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Sou
 impl<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Source> Source for Positional<L, E, T> {
     fn cache(&mut self) {
         self.0.cache();
-        
+
         E::cache(&mut self.1);
         L::cache(&mut self.2[0]);
         L::cache(&mut self.2[1]);
@@ -35,7 +35,9 @@ impl<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Source> Source for P
     }
 
     fn sample(&mut self, input: &crate::SourceInput) -> Option<f32> {
-        self.0.sample(input).map(|x| x * self.3[input.channel as usize])
+        self.0
+            .sample(input)
+            .map(|x| x * self.3[input.channel as usize])
     }
 
     fn duration(&self) -> Option<std::time::Duration> {

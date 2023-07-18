@@ -12,7 +12,6 @@ pub struct TerrainMeshSettings {
 
     // Used for octree generation
     pub max_octree_depth: u32,
-    pub octree_depths_size_factors: Option<Vec<f32>>,
 
     // Used for skirts generation
     pub skirts_threshold_exp: f32,
@@ -26,7 +25,6 @@ impl Default for TerrainMeshSettings {
             size: 64,
             collisions: false,
             max_octree_depth: 8,
-            octree_depths_size_factors: None,
             skirts_threshold_exp: 1.7f32,
             skirts_threshold_bias: 0.02f32,
             skirts_threshold_min_density: -800.0f32,

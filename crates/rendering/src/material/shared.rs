@@ -58,6 +58,9 @@ pub struct DefaultMaterialResources<'a> {
 
     // Lightspace matrix for shadows
     pub lightspace: Option<vek::Mat4<f32>>,
+
+    // Shadow cascade we are currently rendering
+    pub shadow_cascade: Option<usize>,
 }
 
 // Camera data that will be stored in a UBO

@@ -30,6 +30,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
             .user_data(entity.to_raw() as u128)
             .locked_axes(rigid_body.locked)
             .build();
+        log::trace!("create rapier rigidbody type");
         let handle = physics.bodies.insert(rb);
         rigid_body.handle = Some(handle);
 
@@ -52,6 +53,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
             };
 
             if let Some(collider) = C::build_collider(component, entity) {
+                log::trace!("create rapier generic collider type");
                 let handle = colliders.insert_with_parent(collider, handle, bodies);
                 C::set_handle(component, handle);
             }
@@ -75,6 +77,7 @@ fn pre_step_spawn_rapier_counterparts(physics: &mut Physics, scene: &mut Scene) 
         let query = entry.as_query::<(&Position, &Rotation, &Velocity, &AngularVelocity)>();
 
         if let Some((position, rotation, velocity, angular_velocity)) = query {
+            log::trace!("insert ticked components for interpolated physics entity");
             entry
                 .insert((
                     LastTickedPosition::from(**position),
@@ -224,9 +227,9 @@ fn pre_step_sync_rapier_to_comps(
                         *collider = new_collider;
                     }
                 } else if C::regenerate_when_updating() {
-                    log::debug!("Rebuild collider...");
+                    log::trace!("rebuilding collider...");
                     if let Some(collider) = C::build_collider(component, entity) {
-                        log::debug!("Rebuild collider2...");
+                        log::trace!("rebuilt collider successfully");
 
                         let handle = physics.colliders.insert_with_parent(
                             collider,
@@ -432,10 +435,12 @@ pub fn system(system: &mut System) {
     system
         .insert_tick(tick)
         .after(post_user)
+        .after(ecs::pre_frame_or_tick)
         .before(ecs::post_frame_or_tick);
     system
         .insert_update(update)
         .after(post_user)
+        .after(ecs::pre_frame_or_tick)
         .before(ecs::post_frame_or_tick)
         .before(rendering::systems::rendering::system);
 }

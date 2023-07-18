@@ -21,6 +21,8 @@ impl<M: Material> Clone for MaterialId<M> {
     }
 }
 
+impl<M: Material> Copy for MaterialId<M> {}
+
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {

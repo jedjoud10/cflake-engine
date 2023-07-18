@@ -249,19 +249,20 @@ fn render(world: &mut World) {
         black: &albedo_maps[&renderer.black],
         normal: &normal_maps[&renderer.normal],
         mask: &mask_maps[&renderer.mask],
+        environment_map: &environment.environment_map,
         meshes: &meshes,
         indirect_meshes: &indirect_meshes,
         multi_draw_indirect_meshes: &multi_draw_indirect_meshes,
         multi_draw_indirect_count_meshes: &multi_draw_indirect_count_meshes,
-        draw_count_indirect_buffer: &draw_count_indirect_buffer,
         indirect_positions: &indirect_position_attribute,
         indirect_normals: &indirect_normal_attribute,
         indirect_tangents: &indirect_tangents_attribute,
         indirect_tex_coords: &indirect_tex_coords_attribute,
         indirect_triangles: &indirect_triangles,
         draw_indexed_indirect_buffers: &indexed_indirect_buffers,
+        draw_count_indirect_buffer: &draw_count_indirect_buffer,
         lightspace: None,
-        environment_map: &environment.environment_map,
+        shadow_cascade: None,
     };
     drop(scene);
 
@@ -278,6 +279,7 @@ fn render(world: &mut World) {
     ) {
         default.lightspace =
             Some(shadowmap.update(*directional_light_rotation, *camera_position, index));
+        default.shadow_cascade = Some(index);
 
         let mut view = shadowmap.depth_tex.view_mut(1 + index).unwrap();
         let target = view.as_render_target().unwrap();
@@ -322,6 +324,7 @@ fn render(world: &mut World) {
 
     // This will iterate over each material pipeline and draw the scene
     default.lightspace = None;
+    default.shadow_cascade = None;
     for stored in pipelines.iter() {
         stored.render(
             world,
@@ -332,8 +335,6 @@ fn render(world: &mut World) {
     }
 
     drop(render_pass);
-    //dbg!(i.elapsed());
-    //graphics.submit(false);
 }
 
 // The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture

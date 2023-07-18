@@ -225,6 +225,106 @@ impl App {
             .unwrap();
     }
 
+    
+    // Internal function to help us add systems
+    fn regsys(&mut self, sys: impl FnOnce(&mut System) + 'static) {
+        self.systems.insert(sys);
+    }
+
+    // Insert the required default systems
+    fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
+        // Create the rayon global thread pool
+        rayon::ThreadPoolBuilder::new()
+            .thread_name(|i| format!("worker-thread-{i}"))
+            .build_global()
+            .unwrap();
+
+        // Input system
+        self.regsys(input::system);
+
+        // Assets system
+        self.regsys(assets::system);
+
+        // Scene systems
+        self.regsys(ecs::post_frame_or_tick);
+        self.regsys(ecs::pre_frame_or_tick);
+        self.regsys(ecs::common);
+
+        // Hierarchy system
+        self.regsys(coords::hierarchy);
+
+        // World system
+        self.regsys(world::system);
+
+        // Utils systems
+        self.regsys(utils::time);
+        self.regsys(utils::io);
+        self.regsys(utils::file_logger);
+
+        // Audio system
+        self.regsys(audio::system);
+
+        // Networking system
+        self.regsys(networking::system);
+
+        // Graphics systems
+        self.regsys(graphics::common);
+        self.regsys(graphics::acquire);
+        self.regsys(graphics::present);
+
+        // Rendering systems
+        self.regsys(rendering::systems::camera::system);
+        self.regsys(rendering::systems::composite::system);
+        self.regsys(rendering::systems::matrix::system);
+        self.regsys(rendering::systems::rendering::system);
+        self.regsys(rendering::systems::lights::system);
+        self.regsys(rendering::systems::environment::system);
+
+        // Terrain systems
+        self.regsys(terrain::systems::manager::system);
+        self.regsys(terrain::systems::generation::system);
+        self.regsys(terrain::systems::init::system);
+        self.regsys(terrain::systems::readback::readback_begin_system);
+        self.regsys(terrain::systems::readback::readback_end_system);
+        self.regsys(terrain::systems::cull::system);
+
+        // Physics systems
+        self.regsys(physics::system);
+
+        // Gui system + stats update event
+        self.regsys(gui::common);
+        self.regsys(gui::acquire);
+        self.regsys(gui::display);
+
+        // Camera system and statistics system
+        self.regsys(crate::systems::camera::system);
+        self.regsys(crate::systems::gui::system);
+
+        // Fetch names and versions
+        let app_name = self.app_name.clone();
+        let app_version = self.app_version;
+        let engine_name = self.engine_name.clone();
+        let engine_version = self.engine_version;
+        let author_name = self.author_name.clone();
+
+        // Insert the utils' settings
+        self.world.insert(UtilsSettings {
+            author_name: author_name.clone(),
+            app_name: app_name.clone(),
+            log_receiver: Some(receiver),
+        });
+
+        // Insert the graphics API window resource
+        let window_settings = self.window.clone();
+        self.world.insert(window_settings);
+
+        // Print app / author / engine data
+        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
+        log::info!("Engine Name: '{engine_name}', Engine Version: '{engine_version}'");
+        log::info!("Author Name: '{author_name}'");
+        self
+    }
+
     /// Consume the App builder, and start the engine.
     pub fn execute(mut self) {
         // Enable the environment logger
@@ -353,105 +453,5 @@ impl App {
             }
         }
         sleeper
-    }
-
-    // Internal function to help us add systems
-    fn regsys(&mut self, sys: impl FnOnce(&mut System) + 'static) {
-        self.systems.insert(sys);
-    }
-
-    // Insert the required default systems
-    fn insert_default_systems(mut self, receiver: mpsc::Receiver<String>) -> Self {
-        // Create the rayon global thread pool
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(16)
-            .thread_name(|i| format!("worker-thread-{i}"))
-            .build_global()
-            .unwrap();
-
-        // Input system
-        self.regsys(input::system);
-
-        // Assets system
-        self.regsys(assets::system);
-
-        // Scene systems
-        self.regsys(ecs::post_frame_or_tick);
-        self.regsys(ecs::pre_frame_or_tick);
-        self.regsys(ecs::common);
-
-        // Hierarchy system
-        self.regsys(coords::hierarchy);
-
-        // World system
-        self.regsys(world::system);
-
-        // Utils systems
-        self.regsys(utils::time);
-        self.regsys(utils::io);
-        self.regsys(utils::file_logger);
-
-        // Audio system
-        self.regsys(audio::system);
-
-        // Networking system
-        self.regsys(networking::system);
-
-        // Graphics systems
-        self.regsys(graphics::common);
-        self.regsys(graphics::acquire);
-        self.regsys(graphics::present);
-
-        // Rendering systems
-        self.regsys(rendering::systems::camera::system);
-        self.regsys(rendering::systems::composite::system);
-        self.regsys(rendering::systems::matrix::system);
-        self.regsys(rendering::systems::rendering::system);
-        self.regsys(rendering::systems::lights::system);
-        self.regsys(rendering::systems::environment::system);
-
-        // Terrain systems
-        self.regsys(terrain::systems::manager::system);
-        self.regsys(terrain::systems::generation::system);
-        self.regsys(terrain::systems::init::system);
-        self.regsys(terrain::systems::readback::readback_begin_system);
-        self.regsys(terrain::systems::readback::readback_end_system);
-        self.regsys(terrain::systems::cull::system);
-
-        // Physics systems
-        self.regsys(physics::system);
-
-        // Gui system + stats update event
-        self.regsys(gui::common);
-        self.regsys(gui::acquire);
-        self.regsys(gui::display);
-
-        // Camera system and statistics system
-        self.regsys(crate::systems::camera::system);
-        self.regsys(crate::systems::gui::system);
-
-        // Fetch names and versions
-        let app_name = self.app_name.clone();
-        let app_version = self.app_version;
-        let engine_name = self.engine_name.clone();
-        let engine_version = self.engine_version;
-        let author_name = self.author_name.clone();
-
-        // Insert the utils' settings
-        self.world.insert(UtilsSettings {
-            author_name: author_name.clone(),
-            app_name: app_name.clone(),
-            log_receiver: Some(receiver),
-        });
-
-        // Insert the graphics API window resource
-        let window_settings = self.window.clone();
-        self.world.insert(window_settings);
-
-        // Print app / author / engine data
-        log::info!("App Name: '{app_name}', App Version: '{app_version}'");
-        log::info!("Engine Name: '{engine_name}', Engine Version: '{engine_version}'");
-        log::info!("Author Name: '{author_name}'");
-        self
     }
 }

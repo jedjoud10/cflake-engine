@@ -190,7 +190,7 @@ fn update(world: &mut World) {
 }
 
 // This system will automatically insert the input resource and update it each frame using the window events
-#[doc(hidden)]
+
 pub fn system(system: &mut System) {
     system.insert_init(init).before(user);
     system.insert_device(device_event).before(user);

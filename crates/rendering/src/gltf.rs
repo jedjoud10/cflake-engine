@@ -530,6 +530,9 @@ impl Asset for GltfScene {
         // Number of entities we will add
         let mut count = 0;
 
+        // PBR material id
+        let id = context.pipelines.get::<PbrMaterial>().unwrap();
+
         // Iterate until there are no more nodes to pass through
         while let Some((node, parent)) = {
             if !eval.is_empty() {
@@ -588,14 +591,7 @@ impl Asset for GltfScene {
                 }
 
                 // Create a proper surface
-                let surface = Surface {
-                    subsurfaces: subsurfaces.into(),
-                    visible: true,
-                    culled: false,
-                    shadow_caster: true,
-                    shadow_culled: false,
-                    id: context.pipelines.get::<PbrMaterial>().unwrap(),
-                };
+                let surface = Surface::from_iter(subsurfaces, id);
 
                 match parent {
                     // Local coordinates if we have a parent

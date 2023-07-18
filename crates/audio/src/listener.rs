@@ -1,14 +1,14 @@
-use std::sync::{atomic::Ordering, Arc};
-use parking_lot::RwLock;
 use atomic_float::AtomicF32;
 use cpal::traits::{DeviceTrait, HostTrait};
 use ecs::Component;
+use parking_lot::RwLock;
+use std::sync::{atomic::Ordering, Arc};
 
 // This is a component that will be able to playback any type of audio to a specific cpal device
 // We can technically have multiple audio listenenrs in the same scene, although that would be pretty pointless
 #[derive(Component)]
 pub struct AudioListener {
-    // CPAL stuff 
+    // CPAL stuff
     pub device: cpal::Device,
     pub host: cpal::Host,
     pub supported_output_configs: Vec<cpal::SupportedStreamConfigRange>,
@@ -25,9 +25,7 @@ pub struct AudioListener {
 
 impl AudioListener {
     // Create an audio player that uses the default host device
-    pub fn new(
-        ear_distance: f32,
-    ) -> Option<Self> {
+    pub fn new(ear_distance: f32) -> Option<Self> {
         // Fetch the CPAL device
         let host = cpal::default_host();
         let device = host.default_output_device()?;

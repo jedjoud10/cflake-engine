@@ -27,7 +27,10 @@ impl<T: Source, V: Value<f32>> Source for Amplify<V, T> {
 }
 
 // Amplify a source by a specific amount for each channel
-pub struct ChannelAmplify<const C: usize, V: Value<f32>, T: Source>(pub(crate) T, pub(crate) [V::Storage; C]);
+pub struct ChannelAmplify<const C: usize, V: Value<f32>, T: Source>(
+    pub(crate) T,
+    pub(crate) [V::Storage; C],
+);
 
 impl<const C: usize, T: Source, V: Value<f32>> Source for ChannelAmplify<C, V, T> {
     fn cache(&mut self) {
@@ -39,7 +42,9 @@ impl<const C: usize, T: Source, V: Value<f32>> Source for ChannelAmplify<C, V, T
     }
 
     fn sample(&mut self, input: &crate::SourceInput) -> Option<f32> {
-        self.0.sample(input).map(|x| x * V::fetch(&self.1[input.channel as usize]))
+        self.0
+            .sample(input)
+            .map(|x| x * V::fetch(&self.1[input.channel as usize]))
     }
 
     fn duration(&self) -> Option<std::time::Duration> {
