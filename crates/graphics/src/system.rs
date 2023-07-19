@@ -28,7 +28,6 @@ fn update(world: &mut World) {
         submissions: *graphics.0.submissions.lock() as usize,
         acquires: *graphics.0.acquires.lock() as usize,
         stalls: *graphics.0.stalls.lock() as usize,
-        staging_buffers: graphics.0.staging.allocations.len(),
         cached_shaders: cached.shaders.len(),
         cached_samplers: cached.samplers.len(),
         cached_bind_group_layouts: cached.bind_group_layouts.len(),
@@ -119,8 +118,6 @@ pub fn acquire(system: &mut System) {
                 window.presentable_texture = None;
                 window.presentable_texture_view = None;
             }
-
-            graphics.staging_pool().refresh();
         })
         .before(user);
 }

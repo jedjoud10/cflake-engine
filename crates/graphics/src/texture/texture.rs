@@ -427,12 +427,11 @@ pub(crate) fn write_to_level<T: Texel, R: Region>(
     };
 
     // Write to the mip level of the texture
-    graphics.staging_pool().write_texture(
-        &graphics,
+    graphics.0.queue.write_texture(
         image_copy_texture,
-        image_data_layout,
-        extent_to_extent3d::<R>(extent),
         bytes,
+        image_data_layout,
+        extent_to_extent3d::<R>(extent)
     );
 }
 
@@ -452,11 +451,16 @@ pub(crate) fn read_from_level<T: Texel, R: Region>(
 // Copy a sub-region from another level into this level
 // The texture can have different regions, but the same type
 pub fn copy_subregion_from<'a, T: Texture, O: Texture<T = T::T>>(
-    write: impl AsMut<TextureViewMut<'a, T>>,
-    read: impl AsRef<TextureViewRef<'a, O>>,
+    write: impl Into<TextureViewMut<'a, T>>,
+    read: impl Into<TextureViewRef<'a, O>>,
     src_subregion: Option<O::Region>,
     dst_subregion: Option<T::Region>,
+    graphics: &Graphics,
 ) {
+    let write = write.into();
+    let read = read.into();
+
+    let mut encoder = graphics.acquire();
 }
 
 // Check if the given extent is valid within device limits

@@ -1,5 +1,5 @@
 use crate::{
-    Cached, FrameRateLimit, Graphics, InternalGraphics, StagingPool, Window, WindowSettings,
+    Cached, FrameRateLimit, Graphics, InternalGraphics, Window, WindowSettings,
 };
 
 use dashmap::DashMap;
@@ -149,7 +149,6 @@ pub(crate) unsafe fn init_context_and_window(
         adapter,
         queue,
         encoders: thread_local::ThreadLocal::default(),
-        staging: StagingPool::new(),
         shaderc: shaderc::Compiler::new().unwrap(),
         cached: Cached {
             shaders: Default::default(),

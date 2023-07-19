@@ -143,64 +143,9 @@ pub fn copy_subregion_from<T: Texture, O: Texture<T = T::T>>(
     src_subregion: Option<O::Region>,
     dst_subregion: Option<T::Region>,
 ) -> Result<(), ViewCopyError> {
-    todo!()
-    /*
-    // Make sure we can use the texture as copy src
-    if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
-        return Err(ViewCopyError::NonCopySrc);
-    }
-
-    // Make sure we can use the texture as copy dst
-    if !self.texture.usage().contains(TextureUsage::COPY_DST) {
-        return Err(ViewCopyError::NonCopyDst);
-    }
-
-    // Get a proper subregion with the given opt subregion for dst
-    let Some(dst_subregion) = handle_optional_subregion(
-        self.texture,
-        self.level,
-        dst_subregion
-    ) else {
-        return Err(ViewCopyError::InvalidSrcRegion);
-    };
-
-    // Get a proper subregion with the given opt subregion for src
-    let Some(src_subregion) = handle_optional_subregion(
-        other.texture,
-        other.level,
-        src_subregion
-    ) else {
-        return Err(ViewCopyError::InvalidDstRegion);
-    };
-
-    // Make sure that the layers are compatible
-    match (
-        <O::Region as Region>::view_dimension(),
-        <T::Region as Region>::view_dimension(),
-    ) {
-        // Copy from 2D array to self
-        (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube)
-            if other.texture.layers() == 6 => {}
-        //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
-
-        // Copy from Cube to self
-        (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array)
-            if self.texture.layers() == 6 => {}
-        //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
-
-        /*
-        // Copy from CubeArray to self
-        (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
-        (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
-        */
-        (x, y) if x == y => (),
-        _ => return Err(ViewCopyError::IncompatibleMultiLayerTextures),
-    };
-
-    todo!();
+    
 
     Ok(())
-    */
 }
 
 pub fn clear<T: Texture>(
@@ -297,6 +242,16 @@ impl<'a, T: Texture> TextureViewRef<'a, T> {
     }
 }
 
+impl<'a, T: Texture> From<TextureViewMut<'a, T>> for TextureViewRef<'a, T> {
+    fn from(value: TextureViewMut<'a, T>) -> Self {
+        TextureViewRef {
+            texture: value.texture,
+            view: value.view,
+            settings: value.settings,
+        }
+    }
+}
+
 // Singular mutable texture view that might contain multiple layers / mips
 pub struct TextureViewMut<'a, T: Texture> {
     pub(crate) texture: &'a T,
@@ -378,6 +333,74 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
             subregion,
             val,
         )
+    }
+
+    // Copy a view from another texture view
+    pub fn copy_from<'b>(
+        &mut self,
+        other: impl Into<TextureViewRef<'b, T>>
+    ) -> Result<(), ViewCopyError> {
+        let other: TextureViewRef<'b, T> = other.into();
+
+        // Make sure we can use the texture as copy src
+        if !other.texture.usage().contains(TextureUsage::COPY_SRC) {
+            return Err(ViewCopyError::NonCopySrc);
+        }
+
+        // Make sure we can use the texture as copy dst
+        if !self.texture.usage().contains(TextureUsage::COPY_DST) {
+            return Err(ViewCopyError::NonCopyDst);
+        }
+
+        
+
+        Ok(())
+
+        /*
+        // Get a proper subregion with the given opt subregion for dst
+        let Some(dst_subregion) = handle_optional_subregion(
+            self.texture,
+            self.level,
+            dst_subregion
+        ) else {
+            return Err(ViewCopyError::InvalidSrcRegion);
+        };
+
+        // Get a proper subregion with the given opt subregion for src
+        let Some(src_subregion) = handle_optional_subregion(
+            other.texture,
+            other.level,
+            src_subregion
+        ) else {
+            return Err(ViewCopyError::InvalidDstRegion);
+        };
+        */
+
+        /*
+        // Make sure that the layers are compatible
+        match (
+            <O::Region as Region>::view_dimension(),
+            <T::Region as Region>::view_dimension(),
+        ) {
+            // Copy from 2D array to self
+            (wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::Cube)
+                if other.texture.layers() == 6 => {}
+            //(wgpu::TextureViewDimension::D2Array, wgpu::TextureViewDimension::CubeArray) => todo!(),
+
+            // Copy from Cube to self
+            (wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::D2Array)
+                if self.texture.layers() == 6 => {}
+            //(wgpu::TextureViewDimension::Cube, wgpu::TextureViewDimension::CubeArray) => todo!(),
+
+            /*
+            // Copy from CubeArray to self
+            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::D2Array) => todo!(),
+            (wgpu::TextureViewDimension::CubeArray, wgpu::TextureViewDimension::Cube) => todo!(),
+            */
+            (x, y) if x == y => (),
+            _ => return Err(ViewCopyError::IncompatibleMultiLayerTextures),
+        };
+        */
     }
 
     // Try to use the texture view as a renderable target.

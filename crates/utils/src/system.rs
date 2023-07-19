@@ -12,6 +12,8 @@ use world::{post_user, user, System, World};
 pub struct UtilsSettings {
     pub author_name: String,
     pub app_name: String,
+    pub tick_rate: u32,
+    pub tick_rate_max: u32,
     pub log_receiver: Option<mpsc::Receiver<String>>,
 }
 
@@ -54,16 +56,14 @@ pub fn file_logger(system: &mut System) {
         .after(io);
 }
 
-// Number of ticks that should execute per second
-pub const TICKS_PER_SEC: u32 = 64;
-pub const TICK_DELTA: f32 = 1.0 / (TICKS_PER_SEC as f32);
-
 // Add the Time manager
 pub fn time(system: &mut System) {
     // Main initialization event
     system
         .insert_init(|world: &mut World| {
-            world.insert(Time {
+            let settings = world.get::<UtilsSettings>().unwrap();
+
+            let time = Time {
                 delta: Duration::ZERO,
                 frame_count: 0,
                 startup: Instant::now(),
@@ -71,11 +71,16 @@ pub fn time(system: &mut System) {
                 tick_count: 0,
                 last_tick_start: Instant::now(),
                 ticks_to_execute: None,
-                tick_delta: Duration::from_secs_f32(TICK_DELTA),
+                tick_delta: Duration::from_secs_f32(1.0 / settings.tick_rate as f32),
                 local_tick_count: 0,
                 tick_interpolation: 0.0,
                 accumulator: 0.0,
-            });
+                tick_rate: settings.tick_rate,
+                tick_rate_max: settings.tick_rate_max,
+            };
+
+            drop(settings);
+            world.insert(time);
         })
         .before(user);
 
@@ -95,9 +100,9 @@ pub fn time(system: &mut System) {
 
             // https://gafferongames.com/post/fix_your_timestep/
             time.accumulator += time.delta.as_secs_f32();
-            time.tick_interpolation = time.accumulator / TICK_DELTA;
+            time.tick_interpolation = time.accumulator / time.tick_delta.as_secs_f32();
 
-            while time.accumulator > TICK_DELTA {
+            while time.accumulator > time.tick_delta.as_secs_f32() {
                 time.local_tick_count = 0;
 
                 // Add one to ticks to execute
@@ -108,17 +113,16 @@ pub fn time(system: &mut System) {
                 }
 
                 // Decrease delta and reset interpolations
-                time.accumulator -= TICK_DELTA;
+                time.accumulator -= time.tick_delta.as_secs_f32();
                 time.tick_interpolation = 1.0;
             }
 
             // LIMIT TICKS WHEN WE HAVE SPIRAL OF DEATH
+            let tick_rate_max = time.tick_rate_max;
             if let Some(count) = time.ticks_to_execute.as_mut() {
-                const MIN_FPS: u32 = 16;
-                const MAX_TICKS_BEFORE_SLOWDOWN: u32 = TICKS_PER_SEC / MIN_FPS;
                 const MAX_TICKS_DURING_SLOWDOWN: u32 = 1;
 
-                if count.get() > MAX_TICKS_BEFORE_SLOWDOWN {
+                if count.get() > tick_rate_max {
                     log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
                     *count = NonZeroU32::new(MAX_TICKS_DURING_SLOWDOWN).unwrap();
                 }

@@ -32,7 +32,7 @@ fn create_depth_texture(
         graphics,
         None,
         (vek::Extent2::broadcast(resolution), 4),
-        TextureUsage::TARGET | TextureUsage::SAMPLED,
+        TextureUsage::TARGET | TextureUsage::SAMPLED | TextureUsage::COPY_SRC | TextureUsage::COPY_DST,
         &[
             TextureViewSettings::whole::<<ShadowMap as Texture>::Region>(),
             create_view_settings(0),
@@ -57,10 +57,11 @@ pub struct ShadowMapping {
     // Everything required to render to the depth texture
     pub(crate) render_pass: RenderPass<(), ShadowDepthLayout>,
 
-    // Multilayered shadow map texture for static objects only
-    // TODO: Implement proper interval counter
-    // TODO: Implement separate texture for dynanmic / static objects
-    pub(crate) depth_tex: ShadowMap,
+    // Depth texture for dynamic objects
+    pub(crate) dynamic_depth_tex: ShadowMap,
+
+    // Static depth texture for static objects
+    pub(crate) static_depth_tex: ShadowMap,
 
     // Cached matrices
     pub percents: [f32; 4],
@@ -112,7 +113,8 @@ impl ShadowMapping {
             },
         );
 
-        let depth_tex = create_depth_texture(graphics, resolution);
+        let static_depth_tex = create_depth_texture(graphics, resolution);
+        let dynamic_depth_tex = create_depth_texture(graphics, resolution);
 
         // Default shadow parameters
         let parameters = ShadowUniform {
@@ -141,13 +143,14 @@ impl ShadowMapping {
 
         Self {
             render_pass,
-            depth_tex,
             resolution,
             parameter_buffer,
             lightspace_buffer,
             distance,
             percents,
             parameters,
+            dynamic_depth_tex,
+            static_depth_tex,
         }
     }
 

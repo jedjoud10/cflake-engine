@@ -1,4 +1,5 @@
 use rapier3d::prelude::*;
+use utils::Time;
 
 // Main physics resource that contains all the Rapier3D data structures
 // that are needed to simulate the physics engine
@@ -18,12 +19,12 @@ pub struct Physics {
 }
 
 impl Physics {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(tick_rate: u32) -> Self {
         let rigid_body_set = RigidBodySet::new();
         let collider_set = ColliderSet::new();
 
         let mut integration_parameters = IntegrationParameters::default();
-        integration_parameters.set_inv_dt(utils::TICKS_PER_SEC as f32);
+        integration_parameters.set_inv_dt(tick_rate as f32);
         //integration_parameters.allowed_linear_error = 0.0001;
         //integration_parameters.max_penetration_correction = 0.001;
 

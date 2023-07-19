@@ -12,10 +12,12 @@ pub struct Time {
     pub(crate) frame_start: Instant,
 
     // Related to constant ticks
+    pub(crate) tick_rate: u32,
+    pub(crate) tick_rate_max: u32,
+    pub(crate) tick_delta: Duration,
     pub(crate) tick_count: u128,
     pub(crate) local_tick_count: u32,
     pub(crate) last_tick_start: Instant,
-    pub(crate) tick_delta: Duration,
     pub(crate) tick_interpolation: f32,
     pub(crate) accumulator: f32,
     pub(crate) ticks_to_execute: Option<NonZeroU32>,
@@ -70,5 +72,10 @@ impl Time {
     // Check how many ticks we should execute this frame
     pub fn ticks_to_execute(&self) -> Option<NonZeroU32> {
         self.ticks_to_execute
+    }
+
+    // Get the tick rate
+    pub fn tick_rate(&self) -> u32 {
+        self.tick_rate
     }
 }

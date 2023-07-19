@@ -15,7 +15,7 @@ use crate::{
     BufferAsyncReadError, BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
     BufferInitializationError, BufferMode, BufferNotMappableError, BufferReadError,
     BufferSplatError, BufferUsage, BufferView, BufferViewMut, BufferWriteError, DispatchIndirect,
-    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, StagingPool, Vertex, R,
+    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, Vertex, R,
 };
 
 // FIXME: Is this really worth it? All of this just so we can remove the "range" parameter?

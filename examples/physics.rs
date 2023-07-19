@@ -64,7 +64,7 @@ fn init(world: &mut World) {
 
     // Create a new material instance for the cubes and spheres
     let material = pbrs.insert(PbrMaterial {
-        albedo_map: None,
+        albedo_map: Some(diffuse),
         normal_map: Some(normal),
         mask_map: Some(mask),
         bumpiness_factor: 0.9,

@@ -66,10 +66,10 @@ fn update(world: &mut World) {
                 .set_uniform_buffer("shadow_lightspace_matrices", &shadow.lightspace_buffer, ..)
                 .unwrap();
             group
-                .set_sampled_texture("shadow_map", &shadow.depth_tex)
+                .set_sampled_texture("shadow_map", &shadow.dynamic_depth_tex)
                 .unwrap();
             group
-                .set_sampler("shadow_map_sampler", shadow.depth_tex.sampler().unwrap())
+                .set_sampler("shadow_map_sampler", shadow.static_depth_tex.sampler().unwrap())
                 .unwrap();
             group
                 .set_sampled_texture("environment_map", &environment.environment_map)

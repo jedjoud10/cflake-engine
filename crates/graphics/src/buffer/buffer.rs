@@ -15,7 +15,7 @@ use crate::{
     BufferAsyncReadError, BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
     BufferInitializationError, BufferMode, BufferNotMappableError, BufferReadError,
     BufferSplatError, BufferUsage, BufferView, BufferViewMut, BufferWriteError, DispatchIndirect,
-    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, StagingPool, Vertex, R,
+    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, Vertex, R,
 };
 
 // Bitmask from Vulkan BufferUsages
@@ -462,14 +462,10 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferWriteError::InvalidLen(src.len(), offset, self.len()));
         }
 
-        // Use the staging pool for data writes
-        let staging = self.graphics.staging_pool();
-        staging.write_buffer(
-            &self.graphics,
+        self.graphics.0.queue.write_buffer(
             &self.buffer,
             (offset * self.stride()) as u64,
-            (src.len() * self.stride()) as u64,
-            bytemuck::cast_slice(src),
+            bytemuck::cast_slice(src)
         );
 
         Ok(())
@@ -493,15 +489,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferReadError::InvalidLen(dst.len(), offset, self.len()));
         }
 
-        // Use the staging pool for data reads
-        let staging = self.graphics.staging_pool();
-        staging.read_buffer(
-            &self.graphics,
-            &self.buffer,
-            (offset * self.stride()) as u64,
-            (dst.len() * self.stride()) as u64,
-            bytemuck::cast_slice_mut(dst),
-        );
+        todo!();
 
         Ok(())
     }
@@ -525,15 +513,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             return Err(BufferAsyncReadError::NonReadable);
         }
 
-        // Use the staging pool for data reads
-        let staging = self.graphics.staging_pool();
-        staging.map_buffer_read_async(
-            &self.graphics,
-            &self.buffer,
-            (offset * self.stride()) as u64,
-            (len * self.stride()) as u64,
-            |raw| callback(bytemuck::cast_slice(raw)),
-        );
+        todo!();
 
         Ok(())
     }
@@ -632,6 +612,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let size = (end - start) * self.stride();
         let offset = start * self.stride();
 
+        todo!()
+
+        /*
         // Get the staging pool for download
         let staging = self.graphics.staging_pool();
         let data =
@@ -641,6 +624,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
             buffer: &self,
             data,
         })
+        */
     }
 
     // Try to view the buffer mutably (for writing AND reading) immediately
@@ -666,6 +650,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let read = self.usage.contains(BufferUsage::READ);
 
         if !read {
+            todo!()
+            /*
             // Write only buffer view, uses QueueWriteBufferView
             let staging = self.graphics.staging_pool();
             let data = staging
@@ -675,6 +661,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 buffer: PhantomData,
                 data,
             })
+            */
         } else {
             // Read and write, clone first, then write
             // Create a temporary vector that will store the contents of the buffer

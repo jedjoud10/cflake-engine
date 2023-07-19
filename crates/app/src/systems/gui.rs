@@ -55,7 +55,6 @@ fn update(world: &mut World) {
         acquires,
         submissions,
         stalls,
-        staging_buffers,
         cached_samplers,
         cached_bind_group_layouts,
         cached_pipeline_layouts,
@@ -213,7 +212,6 @@ fn update(world: &mut World) {
             ui.label(format!("Acquires: {acquires}"));
             ui.label(format!("Submissions: {submissions}"));
             ui.label(format!("Stalls: {stalls}"));
-            ui.label(format!("Stg Buffers: {staging_buffers}"));
 
             ui.heading("Cached Graphics Data: ");
             ui.label(format!("Shaders: {cached_shaders}"));

@@ -276,12 +276,19 @@ fn render(world: &mut World) {
         index: usize,
         pipelines: &Vec<std::rc::Rc<dyn DynPipeline>>,
         world: &World,
+        dynamic: bool,
     ) {
         default.lightspace =
             Some(shadowmap.update(*directional_light_rotation, *camera_position, index));
         default.shadow_cascade = Some(index);
 
-        let mut view = shadowmap.depth_tex.view_mut(1 + index).unwrap();
+        let view = if dynamic {
+            &mut shadowmap.dynamic_depth_tex
+        } else {
+            &mut shadowmap.static_depth_tex
+        };
+
+        let mut view = view.view_mut(1 + index).unwrap();
         let target = view.as_render_target().unwrap();
 
         // Create a new active shadowmap render pass
@@ -298,6 +305,11 @@ fn render(world: &mut World) {
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
         for i in 0..4 {
+            let shadowmap = &mut *_shadowmap;
+            let mut dynamic = shadowmap.dynamic_depth_tex.view_mut(i + 1).unwrap();
+            let _static = shadowmap.static_depth_tex.view(i + 1).unwrap();
+            dynamic.copy_from(_static).unwrap();
+
             render_shadows_pipelines(
                 &mut _shadowmap,
                 &mut default,
@@ -307,8 +319,22 @@ fn render(world: &mut World) {
                 i,
                 &pipelines,
                 world,
+                true,
             );
         }
+
+        let i = time.frame_count() as usize % 4;
+        render_shadows_pipelines(
+            &mut _shadowmap,
+            &mut default,
+            directional_light_rotation,
+            camera_position,
+            &mut renderer.shadow_pass_stats[i],
+            i,
+            &pipelines,
+            world,
+            false,
+        );
 
         //graphics.submit(false);
         drop(_shadowmap);

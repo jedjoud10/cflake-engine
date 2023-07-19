@@ -276,7 +276,10 @@ fn post_step_update_character_controllers(_physics: &mut Physics, scene: &mut Sc
 
 // Creates the physics resource and add it into the world
 fn init(world: &mut World) {
-    let physics = Physics::new();
+    let time = world.get::<Time>().unwrap();
+    let tick_rate = time.tick_rate();
+    let physics = Physics::new(tick_rate);
+    drop(time);
     world.insert(physics);
     world.insert(Storage::<PhysicsSurface>::default());
 }

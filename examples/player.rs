@@ -226,6 +226,16 @@ fn update(world: &mut World) {
 
     let mut scene = world.get_mut::<Scene>().unwrap();
 
+    // Set the player rotation
+    if let Some((_, rotation)) = scene.find_mut::<(&CharacterController, &mut Rotation)>() {
+        **rotation = Quaternion::rotation_y(-player.rotation_x * 0.0005);
+    };
+
+    // Set the camera rotation
+    if let Some((_, rotation)) = scene.find_mut::<(&Camera, &mut LocalRotation)>() {
+        **rotation = Quaternion::rotation_x(-player.rotation_y * 0.0005);
+    };
+
     let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
     let position = rotation.forward() * 10.0 + **position;
 
@@ -272,12 +282,12 @@ fn tick(world: &mut World) {
 
     // Set the player rotation
     if let Some((_, rotation)) = scene.find_mut::<(&CharacterController, &mut Rotation)>() {
-        **rotation = Quaternion::rotation_y(-inputs.rotation_x * 0.001);
+        **rotation = Quaternion::rotation_y(-inputs.rotation_x * 0.0005);
     };
 
     // Set the camera rotation
     if let Some((_, rotation)) = scene.find_mut::<(&Camera, &mut LocalRotation)>() {
-        **rotation = Quaternion::rotation_x(-inputs.rotation_y * 0.001);
+        **rotation = Quaternion::rotation_x(-inputs.rotation_y * 0.0005);
     };
 
     // Set the global player velocity
