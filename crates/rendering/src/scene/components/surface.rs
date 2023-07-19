@@ -62,7 +62,7 @@ impl<M: Material> Surface<M> {
             culled: false,
             id,
             shadow_caster: true,
-            shadow_culled: u8::MAX,
+            shadow_culled: 0,
         }
     }
 
@@ -76,7 +76,7 @@ impl<M: Material> Surface<M> {
             visible: true,
             culled: false,
             shadow_caster: true,
-            shadow_culled: u8::MAX,
+            shadow_culled: 0,
             id,
         }
     }

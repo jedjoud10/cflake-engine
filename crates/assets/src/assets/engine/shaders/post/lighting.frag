@@ -110,8 +110,8 @@ float calculate_shadowed(
 ) {
 	// We're a lot tighter with the shadow frustum now so we have to fallback to this
 	// This definitely could be simplified idk how
-	uint layer = 0;
-	for (int i = 0; i < 4; ++i)
+	uint layer = int(-1);
+	for (int i = 0; i <= 4; ++i)
 	{
 		mat4 lightspace = shadow_lightspace_matrices.matrices[i];
     	vec4 ndc = lightspace * vec4(position, 1.0); 
@@ -120,6 +120,10 @@ float calculate_shadowed(
 	        layer = i;
 	        break;
 	    }
+	}
+
+	if (layer == int(-1)) {
+		return 0.0;
 	}
 	
 	/*

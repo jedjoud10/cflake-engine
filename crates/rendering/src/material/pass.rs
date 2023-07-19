@@ -173,6 +173,6 @@ impl Pass for ShadowPass {
             u8::MAX => false,
         };
 
-        visible && renderer.visible
+        visible && renderer.visible && surface.visible
     }
 }
