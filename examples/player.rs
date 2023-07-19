@@ -225,6 +225,7 @@ fn update(world: &mut World) {
     player.jump |= input.get_button("jump").pressed();
 
     let mut scene = world.get_mut::<Scene>().unwrap();
+
     let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
     let position = rotation.forward() * 10.0 + **position;
 

@@ -5,6 +5,7 @@ use rayon::prelude::ParallelIterator;
 use world::World;
 
 // Results of culling against frustum/lightspace
+#[derive(Debug, Clone, Copy)]
 pub enum CullResult {
     // Object is one the bounding area
     Intersect,
@@ -14,6 +15,21 @@ pub enum CullResult {
 
     // Object is completely visible and within the bounds
     Visible,
+}
+
+impl CullResult {
+    // If the object must be completely culled
+    pub fn culled(&self) -> bool {
+        match self {
+            CullResult::Culled => true,
+            _ => false,
+        }
+    }
+
+    // If the object is visible
+    pub fn visible(&self) -> bool {
+        !self.culled()
+    }
 }
 
 // Cull an AABB with a specific matrix against a frustum
@@ -69,19 +85,17 @@ pub(crate) fn cull_against_lightspace_matrix(
 ) -> CullResult {
     let corners = <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
 
-    let mut all_outside = true;
-    let mut all_inside = true;
-
-    for input in corners.iter() {
-        let vec = matrix.mul_point(*input);
+    let bools = corners.map(|vec| {
+        let vec = matrix.mul_point(vec);
         let uv = lightspace.mul_point(vec);
+        uv.x.abs() < 1.0 && uv.y.abs() < 1.0
+    });
 
-        if uv.x.abs() < 1.0 && uv.y.abs() < 1.0 {
-            all_outside &= true;
-        } else {
-            all_inside &= true;
-        }
-    }
+    // If all the nodes are outside the lightspace frustum
+    let all_outside = bools.iter().all(|x| !*x);
+
+    // If all the nodes are inside the lightspace frustum
+    let all_inside = bools.iter().all(|x| *x);
 
     match (all_outside, all_inside) {
         (true, false) => CullResult::Culled,

@@ -57,7 +57,7 @@ fn init(world: &mut World) {
         bumpiness_factor: 1.0,
         roughness_factor: 1.0,
         metallic_factor: 1.0,
-        ambient_occlusion_factor: 3.0,
+        ambient_occlusion_factor: 0.2,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one(),
     });
@@ -75,10 +75,10 @@ fn init(world: &mut World) {
     scene.prefabify("sphere", (renderer, position, surface));
 
     // ADD THE ENTITIES NOW!!
-    for x in 0..25 {
+    for x in 0..400 {
         let mut entry = scene.instantiate("sphere").unwrap();
         let position = entry.get_mut::<Position>().unwrap();
-        *position = Position::at_xyz((x / 5) as f32 * 4.0, 1.0, (x % 5) as f32 * 4.0);
+        *position = Position::at_xyz((x / 20) as f32 * 4.0 - 40.0, 1.0, (x % 20) as f32 * 4.0 - 40.0);
     }
 
     // Create a movable camera

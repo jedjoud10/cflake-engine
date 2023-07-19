@@ -127,24 +127,26 @@ impl Pass for ShadowPass {
         culled: CullResult,
     ) {
         let cascade = defaults.shadow_cascade.unwrap();
-        if cascade == 0 {
-            surface.shadow_culled = 0;
-        }
+
+        // u8::MIN = culled
+        // (1..=4) cascades that "owns" object
+        // u8::MAX = not culled
 
         // If it is already culled don't do shit
-        if ((surface.shadow_culled >> cascade as u8) & 1) == 1 {
+        let shadow = surface.shadow_culled;
+        if cascade as u8 + 1 > shadow && shadow != u8::MAX && shadow != 0 {
             return;
         }
 
         match culled {
             // Not culled, still visible
-            CullResult::Intersect => surface.shadow_culled &= !(1 << cascade),
+            CullResult::Intersect => surface.shadow_culled = 0,
             
             // Still visible for this cascade, culled for other ones
-            CullResult::Visible => surface.shadow_culled = utils::enable_in_range::<u8>(cascade+1, 4),
+            CullResult::Visible => surface.shadow_culled = cascade as u8 + 1,
             
             // Culled completely for this cascade
-            CullResult::Culled => surface.shadow_culled |= 1 << cascade,
+            CullResult::Culled => surface.shadow_culled = u8::MAX,
         }
     }
 
@@ -164,7 +166,13 @@ impl Pass for ShadowPass {
         renderer: &Renderer,
     ) -> bool {
         let cascade = defaults.shadow_cascade.unwrap();
-        let culled = ((surface.shadow_culled >> cascade as u8) & 1) == 0;
-        culled && surface.visible && renderer.visible
+
+        let visible = match surface.shadow_culled {
+            0 => true,
+            x @ 1..=254 => (cascade as u8 + 1) <= x,
+            u8::MAX => false,
+        };
+
+        visible && renderer.visible
     }
 }

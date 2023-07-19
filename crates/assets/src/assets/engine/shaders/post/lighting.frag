@@ -108,9 +108,25 @@ float calculate_shadowed(
     vec3 light_dir,
     vec3 camera
 ) {
+	// We're a lot tighter with the shadow frustum now so we have to fallback to this
+	// This definitely could be simplified idk how
+	uint layer = 0;
+	for (int i = 0; i < 4; ++i)
+	{
+		mat4 lightspace = shadow_lightspace_matrices.matrices[i];
+    	vec4 ndc = lightspace * vec4(position, 1.0); 
+	    if (abs(ndc.x) < 1.0 && abs(ndc.y) < 1.0)
+	    {
+	        layer = i;
+	        break;
+	    }
+	}
+	
+	/*
 	// Taken from a comment by Octavius Ace from the same learn OpenGL website 
-    vec4 res = step(shadow_parameters.distances, vec4(distance(position, camera)));
-    uint layer = uint(res.x + res.y + res.z + res.w);    
+    vec4 res = step(shadow_parameters.distances, vec4(distance(position, camera)) / 2.0);
+    uint layer = uint(res.x + res.y + res.z + res.w);
+	*/
 
     // Transform the world coordinates to NDC coordinates 
 	mat4 lightspace = shadow_lightspace_matrices.matrices[layer];

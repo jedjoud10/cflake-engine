@@ -533,8 +533,11 @@ fn update(world: &mut World) {
             .show(&gui, |ui| {
                 ui.heading("Deferred Pass:");
                 show_pass_stats(ui, renderer.deferred_pass_stats);
-                ui.heading("Shadow Pass:");
-                show_pass_stats(ui, renderer.shadow_pass_stats);
+                
+                for x in 0..4 {
+                    ui.heading(format!("Shadow Pass ({x}):"));
+                    show_pass_stats(ui, renderer.shadow_pass_stats[x]);
+                }
             });
 
         /*

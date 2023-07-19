@@ -303,7 +303,7 @@ fn render(world: &mut World) {
                 &mut default,
                 directional_light_rotation,
                 camera_position,
-                &mut renderer.shadow_pass_stats,
+                &mut renderer.shadow_pass_stats[i],
                 i,
                 &pipelines,
                 world,

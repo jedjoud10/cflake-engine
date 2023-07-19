@@ -100,7 +100,7 @@ pub struct DeferredRenderer {
 
     // Stats for the deferred and shadow pass
     pub deferred_pass_stats: PassStats,
-    pub shadow_pass_stats: PassStats,
+    pub shadow_pass_stats: [PassStats; 4],
 }
 
 impl DeferredRenderer {

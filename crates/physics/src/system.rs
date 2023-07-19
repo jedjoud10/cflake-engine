@@ -442,5 +442,5 @@ pub fn system(system: &mut System) {
         .after(post_user)
         .after(ecs::pre_frame_or_tick)
         .before(ecs::post_frame_or_tick)
-        .before(rendering::systems::rendering::system);
+        .before(rendering::systems::matrix::system);
 }
