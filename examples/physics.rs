@@ -7,72 +7,42 @@ fn main() {
         .insert_init(init)
         .insert_update(update)
         .set_window_fullscreen(true)
+        .set_tick_rate(64)
         .execute();
 }
 // Creates a movable camera, and sky entity
 fn init(world: &mut World) {
     // Fetch the required resources from the world
     let assets = world.get::<Assets>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
-    let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
+
+    // Load the glTF scene into the world LMAO!!
+    let context = GtlfContext::from_world(world).unwrap();
+    let settings = GltfSettings::default();
+    assets
+        .load::<GltfScene>(("engine/meshes/froggo.glb", settings, context))
+        .unwrap();
+
+    // Get the entity that contains the frogg and convert it to a prefab
+    // TODO: Implement name search feature
     let mut scene = world.get_mut::<Scene>().unwrap();
-    let pipelines = world.get::<Pipelines>().unwrap();
-
-    asset!(assets, "user/textures/diffuse2.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/normal2.jpg", "/examples/assets/");
-    asset!(assets, "user/textures/mask2.jpg", "/examples/assets/");
-
-    // Load in the diffuse map, normal map, and mask map textures asynchronously
-    let albedo = assets.async_load::<AlbedoMap>(("user/textures/diffuse2.jpg", graphics.clone()));
-    let normal = assets.async_load::<NormalMap>(("user/textures/normal2.jpg", graphics.clone()));
-    let mask = assets.async_load::<MaskMap>(("user/textures/mask2.jpg", graphics.clone()));
-
-    // Get the material id (also registers the material pipeline)
-    let id = pipelines.get::<PbrMaterial>().unwrap();
-
-    // Get the default meshes from the forward renderer
-    let renderer = world.get::<DeferredRenderer>().unwrap();
-    let plane = renderer.plane.clone();
-    let sphere = renderer.sphere.clone();
-    let cube = renderer.cube.clone();
-
-    // Fetch the loaded textures
-    let diffuse = assets.wait(albedo).unwrap();
-    let normal = assets.wait(normal).unwrap();
-    let mask = assets.wait(mask).unwrap();
-
-    // Add the textures to the storage
-    let mut diffuse_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
-    let mut normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
-    let mut mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
-    let diffuse = diffuse_maps.insert(diffuse);
-    let normal = normal_maps.insert(normal);
-    let mask = mask_maps.insert(mask);
+    let froggo_surface = scene.find::<&Surface<PbrMaterial>>().unwrap();
 
     // Create a new material instance for the gound
+    let mut pbrs = world.get_mut::<Storage<PbrMaterial>>().unwrap();
+    let renderer = world.get::<DeferredRenderer>().unwrap();
+    let pipelines = world.get::<Pipelines>().unwrap();
+    let id = pipelines.get::<PbrMaterial>().unwrap();
+    let plane = renderer.plane.clone();
     let ground = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse.clone()),
-        normal_map: Some(normal.clone()),
-        mask_map: Some(mask.clone()),
+        albedo_map: None,
+        normal_map: None,
+        mask_map: None,
         bumpiness_factor: 0.5,
         roughness_factor: 1.0,
-        metallic_factor: 1.0,
+        metallic_factor: 0.0,
         ambient_occlusion_factor: 1.0,
         tint: vek::Rgb::white(),
         scale: vek::Extent2::one() * 25.0,
-    });
-
-    // Create a new material instance for the cubes and spheres
-    let material = pbrs.insert(PbrMaterial {
-        albedo_map: Some(diffuse),
-        normal_map: Some(normal),
-        mask_map: Some(mask),
-        bumpiness_factor: 0.9,
-        roughness_factor: 1.0,
-        metallic_factor: 1.0,
-        ambient_occlusion_factor: 1.0,
-        tint: vek::Rgb::white(),
-        scale: vek::Extent2::one(),
     });
 
     // Create a simple floor and add the entity
@@ -81,43 +51,51 @@ fn init(world: &mut World) {
     let scale = Scale::uniform(50.0);
     let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
     let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::new(50.0, 0.03, 50.0)).build();
-    let position = Position::at_y(-10.0);
-    scene.insert((position, surface, renderer, scale, rigidbody, collider));
+    scene.insert((surface, renderer, scale, rigidbody, collider));
 
-    // Create a prefab that contains the sphere entity and it's components
+    // Create 4 invisble collision walls
+    for i in 0..4 {
+        let w = if i % 2 == 0 {
+            50.0
+        } else {
+            1.0
+        };
+
+        let h = if i % 2 == 0 {
+            1.0
+        } else {
+            50.0
+        };
+
+        // 0, w = 50, h = 1
+        // 1, w = 1, h = 50
+        // 2, w = 50, h = 1
+        // 3, w = 1, h = 50
+
+        let (x, y) = match i {
+            0 => (1.0, 0.0),
+            1 => (0.0, 1.0),
+            2 => (-1.0, 0.0),
+            3 => (0.0, -1.0), 
+            _ => panic!(),
+        };
+
+        let rigidbody = RigidBodyBuilder::new(RigidBodyType::Fixed).build();
+        let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::new(h, 50.0, w)).build();
+        scene.insert((Position::at_xyz(x * 50.0, 0.0, y * 50.0), scale, rigidbody, collider));
+    }
+
+    // Create a prefab that contains the froggo entity and its components
     let renderer = Renderer::default();
     let position = Position::default();
     let rotation = Rotation::default();
-    let surface = Surface::new(sphere, material.clone(), id.clone());
+    let surface = froggo_surface.clone();
     let rigidbody = RigidBodyBuilder::new(RigidBodyType::Dynamic).build();
     let velocity = Velocity::default();
     let angular_velocity = AngularVelocity::default();
     let collider = SphereColliderBuilder::new(1.0, 1.0).build();
     scene.prefabify(
-        "sphere",
-        (
-            renderer,
-            position,
-            rotation,
-            surface,
-            rigidbody,
-            collider,
-            velocity,
-            angular_velocity,
-        ),
-    );
-
-    // Create a prefab that contains the cube entity and it's components
-    let renderer = Renderer::default();
-    let position = Position::default();
-    let rotation = Rotation::default();
-    let surface = Surface::new(cube, material, id);
-    let rigidbody = RigidBodyBuilder::new(RigidBodyType::Dynamic).build();
-    let velocity = Velocity::default();
-    let angular_velocity = AngularVelocity::default();
-    let collider = CuboidColliderBuilder::new(1.0, vek::Extent3::broadcast(1.0)).build();
-    scene.prefabify(
-        "cube",
+        "froggo",
         (
             renderer,
             position,
@@ -141,12 +119,12 @@ fn init(world: &mut World) {
     ));
 
     // Create a directional light
-    let light = DirectionalLight::default();
-    let rotation = vek::Quaternion::rotation_x(-45.0f32.to_radians()).rotated_y(45f32.to_radians());
+    let light = DirectionalLight { intensity: 0.8, ..Default::default() };
+    let rotation = vek::Quaternion::rotation_x(-15.0f32.to_radians()).rotated_y(45f32.to_radians());
     scene.insert((light, Rotation::from(rotation)));
 }
 
-// Allows the user to place a sphere or cube when they left or right click
+// Allows the user to place a froggo when they click
 fn update(world: &mut World) {
     let mut state = world.get_mut::<State>().unwrap();
     let input = world.get::<Input>().unwrap();
@@ -160,16 +138,9 @@ fn update(world: &mut World) {
     let (_, position, rotation) = scene.find::<(&Camera, &Position, &Rotation)>().unwrap();
     let position = rotation.forward() * 3.0 + **position;
 
-    // Create a new sphere in front of the camera when we press the right mouse button
+    // Create a new froggo in front of the camera when we press the right mouse button
     if input.get_button(MouseButton::Right).pressed() {
-        let mut entry = scene.instantiate("sphere").unwrap();
-        **entry.get_mut::<Position>().unwrap() = position;
-        **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
-    }
-
-    // Create a new box in front of the camera when we press the left mouse button
-    if input.get_button(MouseButton::Left).pressed() {
-        let mut entry = scene.instantiate("cube").unwrap();
+        let mut entry = scene.instantiate("froggo").unwrap();
         **entry.get_mut::<Position>().unwrap() = position;
         **entry.get_mut::<Velocity>().unwrap() = rotation.forward() * 15.0;
     }

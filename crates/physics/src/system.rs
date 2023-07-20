@@ -434,7 +434,7 @@ fn update(world: &mut World) {
 
 // Create the main physics system that will be responsible for stepping through the Rapier simulation
 pub fn system(system: &mut System) {
-    system.insert_init(init).before(user);
+    system.insert_init(init).before(user).after(utils::time);
     system
         .insert_tick(tick)
         .after(post_user)

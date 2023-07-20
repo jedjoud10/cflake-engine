@@ -27,6 +27,7 @@ pub struct App {
     app_version: u32,
     engine_name: String,
     engine_version: u32,
+    tick_rate: u32,
 
     // Main app resources
     systems: Systems,
@@ -50,6 +51,7 @@ impl Default for App {
             app_version: 1,
             engine_name: "cFlake Game Engine".to_string(),
             engine_version: 1,
+            tick_rate: 128,
             systems,
             el: EventLoop::new(),
             logging_level: log::LevelFilter::Debug,
@@ -87,6 +89,12 @@ impl App {
     /// Set the app version.
     pub fn set_app_version(mut self, version: u32) -> Self {
         self.app_version = version;
+        self
+    }
+
+    /// Set the tick rate 
+    pub fn set_tick_rate(mut self, tick_rate: u32) -> Self {
+        self.tick_rate = tick_rate;
         self
     }
 
@@ -312,6 +320,8 @@ impl App {
             author_name: author_name.clone(),
             app_name: app_name.clone(),
             log_receiver: Some(receiver),
+            tick_rate: self.tick_rate,
+            tick_rate_max: 8,
         });
 
         // Insert the graphics API window resource

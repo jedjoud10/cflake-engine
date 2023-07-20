@@ -427,15 +427,18 @@ impl Asset for GltfScene {
                     cached_meshes.entry(key).or_insert_with(|| {
                         // Create buffers and AABB
                         let (mut positions, aabb) = create_positions_vec(&mapped_accessors[key.0]);
+
+                        // TODO: Generate normals / tangents / uvs if missing
                         let mut normals = key
                             .1
                             .map(|index| create_normals_vec(&mapped_accessors[index]));
                         let mut tangents = key
                             .2
                             .map(|index| create_tangents_vec(&mapped_accessors[index]));
-                        let mut tex_coords = key
+                        let mut tex_coords = Some(key
                             .3
-                            .map(|index| create_tex_coords_vec(&mapped_accessors[index]));
+                            .map(|index| create_tex_coords_vec(&mapped_accessors[index]))
+                            .unwrap_or_else(|| vec![vek::Vec2::zero(); positions.len()]));
                         let mut triangles = create_triangles_vec(&mapped_accessors[key.4]);
 
                         // Optionally generate the tangents

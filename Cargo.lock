@@ -256,18 +256,16 @@ name = "audio"
 version = "0.1.0"
 dependencies = [
  "assets",
- "atomic-traits",
  "atomic_float",
  "coords",
  "cpal",
  "ecs",
- "hrtf",
  "log",
  "math",
  "minimp3",
  "parking_lot",
  "rayon",
- "rubato 0.12.0",
+ "rubato",
  "thiserror",
  "utils",
  "vek",
@@ -1478,17 +1476,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5444c27eef6923071f7ebcc33e3444508466a76f7a2b93da00ed6e19f30c1ddb"
 dependencies = [
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "hrtf"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73088c4a5d7c9d21ee942a54611696f247c4bafc85e9261bf8c409b6857e75be"
-dependencies = [
- "byteorder",
- "rubato 0.10.1",
- "rustfft",
 ]
 
 [[package]]
@@ -2794,15 +2781,6 @@ dependencies = [
 
 [[package]]
 name = "realfft"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7695c87f31dc3644760f23fb59a3fed47659703abf76cf2d111f03b9e712342"
-dependencies = [
- "rustfft",
-]
-
-[[package]]
-name = "realfft"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93d6b8e8f0c6d2234aa58048d7290c60bf92cd36fd2888cd8331c66ad4f2e1d2"
@@ -2925,19 +2903,6 @@ dependencies = [
 
 [[package]]
 name = "rubato"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "610bbefcfef7f43cbe275995b6077b74f34480efce293c30327bf44fdad871ed"
-dependencies = [
- "log",
- "num-complex 0.4.3",
- "num-integer",
- "num-traits",
- "realfft 2.0.1",
-]
-
-[[package]]
-name = "rubato"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd70209c27d5b08f5528bdc779ea3ffb418954e28987f9f9775c6eac41003f9c"
@@ -2945,7 +2910,7 @@ dependencies = [
  "num-complex 0.4.3",
  "num-integer",
  "num-traits",
- "realfft 3.2.0",
+ "realfft",
 ]
 
 [[package]]

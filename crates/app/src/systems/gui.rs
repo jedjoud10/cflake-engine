@@ -260,7 +260,7 @@ fn update(world: &mut World) {
             let ticks = ticks_to_exec;
             ui.label(format!("Ticks to execute: {:.3}", ticks));
 
-            ui.label(format!("Tick-rate: {:.3} t/s", utils::TICKS_PER_SEC))
+            ui.label(format!("Tick-rate: {:.3} t/s", time.tick_rate()))
         });
 
     // ECS Stats
@@ -566,14 +566,6 @@ fn update(world: &mut World) {
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label("Gamma: ");
-                    ui.add(
-                        egui::Slider::new(&mut compositor.post_process.gamma, 0.01..=3.0)
-                            .trailing_fill(true),
-                    );
-                });
-
-                ui.horizontal(|ui| {
                     ui.label("Vignette Strength: ");
                     ui.add(
                         egui::Slider::new(
@@ -672,6 +664,11 @@ fn update(world: &mut World) {
                                 &mut selected_debug_gbuffer,
                                 DebugGBuffer::MetallicMask,
                                 "Metallic Mask",
+                            );
+                            ui.selectable_value(
+                                &mut selected_debug_gbuffer,
+                                DebugGBuffer::DiffuseIrradiance,
+                                "Diffuse Irradiance",
                             );
                         });
                 });

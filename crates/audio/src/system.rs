@@ -44,7 +44,6 @@ fn update(world: &mut World) {
         if let Some(pos) = emitter.position.as_ref() {
             if let Some(mut write) = pos.try_write() {
                 *write = **position;
-                dbg!("write pos");
             }
         }
     }

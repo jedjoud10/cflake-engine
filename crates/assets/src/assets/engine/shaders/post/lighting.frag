@@ -29,7 +29,6 @@ layout(set = 0, binding = 2) uniform SceneUniform {
 // Post processing settings
 layout(set = 0, binding = 3) uniform PostProcessUniform {
     float exposure;
-	float gamma;
 	float vignette_strength;
 	float vignette_size;
 	uint tonemapping_mode;
@@ -356,6 +355,9 @@ void main() {
 	        return;
 		case 6:
 			frag = vec4(mask.b);
+	        return;
+		case 7:
+			frag = vec4(texture(samplerCube(ibl_diffuse_map, ibl_diffuse_map_sampler), normal).xyz, 0);
 	        return;
 	}
 

@@ -131,6 +131,9 @@ pub enum DebugGBuffer {
     // Mask map Metallic
     MetallicMask,
 
+    // Diffuse irradiance map
+    DiffuseIrradiance,
+
     // Disabled G-Buffer
     None,
 }
@@ -171,6 +174,7 @@ impl DebugGBuffer {
             4 => Self::AmbientOcclusionMask,
             5 => Self::RoughnessMask,
             6 => Self::MetallicMask,
+            7 => Self::DiffuseIrradiance,
             u32::MAX => Self::None,
             _ => panic!(),
         }
@@ -186,6 +190,7 @@ impl DebugGBuffer {
             Self::AmbientOcclusionMask => 4,
             Self::RoughnessMask => 5,
             Self::MetallicMask => 6,
+            Self::DiffuseIrradiance => 7,
             Self::None => u32::MAX,
         }
     }
@@ -197,7 +202,6 @@ impl DebugGBuffer {
 pub struct PostProcessUniform {
     // Lighting parameters
     pub exposure: f32,
-    pub gamma: f32,
 
     // Vignette parameters
     pub vignette_strength: f32,
@@ -223,7 +227,6 @@ impl Default for PostProcessUniform {
     fn default() -> Self {
         Self {
             exposure: 1.5,
-            gamma: 2.2,
             vignette_strength: 0.4,
             vignette_size: 0.1,
             tonemapping_mode: 2,

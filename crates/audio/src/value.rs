@@ -1,7 +1,6 @@
 use std::sync::{atomic::Ordering, Arc};
 
 use atomic_float::AtomicF32;
-use atomic_traits::Atomic;
 use parking_lot::RwLock;
 
 // Any value that can be passed as parameter to sources

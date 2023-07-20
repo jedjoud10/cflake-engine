@@ -32,6 +32,7 @@ impl<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Source> Source for P
         let right_dist_modifier = (1.0 / right_dist_sq).min(1.0);
         self.3[0] = left_diff_modifier * left_dist_modifier;
         self.3[1] = right_diff_modifier * right_dist_modifier;
+
     }
 
     fn sample(&mut self, input: &crate::SourceInput) -> Option<f32> {
@@ -45,7 +46,7 @@ impl<L: Value<vek::Vec3<f32>>, E: Value<vek::Vec3<f32>>, T: Source> Source for P
     }
 
     fn target_channels(&self) -> Option<u16> {
-        self.0.target_channels().map(|x| 2)
+        self.0.target_channels().map(|_| 2)
     }
 
     fn target_sample_rate(&self) -> Option<u32> {

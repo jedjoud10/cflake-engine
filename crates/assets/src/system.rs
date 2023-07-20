@@ -82,6 +82,7 @@ fn init(world: &mut World) {
     internal!(loader, "engine/meshes/sphere.obj");
     internal!(loader, "engine/meshes/icosphere.obj");
     internal!(loader, "engine/meshes/plane.obj");
+    internal!(loader, "engine/meshes/froggo.glb");
 
     // Insert the loader
     world.insert(loader);

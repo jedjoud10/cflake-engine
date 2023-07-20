@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::Source;
+use crate::{Source, AudioListener};
 use cpal::traits::StreamTrait;
 use ecs::Component;
 use parking_lot::RwLock;
@@ -34,12 +34,14 @@ impl AudioEmitter {
     }
 
     // Create a new positional audio emitter with a position
-    pub fn positional(source: impl Source + 'static) -> Self {
+    pub fn positional(listener: &AudioListener, source: impl Source + 'static) -> Self {
+        let position: Arc<RwLock<vek::Vec3<f32>>> = Arc::default();
+        
         Self {
-            source: Some(Box::new(source.amplify(0.2))),
+            source: Some(Box::new(source.positional(listener.ear_positions.clone(), position.clone()))),
             stream: None,
             playing: true,
-            position: None,
+            position: Some(position),
         }
     }
 
