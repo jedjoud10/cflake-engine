@@ -1,6 +1,6 @@
 use std::{path::Path, sync::Arc};
 
-use crate::{AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial, Pipelines, SubSurface, Surface};
+use crate::{AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial, Pipelines, SubSurface, Surface, CullResult};
 use ahash::AHashMap;
 use assets::{Asset, Data};
 use base64::{
@@ -572,6 +572,7 @@ impl Asset for GltfScene {
                 .unwrap_or(1.0f32);
 
             // For now, we only handle mesh entities and empty entities
+            let name = node.name.as_ref().map(|x| x.as_str()).unwrap_or("Untitled Node");
             let entity = if let Some(mesh_index) = node.mesh {
                 let mesh = &meshes[mesh_index.value()];
                 let meshes = &mapped_meshes[mesh_index.value()];
@@ -590,6 +591,10 @@ impl Asset for GltfScene {
                     subsurfaces.push(SubSurface {
                         mesh: mesh.clone(),
                         material: material.clone(),
+                        culled: CullResult::Visible,
+                        visible: true,
+                        shadow_culled: 0,
+                        shadow_caster: true,
                     });
                 }
 
@@ -609,6 +614,7 @@ impl Asset for GltfScene {
                             coords::Scale::default(),
                             surface,
                             crate::Renderer::default(),
+                            ecs::Named(name.to_string()),
                         ))
                     }
 
@@ -621,6 +627,7 @@ impl Asset for GltfScene {
                             coords::Scale::from(scale),
                             surface,
                             crate::Renderer::default(),
+                            ecs::Named(name.to_string()),
                         ))
                     }
                 }
@@ -636,6 +643,7 @@ impl Asset for GltfScene {
                             coords::Position::default(),
                             coords::Rotation::default(),
                             coords::Scale::default(),
+                            ecs::Named(name.to_string()),
                         ))
                     }
 
@@ -646,6 +654,7 @@ impl Asset for GltfScene {
                             coords::Position::from(position),
                             coords::Rotation::from(rotation),
                             coords::Scale::from(scale),
+                            ecs::Named(name.to_string()),
                         ))
                     }
                 }

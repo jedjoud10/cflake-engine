@@ -120,6 +120,10 @@ impl ChunkManager {
         let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface {
             mesh: mesh.clone(),
             material: material.clone(),
+            culled: todo!(),
+            visible: todo!(),
+            shadow_culled: todo!(),
+            shadow_caster: todo!(),
         });
 
         // Create one whole "terrain" surface

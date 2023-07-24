@@ -2,6 +2,7 @@ use crate::{DefaultMaterialResources, Material, Pass, RenderPath, Renderer, SubS
 use ecs::Scene;
 use math::ExplicitVertices;
 use rayon::prelude::ParallelIterator;
+use smallvec::SmallVec;
 use world::World;
 
 // Results of culling against frustum/lightspace
@@ -43,17 +44,14 @@ pub(crate) fn cull_against_frustum(
     matrix: &vek::Mat4<f32>,
 ) -> CullResult {
     let corners = <math::Aabb<f32> as ExplicitVertices<f32>>::points(&aabb);
-    let mut out: [vek::Vec4<f32>; 8] = [vek::Vec4::zero(); 8];
-
-    for (input, output) in corners.iter().zip(out.iter_mut()) {
-        let vec = matrix.mul_point(*input);
-        *output = vec.with_w(0.0);
-    }
+    let out: [vek::Vec4<f32>; 8] = corners.map(|input| {
+        matrix.mul_point(input).with_w(0.0)
+    });
 
     if let Some(aabb) = crate::aabb_from_points(&out) {
         let corners = [aabb.min, aabb.max];
 
-        let res = planes.planes().map(|plane| {
+        let bools = planes.planes().map(|plane| {
             let mut furthest = vek::Vec3::zero();
             furthest.iter_mut().enumerate().for_each(|(i, e)| {
                 *e = corners[(plane.normal[i] > 0.0) as usize][i];
@@ -63,13 +61,28 @@ pub(crate) fn cull_against_frustum(
             signed > 0.0
         });
 
-        let all = res.iter().all(|x| *x);
-        let any = res.iter().any(|x| *x);
+        /*
+        Does not work pls fix
+        // If all the nodes are outside the lightspace frustum
+        let all_outside = bools.iter().all(|x| !*x);
 
-        match (all, any) {
-            (true, true) | (true, false) => CullResult::Culled,
-            (false, true) => CullResult::Intersect,
-            (false, false) => CullResult::Visible,
+        // If all the nodes are inside the lightspace frustum
+        let all_inside = bools.iter().all(|x| *x);
+
+        dbg!(all_inside);
+        dbg!(all_outside);
+
+        match (all_outside, all_inside) {
+            (true, false) => CullResult::Culled,
+            (false, true) => CullResult::Visible,
+            _ => CullResult::Intersect,
+        }
+        */
+
+        if bools.iter().all(|x| *x) {
+            CullResult::Visible
+        } else {
+            CullResult::Culled
         }
     } else {
         log::error!("Could not create an AABB for culling!");
@@ -123,27 +136,21 @@ pub(super) fn cull_surfaces<'r, P: Pass, M: Material>(
             return;
         }
 
-        // A surface is culled *only* if all of it's sub-surface are not visible
-        P::set_cull_state(
-            defaults,
-            surface,
-            surface.subsurfaces.iter().map(|SubSurface { mesh, .. }| {
-                // Get the mesh and it's AABB
-                let mesh = <M::RenderPath as RenderPath>::get(defaults, mesh);
-                let aabb = mesh.vertices().aabb();
+        for sub_surface in surface.subsurfaces.iter_mut() {
+            // Get the mesh and it's AABB
+            let mesh = <M::RenderPath as RenderPath>::get(defaults, &sub_surface.mesh);
+            let aabb = mesh.vertices().aabb();
 
-                // If we have a valid AABB, check if the surface is visible within the frustum
-                if let Some(aabb) = aabb {
-                    P::cull(defaults, aabb, &renderer.matrix)
-                } else {
-                    log::error!("No valid AABB, not culling");
-                    CullResult::Culled
-                }
-            }).reduce(|a, b| match (a, b) {
-                (CullResult::Culled, CullResult::Culled) => CullResult::Culled,
-                (CullResult::Visible, CullResult::Visible) => CullResult::Visible,
-                _ => CullResult::Intersect,
-            }).unwrap(),
-        );
+            // If we have a valid AABB, check if the surface is visible within the frustum
+            let result = if let Some(aabb) = aabb {
+                P::cull(defaults, aabb, &renderer.matrix)
+            } else {
+                log::error!("No valid AABB, not culling");
+                CullResult::Culled
+            };
+
+            // Set the cull state PER SUB-SURFACE
+            P::set_cull_state(defaults, sub_surface, result);
+        }
     }
 }

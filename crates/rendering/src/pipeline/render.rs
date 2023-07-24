@@ -124,17 +124,24 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Convert to sub-surfaces and discard invisible / culled surfaces
     let iter = query.into_iter().zip(user);
-    let max = iter.len();
-    let iter =
-        iter.filter(|((surface, renderer), _)| P::is_surface_visible(defaults, surface, renderer));
-    let subsurfaces = iter.collect::<Vec<_>>();
-    let visible = subsurfaces.len();
-    let subsurfaces = subsurfaces.iter().flat_map(|((surface, renderer), user)| {
+
+    let vec = iter.collect::<Vec<_>>();
+    let sub_surfaces = vec.iter().flat_map(|((surface, renderer), user)| {
         surface
             .subsurfaces
             .iter()
             .map(move |x| ((x, renderer), user))
     });
+    let sub_surfaces = sub_surfaces.collect::<Vec<_>>();
+
+    // Cull the subsurfaces nyo capperinos
+    let max = sub_surfaces.len();
+    let sub_surfaces = sub_surfaces.into_iter().filter(|((sub_surface, renderer), _)| P::is_sub_surface_visible(
+        defaults,
+        sub_surface,
+        renderer
+    )).collect::<Vec<_>>();
+    let visible = sub_surfaces.len();
 
     // Set the number of culled surfaces
     stats.culled_sub_surfaces = max - visible;
@@ -155,7 +162,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
     // should be [(mt1, mh1), (mt1, mh1), (mt1, mh2), (mt2, mh2)]
     // Materials should have priority over meshes since they require you to set more shit
-    let mut values = subsurfaces.collect::<Vec<_>>();
+    let mut values = sub_surfaces;
     values.sort_by(|((surface1, _), _), ((surface2, _), _)| {
         let mesh1 = &surface1.mesh;
         let mat1 = &surface1.material;

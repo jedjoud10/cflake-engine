@@ -1,6 +1,6 @@
 use crate::{
     DefaultMaterialResources, Material, Renderer, SceneColorLayout, SceneDepthLayout,
-    ShadowDepthLayout, Surface, CullResult,
+    ShadowDepthLayout, Surface, CullResult, SubSurface,
 };
 
 use graphics::{ColorLayout, DepthStencilLayout};
@@ -45,10 +45,10 @@ pub trait Pass {
         matches!(Self::pass_type(), PassType::Shadow)
     }
 
-    // Set the cull state of a specific surface
+    // Set the cull state of a specific sub-surface
     fn set_cull_state<M: Material>(
         defaults: &DefaultMaterialResources,
-        surface: &mut Surface<M>,
+        sub_surface: &mut SubSurface<M>,
         culled: CullResult,
     );
 
@@ -59,10 +59,10 @@ pub trait Pass {
         mesh: &vek::Mat4<f32>,
     ) -> CullResult;
 
-    // Check if a surface should be visible
-    fn is_surface_visible<M: Material>(
+    // Check if a sub-surface should be visible
+    fn is_sub_surface_visible<M: Material>(
         defaults: &DefaultMaterialResources,
-        surface: &Surface<M>,
+        sub_surface: &SubSurface<M>,
         renderer: &Renderer,
     ) -> bool;
 
@@ -81,15 +81,11 @@ impl Pass for DeferredPass {
 
     #[inline(always)]
     fn set_cull_state<M: Material>(
-        _defaults: &DefaultMaterialResources,
-        surface: &mut Surface<M>,
+        defaults: &DefaultMaterialResources,
+        sub_surface: &mut SubSurface<M>,
         culled: CullResult,
     ) {
-        surface.culled = match culled {
-            CullResult::Intersect => true,
-            CullResult::Culled => false,
-            CullResult::Visible => true,
-        };
+        sub_surface.culled = culled;
     }
 
     #[inline(always)]
@@ -102,12 +98,12 @@ impl Pass for DeferredPass {
     }
 
     #[inline(always)]
-    fn is_surface_visible<M: Material>(
-        _defaults: &DefaultMaterialResources,
-        surface: &Surface<M>,
+    fn is_sub_surface_visible<M: Material>(
+        defaults: &DefaultMaterialResources,
+        sub_surface: &SubSurface<M>,
         renderer: &Renderer,
     ) -> bool {
-        !surface.culled && surface.visible && renderer.visible
+        sub_surface.culled.visible() && sub_surface.visible && renderer.visible
     }
 }
 
@@ -123,7 +119,7 @@ impl Pass for ShadowPass {
     #[inline(always)]
     fn set_cull_state<M: Material>(
         defaults: &DefaultMaterialResources,
-        surface: &mut Surface<M>,
+        sub_surface: &mut SubSurface<M>,
         culled: CullResult,
     ) {
         let cascade = defaults.shadow_cascade.unwrap();
@@ -133,20 +129,20 @@ impl Pass for ShadowPass {
         // u8::MAX = not culled
 
         // If it is already culled don't do shit
-        let shadow = surface.shadow_culled;
+        let shadow = sub_surface.shadow_culled;
         if cascade as u8 + 1 > shadow && shadow != u8::MAX && shadow != 0 {
             return;
         }
 
         match culled {
             // Not culled, still visible
-            CullResult::Intersect => surface.shadow_culled = 0,
+            CullResult::Intersect => sub_surface.shadow_culled = 0,
             
             // Still visible for this cascade, culled for other ones
-            CullResult::Visible => surface.shadow_culled = cascade as u8 + 1,
+            CullResult::Visible => sub_surface.shadow_culled = cascade as u8 + 1,
             
             // Culled completely for this cascade
-            CullResult::Culled => surface.shadow_culled = u8::MAX,
+            CullResult::Culled => sub_surface.shadow_culled = u8::MAX,
         }
     }
 
@@ -160,19 +156,19 @@ impl Pass for ShadowPass {
     }
 
     #[inline(always)]
-    fn is_surface_visible<M: Material>(
+    fn is_sub_surface_visible<M: Material>(
         defaults: &DefaultMaterialResources,
-        surface: &Surface<M>,
+        sub_surface: &SubSurface<M>,
         renderer: &Renderer,
     ) -> bool {
         let cascade = defaults.shadow_cascade.unwrap();
 
-        let visible = match surface.shadow_culled {
+        let visible = match sub_surface.shadow_culled {
             0 => true,
             x @ 1..=254 => (cascade as u8 + 1) <= x,
             u8::MAX => false,
         };
 
-        visible && renderer.visible && surface.visible
+        visible && renderer.visible && sub_surface.visible
     }
 }

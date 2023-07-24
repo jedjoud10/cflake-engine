@@ -1,4 +1,4 @@
-use crate::{Material, MaterialId, Mesh};
+use crate::{Material, MaterialId, Mesh, CullResult};
 use ecs::Component;
 use smallvec::SmallVec;
 use utils::Handle;
@@ -8,6 +8,16 @@ use utils::Handle;
 pub struct SubSurface<M: Material> {
     pub mesh: Handle<Mesh<M::RenderPath>>,
     pub material: Handle<M>,
+    pub culled: CullResult,
+
+    // SubSurface settings
+    pub visible: bool,
+    
+    // If an object is completely within the frustum of the cascade then it is a waste to render it for the larger cascades as well
+    pub shadow_culled: u8,
+
+    // Shadow parameters
+    pub shadow_caster: bool,
 }
 
 impl<M: Material> Clone for SubSurface<M> {
@@ -15,6 +25,10 @@ impl<M: Material> Clone for SubSurface<M> {
         Self {
             mesh: self.mesh.clone(),
             material: self.material.clone(),
+            culled: self.culled.clone(),
+            visible: self.visible.clone(),
+            shadow_culled: self.shadow_culled.clone(),
+            shadow_caster: self.shadow_caster.clone(),
         }
     }
 }
@@ -26,16 +40,6 @@ pub struct Surface<M: Material> {
     // I LOVE SUBSURFACES
     pub subsurfaces: SmallVec<[SubSurface<M>; 1]>,
 
-    // Surface settings
-    pub visible: bool,
-    pub culled: bool,
-
-    // Shadow parameters
-    pub shadow_caster: bool,
-
-    // If an object is completely within the frustum of the cascade then it is a waste to render it for the larger cascades as well
-    pub shadow_culled: u8,
-
     // Needed to force the user to initialize the material
     pub id: MaterialId<M>,
 }
@@ -44,10 +48,6 @@ impl<M: Material> Clone for Surface<M> {
     fn clone(&self) -> Self {
         Self {
             subsurfaces: self.subsurfaces.clone(),
-            visible: self.visible,
-            culled: self.culled,
-            shadow_caster: self.shadow_caster,
-            shadow_culled: self.shadow_culled,
             id: self.id.clone(),
         }
     }
@@ -57,12 +57,15 @@ impl<M: Material> Surface<M> {
     // Create a new visible surface from a mesh handle, material handle, and material ID
     pub fn new(mesh: Handle<Mesh<M::RenderPath>>, material: Handle<M>, id: MaterialId<M>) -> Self {
         Self {
-            subsurfaces: SmallVec::from_buf([SubSurface { mesh, material }]),
-            visible: true,
-            culled: false,
+            subsurfaces: SmallVec::from_buf([SubSurface {
+                mesh,
+                material,
+                culled: CullResult::Visible,
+                visible: true,
+                shadow_culled: 0,
+                shadow_caster: true
+            }]),
             id,
-            shadow_caster: true,
-            shadow_culled: 0,
         }
     }
 
@@ -73,10 +76,6 @@ impl<M: Material> Surface<M> {
     ) -> Self {
         Self {
             subsurfaces: subsurfaces.into_iter().collect::<_>(),
-            visible: true,
-            culled: false,
-            shadow_caster: true,
-            shadow_culled: 0,
             id,
         }
     }

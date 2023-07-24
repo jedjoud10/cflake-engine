@@ -1,5 +1,6 @@
 use ahash::AHashMap;
 use itertools::Itertools;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use slotmap::SlotMap;
 use std::iter::once;
 use world::{post_user, user, System, World};
@@ -7,7 +8,7 @@ use world::{post_user, user, System, World};
 use crate::{
     entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
     MaskHashMap, PrefabBundle, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    UntypedVec, Wrap,
+    UntypedVec, Wrap, Named, Tagged,
 };
 
 // Convenience type aliases
@@ -179,6 +180,28 @@ impl Scene {
 
         let boxed: Box<dyn PrefabBundle> = Box::new(bundle);
         self.prefabs.insert(name, (boxed, mask));
+    }
+
+    /// Fetch an entry for a corresponding entity with the given name
+    pub fn find_by_name_mut(&mut self, name: &str) -> Option<EntryMut> {
+        let query = self
+            .query::<(&Named, &Entity)>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let entity = query.par_iter()
+            .find_map_first(|(named, entity)| (named.0 == name).then_some(entity))?;
+        self.entry_mut(**entity)
+    }
+
+    /// Fetch an entry for a corresponding entity with the given tag
+    pub fn find_by_tag_mut(&mut self, tag: &str) -> Option<EntryMut> {
+        let query = self
+            .query::<(&Tagged, &Entity)>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        let entity = query.par_iter()
+            .find_map_first(|(tagged, entity)| (tagged.0 == tag).then_some(entity))?;
+        self.entry_mut(**entity)
     }
 
     /// Get the internally stored prefab hashmap.
