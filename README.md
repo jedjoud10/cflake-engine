@@ -1,9 +1,12 @@
 # 🚧🚧🚧 **UNDER HEAVY DEVELOPMENT** 🚧🚧🚧
+[![Rust](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml/badge.svg)](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml)
 
 # cFlake Engine
 
-[![Rust](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml/badge.svg)](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml)
-
+# Preview of what it can render (before the Vulkan rewrite)
+![sand](https://github.com/jedjoud10/cflake-engine/assets/34755598/4a151507-de01-4d62-8ad2-859616f2f550)
+![pyramids](https://github.com/jedjoud10/cflake-engine/assets/34755598/a4b38fe2-1789-4481-906a-b71ca68ae701)
+![hovering](https://github.com/jedjoud10/cflake-engine/assets/34755598/d5650a3d-4464-4a6c-b61c-01ac8ecdeb21)
 
 cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 2 years as a personal project.
 Currently, cFlake engine is under heavy development (***very*** WIP) and is still in it's early stages, but pull requests are heavily appreciated (pls help me I am becoming insane)
