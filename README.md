@@ -3,7 +3,7 @@
 
 # cFlake Engine
 
-# Preview of what it can render (before the Vulkan rewrite)
+# Preview of what it *could* render (before the Vulkan rewrite)
 ![sand](https://github.com/jedjoud10/cflake-engine/assets/34755598/4a151507-de01-4d62-8ad2-859616f2f550)
 ![pyramids](https://github.com/jedjoud10/cflake-engine/assets/34755598/a4b38fe2-1789-4481-906a-b71ca68ae701)
 ![hovering](https://github.com/jedjoud10/cflake-engine/assets/34755598/d5650a3d-4464-4a6c-b61c-01ac8ecdeb21)
