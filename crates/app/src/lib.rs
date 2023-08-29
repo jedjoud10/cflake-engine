@@ -14,7 +14,6 @@ pub use input;
 pub use math;
 pub use networking;
 pub use physics;
-pub use terrain;
 pub use utils;
 pub use world;
 //pub(crate) mod systems;
@@ -36,7 +35,6 @@ pub mod prelude {
     pub use crate::networking::*;
     pub use crate::physics::*;
     //pub use crate::systems::camera::CameraController;
-    pub use crate::terrain::*;
     pub use crate::utils::*;
     pub use crate::world::*;
 

@@ -19,18 +19,17 @@ members = [
     "crates/math",
     "crates/graphics",
     "crates/networking",
-    "crates/terrain",
     "crates/rendering",
     "crates/world",
     "crates/physics"
 ]
 
 [features]
+default = ["windowed"]
 extended-tuples = ["app/extended-tuples"]
 extended-bitmasks = ["app/extended-bitmasks"]
-headless = ["app/headless"]
+windowed = ["app/windowed"]
 pack-assets = ["app/pack-assets"]
-shaderc-build-from-source = ["app/shaderc-build-from-source"]
 
 [workspace.dependencies]
 log = "0.4.17"

@@ -64,7 +64,20 @@ pub(crate) unsafe fn init_phobos_context_and_window(
         size,
     };
 
-    todo!()
+    // Create the graphics wrapper
+    let internal = InternalGraphics {
+        instance,
+        physical_device,
+        device,
+        allocator,
+        pool,
+        exec,
+        frame,
+        debug_messenger,
+    };
+    let graphics = Graphics(Arc::new(internal));
+
+    (graphics, window)
 }
 
 // Init a winit window
