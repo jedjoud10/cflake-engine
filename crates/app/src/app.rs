@@ -10,7 +10,7 @@ use winit::{
 };
 use world::{Event, Init, Shutdown, State, System, Systems, Tick, Update, World};
 
-use crate::systems::gui::EventStatsDurations;
+//use crate::systems::gui::EventStatsDurations;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
@@ -280,6 +280,7 @@ impl App {
         self.regsys(graphics::acquire);
         self.regsys(graphics::present);
 
+        /*
         // Rendering systems
         self.regsys(rendering::systems::camera::system);
         self.regsys(rendering::systems::composite::system);
@@ -307,6 +308,7 @@ impl App {
         // Camera system and statistics system
         self.regsys(crate::systems::camera::system);
         self.regsys(crate::systems::gui::system);
+        */
 
         // Fetch names and versions
         let app_name = self.app_name.clone();
@@ -363,12 +365,6 @@ impl App {
         // Sort & execute the init events
         self.systems.init.execute((&mut self.world, &self.el));
 
-        // Update the EventStatsDurations
-        let mut durations = self.world.get_mut::<EventStatsDurations>().unwrap();
-        durations.init = self.systems.init.timings().0.to_vec();
-        durations.init_total = self.systems.init.timings().1;
-        drop(durations);
-
         // Decompose the app
         let mut world = self.world;
         let el = self.el;
@@ -399,7 +395,7 @@ impl App {
             winit::event::Event::MainEventsCleared => {
                 sleeper.loop_start();
 
-                // Make sure we execute the tick event only 60 times per second
+                // Make sure we execute the tick event only when needed per second
                 let time = world.get::<utils::Time>().unwrap();
                 let ticks_to_execute = time.ticks_to_execute();
                 drop(time);
@@ -411,20 +407,6 @@ impl App {
 
                 // Execute the update event
                 systems.update.execute(&mut world);
-
-                // Execute the tick event 120 times per second
-                let time = world.get::<utils::Time>().unwrap();
-
-                // Update "update" and "tick" timings
-                if time.frame_count() % 2 == 0 {
-                    let mut durations = world.get_mut::<EventStatsDurations>().unwrap();
-                    durations.update = systems.update.timings().0.to_vec();
-                    durations.update_total = systems.update.timings().1;
-
-                    durations.tick = systems.tick.timings().0.to_vec();
-                    durations.tick_total = systems.tick.timings().1;
-                    drop(durations);
-                }
 
                 // Handle app shutdown
                 if let Ok(State::Stopped) = world.get::<State>().map(|x| *x) {

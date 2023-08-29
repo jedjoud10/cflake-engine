@@ -1,3 +1,4 @@
+/*
 mod components;
 mod query;
 mod resource;
@@ -8,3 +9,4 @@ pub use resource::*;
 mod system;
 pub use system::*;
 pub use util::*;
+*/

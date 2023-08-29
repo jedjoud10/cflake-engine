@@ -22,11 +22,6 @@ impl<C: Caller> Clone for PersistentEventTimings<C> {
 }
 
 impl<C: Caller> PersistentEventTimings<C> {
-    // Get the median time
-    pub fn median(&self) -> Duration {
-        todo!()
-    }
-
     // Get the average time
     pub fn average(&self) -> Duration {
         let nanos = self.samples.iter().map(|x| x.as_nanos()).sum::<u128>();
