@@ -2421,7 +2421,7 @@ dependencies = [
 [[package]]
 name = "phobos"
 version = "0.10.0"
-source = "git+https://github.com/jedjoud10/phobos-rs#83089743c9e858cc6fa5fd4aa01c1d9898eb481b"
+source = "git+https://github.com/jedjoud10/phobos-rs?branch=cflake#20b7a2ada86a43a67758b7ed73884e0d57a4a91d"
 dependencies = [
  "anyhow",
  "ash",

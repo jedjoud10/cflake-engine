@@ -49,6 +49,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 }
 
 // Common system will be responsible for calling the init event and window event
+#[doc(hidden)]
 pub fn common(system: &mut System) {
     system
         .insert_update(update)
@@ -60,6 +61,7 @@ pub fn common(system: &mut System) {
 }
 
 // Acquire system will acquire a valid texture to draw to at the start of every frame
+#[doc(hidden)]
 pub fn acquire(system: &mut System) {
     system
         .insert_update(|world: &mut World| {
@@ -69,6 +71,7 @@ pub fn acquire(system: &mut System) {
 }
 
 // Present system will present the currently acquired texture to the monitor
+#[doc(hidden)]
 pub fn present(system: &mut System) {
     system
         .insert_update(|world: &mut World| {

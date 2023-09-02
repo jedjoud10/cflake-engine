@@ -61,6 +61,7 @@ pub(crate) unsafe fn init_phobos_context_and_window(
     let window = Window {
         settings,
         raw: Arc::new(window),
+        frame,
         size,
     };
 
@@ -72,7 +73,6 @@ pub(crate) unsafe fn init_phobos_context_and_window(
         allocator,
         pool,
         exec,
-        frame,
         debug_messenger,
     };
     let graphics = Graphics(Arc::new(internal));

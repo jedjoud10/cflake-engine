@@ -123,7 +123,7 @@ pub fn time(system: &mut System) {
                 const MAX_TICKS_DURING_SLOWDOWN: u32 = 1;
 
                 if count.get() > tick_rate_max {
-                    log::warn!("Too many ticks to execute! Spiral of death effect is occuring");
+                    log::warn!("Too many ticks to execute! (count: {}, tick_rate_max: {})", count.get(), tick_rate_max);
                     *count = NonZeroU32::new(MAX_TICKS_DURING_SLOWDOWN).unwrap();
                 }
             }
@@ -139,19 +139,4 @@ pub fn time(system: &mut System) {
             time.ticks_to_execute = None;
         })
         .before(user);
-}
-
-// Add the event cleaner system
-pub fn per_frame_event_clean(system: &mut System) {
-    system
-        .insert_update(|world: &mut World| {
-            if let Some(cleaner) = crate::PER_FRAME_EVENTS_CACHE_CLEANER.get() {
-                let locked = cleaner.lock();
-
-                for (_, callback) in locked.iter() {
-                    callback(world)
-                }
-            }
-        })
-        .after(post_user);
 }

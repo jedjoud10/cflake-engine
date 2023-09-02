@@ -8,17 +8,16 @@ use utils::Storage;
 
 // Internnal graphics context that will eventually be wrapped within an Arc
 pub(crate) struct InternalGraphics {
-    pub(crate) instance: Instance,
     pub(crate) physical_device: PhysicalDevice,
+    pub(crate) debug_messenger: DebugMessenger,
     pub(crate) device: Device,
     pub(crate) allocator: DefaultAllocator,
     pub(crate) pool: ResourcePool,
     pub(crate) exec: ExecutionManager,
-    pub(crate) frame: FrameManager,
-    pub(crate) debug_messenger: DebugMessenger,
+    pub(crate) instance: Instance,
 }
 
-// Graphical context that we will wrap around the WGPU instance
+// Graphical context that we will wrap around the phobos instance
 // This context must be shareable between threads to allow for multithreading
 #[derive(Clone)]
 pub struct Graphics(pub(crate) Arc<InternalGraphics>);

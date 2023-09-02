@@ -1,11 +1,9 @@
 mod bounds;
 mod common;
 mod intersect;
-mod octree;
 pub mod shapes;
 mod tests;
 pub use bounds::*;
 pub use common::*;
 pub use intersect::*;
-pub use octree::*;
 pub use shapes::*;

@@ -12,7 +12,7 @@ math = { path = "../math" }
 utils = { path = "../utils" }
 
 # Phobos and Window creation
-phobos = { git = "https://github.com/jedjoud10/phobos-rs" }
+phobos = { git = "https://github.com/jedjoud10/phobos-rs", branch = "cflake" }
 spirq = "0.6.3"
 spirv = "0.2.0"
 winit = { version = "0.28.0", optional = true }

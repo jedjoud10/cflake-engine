@@ -116,25 +116,3 @@ mod shapes {
         }
     }
 }
-
-#[cfg(test)]
-mod octree {
-    use crate::{Octree, OctreeHeuristic};
-
-    #[test]
-    fn basic() {
-        let mut octree = Octree::new(8, 4, OctreeHeuristic::Point);
-        assert_eq!(octree.size(), 1024);
-
-        octree.compute(&[vek::Vec3::zero()]);
-
-        let node = &octree.nodes()[0];
-        assert_eq!(node.index(), 0);
-        assert_eq!(node.parent(), None);
-        dbg!(node);
-        dbg!(node.aabb());
-        assert!(crate::point_aabb(&vek::Vec3::<f32>::zero(), &node.aabb()));
-        assert!(crate::point_aabb(&vek::Vec3::<f32>::one(), &node.aabb()));
-        assert!(crate::point_aabb(&-vek::Vec3::<f32>::one(), &node.aabb()));
-    }
-}
