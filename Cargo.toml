@@ -6,30 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-app = { path = "crates/app" }
-
-[workspace]
-members = [
-    "crates/assets",
-    "crates/audio",    
-    "crates/ecs",    
-    "crates/app",
-    "crates/gui",
-    "crates/input",
-    "crates/math",
-    "crates/graphics",
-    "crates/networking",
-    "crates/rendering",
-    "crates/world",
-    "crates/physics"
-]
-
-[features]
-default = ["windowed"]
-extended-tuples = ["app/extended-tuples"]
-extended-bitmasks = ["app/extended-bitmasks"]
-windowed = ["app/windowed"]
-pack-assets = ["app/pack-assets"]
 
 [workspace.dependencies]
 log = "0.4.17"
@@ -38,9 +14,3 @@ ahash = "0.7.6"
 parking_lot = "0.12.0"
 lazy_static = "1.4.0"
 thiserror = "1.0.37"
-
-[profile.release]
-incremental = true
-
-[profile.dev]
-opt-level = 3
