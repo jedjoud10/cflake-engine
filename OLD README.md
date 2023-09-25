@@ -5,7 +5,7 @@
 [![Rust](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml/badge.svg)](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml)
 
 
-cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 2 years as a personal project.
+cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 3 years as a personal project.
 Currently, cFlake engine is under heavy development (***very*** WIP) and is still in it's early stages, but pull requests are heavily appreciated (pls help me I am becoming insane)
 
 # Main features of cFlake:

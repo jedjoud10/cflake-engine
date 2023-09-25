@@ -6,6 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+app = { path = "crates/app" }
+
+[workspace]
+members = [
+    "crates/app",
+    "crates/utils",
+    "crates/input",    
+    "crates/ecs",  
+]
+
+[features]
 
 [workspace.dependencies]
 log = "0.4.17"
