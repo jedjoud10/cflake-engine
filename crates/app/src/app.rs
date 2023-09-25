@@ -21,6 +21,5 @@ impl App {
     pub fn execute(mut self) {
         let (sender, receiver) = mpsc::channel::<String>();
         crate::logger::init_logger(log::LevelFilter::Debug, sender);
-        loop {}
     }
 }

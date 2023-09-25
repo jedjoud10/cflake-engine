@@ -1,14 +1,14 @@
-mod errors;
-mod events;
-mod registry;
-mod stage;
-mod systems;
-mod timings;
-mod variants;
-pub use errors::*;
-pub use events::*;
-pub use registry::*;
-pub use stage::*;
-pub use systems::*;
-pub use timings::*;
-pub use variants::*;
+use winit::event::{WindowEvent, DeviceEvent};
+/// An event is something that a system can "subscribe" to to execute specific code when something interesting happens
+pub trait Event: 'static + Sized {}
+impl Event for WindowEvent {}
+impl Event for DeviceEvent {}
+
+pub struct Init(());
+impl Event for Init {}
+pub struct Update(());
+impl Event for Update {}
+pub struct Shutdown(());
+impl Event for Shutdown {}
+pub struct Tick(());
+impl Event for Tick {}

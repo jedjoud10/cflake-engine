@@ -1,6 +1,6 @@
 mod entry;
-mod guards;
 mod resource;
+mod layout;
+pub use layout::*;
 pub use entry::*;
-pub use guards::*;
 pub use resource::*;
