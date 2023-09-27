@@ -1,7 +1,7 @@
 use crate::events::Event;
-use ahash::AHashMap;
-use petgraph::{visit::Topo, Graph};
-use std::{any::TypeId, marker::PhantomData, time::Duration};
+
+
+use std::{marker::PhantomData};
 
 /// A registry is what will contain all the different stages, and their appropriate systems
 /// Stages are executed sequentially, although the systems within them are executed in parallel (if possible)
@@ -23,5 +23,5 @@ impl<E: Event> Registry<E> {
     pub fn sort(&mut self) {}
 
     /// Execute all the systems that are stored in this registry
-    pub fn execute(&mut self, mut args: E) {}
+    pub fn execute(&mut self, _args: E) {}
 }

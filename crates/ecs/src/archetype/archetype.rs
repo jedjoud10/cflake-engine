@@ -1,7 +1,7 @@
 use crate::{
     entity::{Entity, EntityLinkings},
     layout::{Bundle, PrefabBundle},
-    mask::{self, Mask, MaskHashMap},
+    mask::{Mask, MaskHashMap},
     registry::{mask, Component},
     scene::{ArchetypeSet, EntitySet, RemovedComponents},
 };

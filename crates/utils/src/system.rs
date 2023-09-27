@@ -1,8 +1,5 @@
 use std::{
-    io::Write,
-    num::NonZeroU32,
     sync::mpsc,
-    time::{Duration, Instant},
 };
 
 // Utils resources that is added to the world at the very start

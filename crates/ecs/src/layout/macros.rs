@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use super::{Bundle, LayoutAccess, QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef};
 use crate::archetype::{Archetype, StateColumn, StateFlags};
 use crate::mask::{Mask, MaskHashMap};
@@ -22,19 +24,12 @@ macro_rules! tuple_impls {
             ) -> Option<usize> {
                 assert!(Self::is_valid());
                 seq!(N in 0..$max {
-                    #[allow(non_snake_case)]
                     let (components_C~N, delta_frame_states_C~N, delta_tick_states_C~N) = archetype.column_mut::<C~N>()?;
-                    #[allow(non_snake_case)]
                     let components_ptr_C~N = components_C~N as *mut Vec::<C~N>;
-                    #[allow(non_snake_case)]
                     let delta_frame_states_ptr_C~N = delta_frame_states_C~N as *mut StateColumn;
-                    #[allow(non_snake_case)]
                     let delta_tick_states_ptr_C~N = delta_tick_states_C~N as *mut StateColumn;
-                    #[allow(non_snake_case)]
                     let components_C~N = unsafe { &mut *components_ptr_C~N };
-                    #[allow(non_snake_case)]
                     let delta_frame_states_C~N = unsafe { &mut *delta_frame_states_ptr_C~N };
-                    #[allow(non_snake_case)]
                     let delta_tick_states_C~N = unsafe { &mut *delta_tick_states_ptr_C~N };
                 });
 
@@ -74,7 +69,7 @@ macro_rules! tuple_impls {
             fn default_vectors() -> MaskHashMap<Box<dyn UntypedVec>> {
                 let mut map = MaskHashMap::<Box<dyn UntypedVec>>::default();
                 ($(
-                    map.insert(mask::<$name>(), Box::new(Vec::<$name>::new()))
+                    map.insert(mask::<$name>(), Box::<Vec::<$name>>::default())
                 ),+);
                 map
             }

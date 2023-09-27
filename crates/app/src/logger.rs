@@ -45,8 +45,7 @@ pub(crate) fn init_logger(mut logging_level: LevelFilter, sender: mpsc::Sender<S
     let overwrite = std::env::var("CFLAKE_LOGGING_TRACE")
         .as_deref()
         .ok()
-        .map(|x| <LevelFilter as FromStr>::from_str(x).ok())
-        .flatten();
+        .and_then(|x| <LevelFilter as FromStr>::from_str(x).ok());
 
     if let Some(new) = overwrite {
         logging_level = new;

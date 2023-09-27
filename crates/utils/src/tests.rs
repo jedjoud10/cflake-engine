@@ -169,15 +169,15 @@ mod enable_in_range {
 
         let all: usize = enable_in_range(0, usize::BITS as usize);
         assert_eq!(all, usize::MAX);
-        assert_eq!(all.count_ones(), usize::BITS as u32);
+        assert_eq!(all.count_ones(), { usize::BITS });
 
         let none: usize = enable_in_range(0, 0);
         assert_eq!(none, usize::MIN);
         assert_eq!(none.count_ones(), 0);
 
         let half: usize = enable_in_range(usize::BITS as usize / 2, usize::BITS as usize);
-        assert_eq!(half.count_ones(), usize::BITS as u32 / 2);
-        assert_eq!(half.count_zeros(), usize::BITS as u32 / 2);
+        assert_eq!(half.count_ones(), usize::BITS / 2);
+        assert_eq!(half.count_zeros(), usize::BITS / 2);
 
         let test: usize = enable_in_range(usize::BITS as usize - 1, usize::BITS as usize);
         assert_eq!(test, 1 << (usize::BITS as usize - 1));

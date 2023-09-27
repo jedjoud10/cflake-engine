@@ -19,12 +19,12 @@ impl<E: Event> Default for InjectionOrder<E> {
 
 impl<E: Event> InjectionOrder<E> {
     /// Make this system execute before the "other" system
-    pub fn before<O: System<E>>(mut self) -> Self {
+    pub fn before<O: System<E>>(self) -> Self {
         self
     }
 
     /// Make this system execute after the "other" system
-    pub fn after<O: System<E>>(mut self) -> Self {
+    pub fn after<O: System<E>>(self) -> Self {
         self
     }
 }

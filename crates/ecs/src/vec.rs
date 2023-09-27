@@ -68,6 +68,6 @@ impl<T: 'static> UntypedVec for Vec<T> {
     }
 
     fn clone_default(&self) -> Box<dyn UntypedVec> {
-        Box::new(Vec::<T>::new())
+        Box::<Vec<T>>::default()
     }
 }

@@ -64,7 +64,7 @@ pub trait ResourceLayout<'a> {
 impl<'a, T: ResourceBorrow<'a>> ResourceLayout<'a> for T {
     type Guarded<'b> = T::Guarded<'b>;
 
-    fn fetch(world: &'a World) -> Self::Guarded<'a> {
+    fn fetch(_world: &'a World) -> Self::Guarded<'a> {
         todo!()
     }
 
