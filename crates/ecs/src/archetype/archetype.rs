@@ -1,8 +1,9 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask, ArchetypeSet, Bundle, Component, EntitySet, Mask, MaskHashMap, PrefabBundle,
-    RemovedComponents, StateColumn, UntypedColumn,
+    mask::{self, MaskHashMap, Mask}, layout::{Bundle, PrefabBundle}, scene::{EntitySet, RemovedComponents, ArchetypeSet}, registry::{Component, mask}
 };
+
+use super::{UntypedColumn, StateColumn};
 
 /// The table that will be stored internally the archetype
 pub type Table = MaskHashMap<UntypedColumn>;
@@ -405,7 +406,7 @@ pub(crate) fn add_bundle<B: Bundle>(
 }
 
 // Remove some old components from an entity, forcing it to switch archetypes
-// This assumes that the OwnedBundle type is valid for this use case
+// This assumes that the Bundle type is valid for this use case
 pub(crate) fn remove_bundle<B: Bundle>(
     archetypes: &mut ArchetypeSet,
     entity: Entity,

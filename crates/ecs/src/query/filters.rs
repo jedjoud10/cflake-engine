@@ -1,8 +1,7 @@
-use crate::{
-    Archetype, ArchetypeSet, LayoutAccess, Mask, QueryLayoutMut, QueryLayoutRef, StateColumn,
-};
 use std::marker::PhantomData;
-use utils::BitSet;
+use utils::bitset::BitSet;
+
+use crate::{archetype::{Archetype, UntypedColumn, StateColumn}, layout::{LayoutAccess, QueryLayoutRef, QueryLayoutMut}, scene::ArchetypeSet, mask::Mask};
 
 /// Result value whenever we call evaluate_chunk within QueryFilter.
 /// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation.
@@ -166,7 +165,7 @@ pub struct Xor<A: QueryFilter, B: QueryFilter>(PhantomData<A>, PhantomData<B>);
 /// Passes if the filters fail the coarse / fine tests
 pub struct Not<A: QueryFilter>(PhantomData<A>);
 
-pub(crate) fn get_either_states(col: &crate::UntypedColumn, ticked: bool) -> &StateColumn {
+pub(crate) fn get_either_states(col: &UntypedColumn, ticked: bool) -> &StateColumn {
     match ticked {
         true => col.delta_tick_states(),
         false => col.delta_frame_states(),
@@ -174,7 +173,7 @@ pub(crate) fn get_either_states(col: &crate::UntypedColumn, ticked: bool) -> &St
 }
 
 pub(crate) fn get_either_states_mut(
-    col: &mut crate::UntypedColumn,
+    col: &mut UntypedColumn,
     ticked: bool,
 ) -> &mut StateColumn {
     match ticked {

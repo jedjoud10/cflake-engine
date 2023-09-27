@@ -1,4 +1,4 @@
-use crate::Handle;
+use super::Handle;
 use slotmap::{DefaultKey, Key};
 use std::{
     marker::PhantomData,

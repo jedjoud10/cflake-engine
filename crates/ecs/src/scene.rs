@@ -2,13 +2,9 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use slotmap::SlotMap;
 use std::iter::once;
-//use world::{post_user, user, System, World};
 
-use crate::{
-    entity::Entity, mask, Archetype, Bundle, Component, EntityLinkings, EntryMut, EntryRef, Mask,
-    MaskHashMap, PrefabBundle, QueryFilter, QueryLayoutMut, QueryLayoutRef, QueryMut, QueryRef,
-    UntypedVec, Wrap,
-};
+use crate::{mask::{MaskHashMap, Mask}, entity::{Entity, EntityLinkings, EntryRef, EntryMut}, vec::UntypedVec, archetype::Archetype, layout::{PrefabBundle, Bundle, QueryLayoutMut, QueryLayoutRef}, registry::{Component, mask}, query::{QueryFilter, Wrap, QueryMut, QueryRef}};
+//use world::{post_user, user, System, World};
 
 // Convenience type aliases
 pub(crate) type EntitySet = SlotMap<Entity, EntityLinkings>;

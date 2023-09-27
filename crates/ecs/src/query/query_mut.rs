@@ -1,7 +1,8 @@
-use utils::BitSet;
-
-use crate::{Always, Archetype, LayoutAccess, Mask, QueryFilter, QueryLayoutMut, Scene, Wrap};
+use utils::bitset::BitSet;
 use std::{iter::FusedIterator, marker::PhantomData};
+
+use crate::{layout::{QueryLayoutMut, LayoutAccess}, archetype::Archetype, scene::Scene, mask::Mask};
+use super::{Wrap, QueryFilter, Always};
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator.
@@ -73,7 +74,7 @@ fn apply_mutability_states(
     let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
-        let states = crate::get_either_states_mut(column, ticked);
+        let states = super::get_either_states_mut(column, ticked);
 
         if let Some(bitset) = bitset {
             for (out_states, in_states) in

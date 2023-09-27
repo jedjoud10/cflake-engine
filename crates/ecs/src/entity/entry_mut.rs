@@ -1,8 +1,6 @@
-use super::Entity;
-use crate::{
-    add_bundle, remove_bundle, Archetype, ArchetypeSet, Bundle, Component, EntityLinkings,
-    EntitySet, QueryLayoutMut, QueryLayoutRef, RemovedComponents, Scene,
-};
+use crate::{scene::{EntitySet, ArchetypeSet, RemovedComponents, Scene}, archetype::Archetype, registry::Component, layout::{Bundle, QueryLayoutRef, QueryLayoutMut}};
+use super::{Entity, EntityLinkings};
+
 
 /// Mutable entity entries allow the user to be able to modify components that are linked to the entity.
 /// They also allow the user to be able to add/remove certain component bundles from the entity.
@@ -84,7 +82,7 @@ impl<'a> EntryMut<'a> {
             "Bundle is not valid, check the bundle for component collisions"
         );
 
-        add_bundle(self.archetypes, self.entity, self.entities, bundle)?;
+        crate::archetype::add_bundle(self.archetypes, self.entity, self.entities, bundle)?;
         self.linkings = self.entities[self.entity];
         Some(())
     }
@@ -98,7 +96,7 @@ impl<'a> EntryMut<'a> {
         );
 
         // Move the entity to a new archetype
-        let rizz = remove_bundle::<B>(self.archetypes, self.entity, self.entities, self.removed);
+        let rizz = crate::archetype::remove_bundle::<B>(self.archetypes, self.entity, self.entities, self.removed);
         self.linkings = self.entities[self.entity];
         rizz
     }

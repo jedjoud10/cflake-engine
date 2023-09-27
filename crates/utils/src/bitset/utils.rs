@@ -1,7 +1,7 @@
 use num_traits::PrimInt;
 use std::mem::size_of;
 
-// Update a value in a specific bitmask, though return the unwritten value first
+/// Update a value in a specific bitmask, though return the unwritten value first
 pub fn toggle_bit<T: PrimInt>(bitmask: &mut T, index: usize, value: bool) -> bool {
     let copy = ((*bitmask >> index) & T::one()) == T::one();
 
@@ -14,8 +14,8 @@ pub fn toggle_bit<T: PrimInt>(bitmask: &mut T, index: usize, value: bool) -> boo
     copy
 }
 
-// Enable all the bits between "start" and "end" in the binary representation of a T
-// Start is inclusive, end is exclusive
+/// Enable all the bits between "start" and "end" in the binary representation of a T
+/// Start is inclusive, end is exclusive
 pub fn enable_in_range<T: PrimInt>(start: usize, end: usize) -> T {
     assert!(end >= start);
     let bits = size_of::<T>() * 8;
@@ -29,7 +29,7 @@ pub fn enable_in_range<T: PrimInt>(start: usize, end: usize) -> T {
     }
 }
 
-// Check if a bit at a specific index is set
+/// Check if a bit at a specific index is set
 pub fn is_bit_enabled<T: PrimInt>(bitset: T, index: usize) -> bool {
     (bitset >> index & T::one()) == T::one()
 }

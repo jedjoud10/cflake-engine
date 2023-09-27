@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-winit = "0.28.0" 
-platform-dirs = "0.3.0"
+winit = "0.29.1-beta"
 spin_sleep = "1.1.0"
 mimalloc = "0.1.28"
 input = { path = "../input" }
@@ -17,4 +16,3 @@ fern = { version = "0.6.1", features = ["colored"] }
 chrono = "0.4.23"
 log = { workspace = true }
 vek = { workspace = true }
-ahash = { workspace = true }

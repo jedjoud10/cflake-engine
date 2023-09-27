@@ -13,8 +13,8 @@ use std::fmt::Display;
 use std::mem::size_of;
 use std::sync::atomic::Ordering;
 
-// Simple atomic bitset that allocates using usize chunks
-// This bitset contains a specific number of elements per chunk that we can share in multiple threads
+/// Simple atomic bitset that allocates using usize chunks
+/// This bitset contains a specific number of elements per chunk that we can share in multiple threads
 #[derive(Default)]
 pub struct AtomicBitSet<T: Bitwise>(RwLock<Vec<T>>)
 where
@@ -48,28 +48,28 @@ impl<T: Bitwise> AtomicBitSet<T>
 where
     <T as Atomic>::Type: PrimInt,
 {
-    // Create a new empty bit set
+    /// Create a new empty bit set
     pub fn new() -> Self {
         Self(RwLock::new(Vec::default()))
     }
 
-    // Create a bit set with some pre-allocated chunks
+    /// Create a bit set with some pre-allocated chunks
     pub fn with_capacity(elements: usize) -> Self {
         let chunk = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
         Self(RwLock::new(Vec::with_capacity(chunk)))
     }
 
-    // Create a bitset from an iterator of chunks
+    /// Create a bitset from an iterator of chunks
     pub fn from_chunks_iter(iter: impl Iterator<Item = <T as Atomic>::Type>) -> Self {
         Self(RwLock::new(iter.map(T::new).collect()))
     }
 
-    // Get the bit-size of the primitive
+    /// Get the bit-size of the primitive
     pub fn bitsize() -> usize {
         size_of::<<T as Atomic>::Type>() * 8
     }
 
-    // Create a bitset from an iterator of booleans
+    /// Create a bitset from an iterator of booleans
     pub fn from_iter(iter: impl Iterator<Item = bool>) -> Self {
         let chunks = iter.chunks(Self::bitsize());
 
@@ -81,19 +81,19 @@ where
         Self::from_chunks_iter(chunks)
     }
 
-    // Get an immutable reference to the stored chunks
+    /// Get an immutable reference to the stored chunks
     pub fn chunks(&self) -> MappedRwLockReadGuard<[T]> {
         RwLockReadGuard::map(self.0.read(), |s| s.as_slice())
     }
 
-    // Get the chunk and bitmask location for a specific chunk
+    /// Get the chunk and bitmask location for a specific chunk
     fn coords(index: usize) -> (usize, usize) {
         let chunk = index / (Self::bitsize());
         let location = index % (Self::bitsize());
         (chunk, location)
     }
 
-    // Extend the inner chunks with a specific count
+    /// Extend the inner chunks with a specific count
     fn extend(&self, count: usize) {
         if count > 0 {
             let splat = min::<T>();
@@ -101,7 +101,7 @@ where
         }
     }
 
-    // Set a bit value in the bitset
+    /// Set a bit value in the bitset
     pub fn set(&self, index: usize, order: Ordering) {
         let (chunk, location) = Self::coords(index);
 
@@ -116,46 +116,7 @@ where
         chunk.fetch_or(one::<T>() << location, order);
     }
 
-    /*
-    // Set a range within the bitset to a specific value
-    pub fn splat(&self, range: std::ops::Range<usize>, value: bool, order: Ordering) {
-        let (start, end) = (range.start, range.end);
-        let (start_chunk, start_location) = Self::coords(start);
-        let (end_chunk, end_location) = Self::coords(end);
-
-        fn splatting<T: Bitwise>(atomic: &T, start: usize, end: usize, value: bool, order: Ordering) where <T as Atomic>::Type: PrimInt {
-            if value {
-                let inv = crate::enable_in_range::<<T as Atomic>::Type>(start, end);
-                atomic.fetch_or(inv, order);
-            } else {
-                let inv = todo!();
-                atomic.fetch_and(inv, order);
-            }
-        }
-
-        // Extend to make sure we have enough
-        let len = self.0.read().len();
-        if end_chunk >= len {
-            self.extend((end_chunk - len) + 1);
-        }
-
-        // If we start partially within a chunk, set it
-        if start_location != 0 {
-            let atomic = &self.0.read()[start_chunk];
-            splatting(atomic, start_location, Self::bitsize(), value, order);
-        }
-
-        // If we end partially within a chunk, set it
-        if end_location != 0 {
-            let atomic = &self.0.read()[end_chunk];
-            splatting(atomic, 0, end_location, value, order);
-        }
-
-        // Set the region within it
-    }
-    */
-
-    // Remove a bit value from the bitset
+    /// Remove a bit value from the bitset
     pub fn remove(&self, index: usize, order: Ordering) {
         let (chunk, location) = Self::coords(index);
         if let Some(chunk) = &self.0.read().get(chunk) {
@@ -163,13 +124,13 @@ where
         }
     }
 
-    // Pre-allocate a specific amount of elements
+    /// Pre-allocate a specific amount of elements
     pub fn reserve(&mut self, elements: usize) {
         let additional = (elements as f32 / Self::bitsize() as f32).ceil() as usize;
         self.extend(additional);
     }
 
-    // Get a bit value from the bitset
+    /// Get a bit value from the bitset
     pub fn get(&self, index: usize, order: Ordering) -> bool {
         let (chunk, location) = Self::coords(index);
 
@@ -180,7 +141,7 @@ where
             .unwrap_or_default()
     }
 
-    // Count the number of zeros in this bitset
+    /// Count the number of zeros in this bitset
     pub fn count_zeros(&self, order: Ordering) -> usize {
         self.0
             .read()
@@ -189,7 +150,7 @@ where
             .sum()
     }
 
-    // Count the number of ones in this bitset
+    /// Count the number of ones in this bitset
     pub fn count_ones(&self, order: Ordering) -> usize {
         self.0
             .read()
@@ -198,8 +159,8 @@ where
             .sum()
     }
 
-    // Starting from a specific index, read forward and check if there is any set bits
-    // Returns None if it could not find an set bit, returns Some with it's index if it did
+    /// Starting from a specific index, read forward and check if there is any set bits
+    /// Returns None if it could not find an set bit, returns Some with it's index if it did
     pub fn find_one_from(&self, index: usize, order: Ordering) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
@@ -224,8 +185,8 @@ where
             .next()
     }
 
-    // Starting from a specific index, read forward and check if there is any unset bits
-    // Returns None if it could not find an unset bit, returns Some with it's index if it did
+    /// Starting from a specific index, read forward and check if there is any unset bits
+    /// Returns None if it could not find an unset bit, returns Some with it's index if it did
     pub fn find_zero_from(&self, index: usize, order: Ordering) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()

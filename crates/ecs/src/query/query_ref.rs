@@ -1,7 +1,10 @@
-use utils::BitSet;
+use utils::bitset::BitSet;
 
-use crate::{Always, Archetype, LayoutAccess, QueryFilter, QueryLayoutRef, Scene, Wrap};
 use std::{iter::FusedIterator, marker::PhantomData};
+
+use crate::{layout::{QueryLayoutRef, LayoutAccess}, archetype::Archetype, scene::Scene};
+
+use super::{Always, Wrap, QueryFilter};
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lifetime, I don't use them in this query, I only use them in the query iterator.

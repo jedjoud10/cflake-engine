@@ -7,7 +7,7 @@ use std::{
 
 use nohash_hasher::{IsEnabled, NoHashHasher};
 
-use crate::Bundle;
+use crate::layout::Bundle;
 
 /// RawBitMask bitmask value. Either [u64] or [u128] based if the `extended-bitmasks` feature is enabled.
 #[cfg(not(feature = "extended-bitmasks"))]
@@ -29,17 +29,17 @@ impl Mask {
     }
 
     /// Create a mask that has it's bitfield set to one.
-    pub fn one() -> Mask {
+    pub const fn one() -> Mask {
         Mask(0b1)
     }
 
     /// Create a mask that has it's bitfield set to zero.
-    pub fn zero() -> Mask {
+    pub const fn zero() -> Mask {
         Mask(0b0)
     }
 
     /// Create a mask that has all of it's bits set.
-    pub fn all() -> Mask {
+    pub const fn all() -> Mask {
         Mask(RawBitMask::MAX)
     }
 
@@ -66,7 +66,7 @@ impl Mask {
     }
 
     /// Get a specific bit using an offset.
-    pub fn get(&self, offset: usize) -> bool {
+    pub const fn get(&self, offset: usize) -> bool {
         (self.0 >> offset) & 1 == 1
     }
 
@@ -99,12 +99,12 @@ impl Mask {
     }
 
     /// Count the number of set bits in this mask.
-    pub fn count_ones(&self) -> u32 {
+    pub const fn count_ones(&self) -> u32 {
         self.0.count_ones()
     }
 
     /// Count the number of unset bits in this mask.
-    pub fn count_zeros(&self) -> u32 {
+    pub const fn count_zeros(&self) -> u32 {
         self.0.count_zeros()
     }
 }

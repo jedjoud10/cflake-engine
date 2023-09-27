@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-// Global resource that defines the time since the start of the engine and the current frame data
+/// Global resource that defines the time since the start of the engine and the current frame data
 pub struct Time {
     // Related to delta, time, and frames
     pub(crate) delta: Duration,
@@ -24,57 +24,57 @@ pub struct Time {
 }
 
 impl Time {
-    // Get the time it took to complete one frame
+    /// Get the time it took to complete one frame
     pub fn delta(&self) -> Duration {
         self.delta
     }
 
-    // Get the total frame count
+    /// Get the total frame count
     pub fn frame_count(&self) -> u128 {
         self.frame_count
     }
 
-    // Get the moment we started the engine
+    /// Get the moment we started the engine
     pub fn startup(&self) -> Instant {
         self.startup
     }
 
-    // Calculate the elapsed time that have passed since the start of the engine
+    /// Calculate the elapsed time that have passed since the start of the engine
     pub fn elapsed(&self) -> Duration {
         Instant::now() - self.startup()
     }
 
-    // Get the moment the current frame started
+    /// Get the moment the current frame started
     pub fn frame_start(&self) -> Instant {
         self.frame_start
     }
 
-    // Get the total tick count
+    /// Get the total tick count
     pub fn tick_count(&self) -> u128 {
         self.tick_count
     }
 
-    // Get the local tick count
+    /// Get the local tick count
     pub fn local_tick_count(&self) -> u32 {
         self.local_tick_count
     }
 
-    // Get the elapsed time between this tick and the last tick
+    /// Get the elapsed time between this tick and the last tick
     pub fn tick_delta(&self) -> Duration {
         self.tick_delta
     }
 
-    // Represents how far we are from the last tick to the next tick (range of 0 - 1)
+    /// Represents how far we are from the last tick to the next tick (range of 0 - 1)
     pub fn tick_interpolation(&self) -> f32 {
         self.tick_interpolation
     }
 
-    // Check how many ticks we should execute this frame
+    /// Check how many ticks we should execute this frame
     pub fn ticks_to_execute(&self) -> Option<NonZeroU32> {
         self.ticks_to_execute
     }
 
-    // Get the tick rate
+    /// Get the tick rate
     pub fn tick_rate(&self) -> u32 {
         self.tick_rate
     }

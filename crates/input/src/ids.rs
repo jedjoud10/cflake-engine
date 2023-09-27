@@ -1,4 +1,6 @@
-use crate::{Axis, Button, ButtonState, Input};
+use super::input::Input;
+use super::button::{ButtonState, Button};
+use super::axis::Axis;
 
 /// Trait implemented for structs that allow us to fetch the key state from the main input handler.
 /// Allows for use to pass `&str` and `Button` interchangeably into methods that require fetching button state.

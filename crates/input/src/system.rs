@@ -1,8 +1,3 @@
-use std::collections::hash_map::Entry;
-
-use crate::{Axis, Button, ButtonState, Input, MouseAxis};
-use gilrs::PowerInfo;
-use winit::event::{DeviceEvent, ElementState};
 //use world::{post_user, user, System, WindowEvent, World};
 
 /*

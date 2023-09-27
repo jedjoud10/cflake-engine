@@ -1,4 +1,5 @@
-use crate::{mask, Archetype, Component, Entity, LayoutAccess, Mask};
+use crate::{archetype::Archetype, registry::{Component, mask}, mask::Mask, entity::Entity};
+use super::LayoutAccess;
 
 /// Immutable query slice that will be fetched from each archetype.
 pub trait QueryItemRef: Sized {
@@ -7,9 +8,6 @@ pub trait QueryItemRef: Sized {
 
     /// Immutable pointer of the query item.
     type Ptr: 'static + Copy;
-
-    /// Owned query item.
-    type Owned: 'static;
 
     /// Get the layout access mask for this item.
     fn access() -> LayoutAccess;
@@ -32,9 +30,6 @@ pub trait QueryItemMut: Sized {
     /// Immutable pointer of the query item.
     type Ptr: 'static + Copy;
 
-    /// Owned query item.
-    type Owned: 'static;
-
     /// Get the layout access mask for this item.
     fn access() -> LayoutAccess;
 
@@ -51,7 +46,6 @@ pub trait QueryItemMut: Sized {
 impl<T: Component> QueryItemRef for &T {
     type Slice<'s> = &'s [T];
     type Ptr = *const T;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -77,7 +71,6 @@ impl<T: Component> QueryItemRef for &T {
 impl<T: Component> QueryItemRef for Option<&T> {
     type Slice<'s> = Option<&'s [T]>;
     type Ptr = Option<*const T>;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -105,7 +98,6 @@ impl<T: Component> QueryItemRef for Option<&T> {
 impl QueryItemRef for &Entity {
     type Slice<'s> = &'s [Entity];
     type Ptr = *const Entity;
-    type Owned = Entity;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -131,7 +123,6 @@ impl QueryItemRef for &Entity {
 impl QueryItemRef for &() {
     type Slice<'s> = &'s [()];
     type Ptr = *const ();
-    type Owned = ();
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -161,7 +152,6 @@ impl QueryItemRef for &() {
 impl<T: Component> QueryItemMut for &T {
     type Slice<'s> = &'s [T];
     type Ptr = *const T;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -191,7 +181,6 @@ impl<T: Component> QueryItemMut for &T {
 impl<T: Component> QueryItemMut for Option<&T> {
     type Slice<'s> = Option<&'s [T]>;
     type Ptr = Option<*const T>;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -219,7 +208,6 @@ impl<T: Component> QueryItemMut for Option<&T> {
 impl<T: Component> QueryItemMut for &mut T {
     type Slice<'s> = &'s mut [T];
     type Ptr = *mut T;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -249,7 +237,6 @@ impl<T: Component> QueryItemMut for &mut T {
 impl<T: Component> QueryItemMut for Option<&mut T> {
     type Slice<'s> = Option<&'s mut [T]>;
     type Ptr = Option<*mut T>;
-    type Owned = T;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -277,7 +264,6 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
 impl QueryItemMut for &Entity {
     type Slice<'s> = &'s [Entity];
     type Ptr = *const Entity;
-    type Owned = Entity;
 
     fn access() -> LayoutAccess {
         LayoutAccess {

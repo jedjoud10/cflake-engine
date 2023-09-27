@@ -1,7 +1,8 @@
-use crate::{
-    mask, Archetype, Bundle, Component, LayoutAccess, Mask, MaskHashMap, QueryItemMut,
-    QueryItemRef, QueryLayoutMut, QueryLayoutRef, StateColumn, StateFlags, UntypedVec,
-};
+use crate::mask::{Mask, MaskHashMap};
+use crate::registry::{Component, mask};
+use super::{LayoutAccess, Bundle, QueryItemRef, QueryItemMut, QueryLayoutMut, QueryLayoutRef};
+use crate::vec::UntypedVec;
+use crate::archetype::{Archetype, StateColumn, StateFlags};
 use casey::lower;
 use paste::paste;
 use seq_macro::seq;
@@ -80,7 +81,6 @@ macro_rules! tuple_impls {
         }
 
         impl<$($name: QueryItemRef, )+> QueryLayoutRef for ($($name,)+) {
-            type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
             type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 
@@ -121,7 +121,6 @@ macro_rules! tuple_impls {
         }
 
         impl<$($name: QueryItemMut, )+> QueryLayoutMut for ($($name,)+) {
-            type OwnedTuple = ($($name::Owned,)+);
             type PtrTuple = ($($name::Ptr,)+);
             type SliceTuple<'s> = ($($name::Slice<'s>,)+);
 

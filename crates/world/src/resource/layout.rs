@@ -7,7 +7,7 @@ use super::Resource;
 
 /// An immutably/mutably borrowed resource
 /// Could also represent a "partially" bound resource (Option<T>)
-pub trait ResourceBorrow<'a> {
+pub trait ResourceBorrow<'a>: Sized {
     /// Guarded borrowed (using RwLock guards)
     type Guarded<'b>: 'b;
 
@@ -28,6 +28,22 @@ impl<'a, T: Resource> ResourceBorrow<'a> for &'a T {
 
     fn access(guard: &'a mut Self::Guarded<'_>) -> Self {
         (*guard).deref()
+    }
+}
+
+impl<'a, T: Resource> ResourceBorrow<'a> for Option<&'a mut T> {
+    type Guarded<'b> = Option<AtomicRefMut<'b, T>>;
+
+    fn access(guard: &'a mut Self::Guarded<'_>) -> Self {
+        guard.as_mut().map(|x| x.deref_mut())
+    }
+}
+
+impl<'a, T: Resource> ResourceBorrow<'a> for Option<&'a T> {
+    type Guarded<'b> = Option<AtomicRef<'b, T>>;
+
+    fn access(guard: &'a mut Self::Guarded<'_>) -> Self {
+        guard.as_ref().map(|x| x.deref())
     }
 }
 

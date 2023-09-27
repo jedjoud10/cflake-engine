@@ -11,7 +11,7 @@ use std::{
 };
 
 use super::Weak;
-use crate::Handle;
+use super::Handle;
 
 // Internal storage cache
 pub(super) struct Trackers {

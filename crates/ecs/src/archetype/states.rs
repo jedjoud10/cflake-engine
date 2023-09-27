@@ -1,4 +1,4 @@
-use utils::{enable_in_range, is_bit_enabled, toggle_bit};
+use utils::bitset::{enable_in_range, is_bit_enabled, toggle_bit};
 
 // Number of bits in a u64 as a usize
 const BITS: usize = u64::BITS as usize;

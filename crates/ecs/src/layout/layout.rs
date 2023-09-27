@@ -1,4 +1,6 @@
-use crate::{Archetype, LayoutAccess, Mask, QueryItemMut, QueryItemRef};
+use crate::{archetype::Archetype, mask::Mask};
+
+use super::{LayoutAccess, QueryItemRef, QueryItemMut};
 
 /// A query layout ref is a combination of multiple immutable query items.
 /// I separated mutable and immutable query for the sake of type safety.
@@ -8,9 +10,6 @@ pub trait QueryLayoutRef {
 
     /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
-
-    /// Owned query tuple item.
-    type OwnedTuple: 'static;
 
     /// Get a combined layout access mask by running a lambda on each layout.
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess;
@@ -32,9 +31,6 @@ pub trait QueryLayoutMut {
 
     /// Immutable tuple containing multiple pointers of the query items.
     type PtrTuple: 'static + Copy;
-
-    /// Owned query tuple item.
-    type OwnedTuple: 'static;
 
     /// Get a combined layout access mask by running a lambda on each layout.
     fn reduce(lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess;
@@ -72,7 +68,6 @@ pub trait QueryLayoutMut {
 }
 
 impl<I: QueryItemRef> QueryLayoutRef for I {
-    type OwnedTuple = I::Owned;
     type PtrTuple = I::Ptr;
     type SliceTuple<'s> = I::Slice<'s>;
 
@@ -97,7 +92,6 @@ impl<I: QueryItemRef> QueryLayoutRef for I {
 }
 
 impl<I: QueryItemMut> QueryLayoutMut for I {
-    type OwnedTuple = I::Owned;
     type PtrTuple = I::Ptr;
     type SliceTuple<'s> = I::Slice<'s>;
 

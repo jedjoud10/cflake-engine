@@ -1,4 +1,4 @@
-use crate::Mask;
+use crate::mask::Mask;
 use slotmap::{new_key_type, KeyData};
 
 new_key_type! {

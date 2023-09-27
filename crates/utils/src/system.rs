@@ -5,8 +5,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{FileManager, FileType, Time};
-
 // Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
     pub author_name: String,

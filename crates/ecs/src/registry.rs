@@ -1,9 +1,9 @@
-use crate::{Mask, MaskHashMap, RawBitMask};
 use ahash::AHashMap;
 pub use ecs_derive::Component;
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
-use std::any::TypeId;
+use std::{any::TypeId, borrow::Cow};
+use crate::mask::{RawBitMask, Mask, MaskHashMap};
 
 /// This is a certified hood classic
 pub trait Component
@@ -11,6 +11,14 @@ where
     Self: 'static,
 {
 }
+
+/// Default name component
+#[derive(Component)]
+pub struct Named(pub Cow<'static, str>);
+
+/// Default tag component
+#[derive(Component)]
+pub struct Tagged(pub Cow<'static, str>);
 
 // Registered components
 lazy_static! {
@@ -34,7 +42,7 @@ pub fn mask<T: Component>() -> Mask {
 
         // Le bitshifting
         let copy = *bit;
-        let name = utils::pretty_type_name::<T>();
+        let name = utils::pretty_type_name::pretty_type_name::<T>();
         locked.insert(TypeId::of::<T>(), copy);
         NAMES.write().insert(copy, name.clone());
         const ERR: &str = "Ran out of component bits to use!

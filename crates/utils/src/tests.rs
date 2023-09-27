@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod bitset {
-    use crate::BitSet;
+    use crate::bitset::BitSet;
 
     #[test]
     fn bitset() {
@@ -84,7 +84,7 @@ mod bitset {
 
 #[cfg(test)]
 mod atomic_bitset {
-    use crate::AtomicBitSet;
+    use crate::bitset::AtomicBitSet;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
@@ -155,8 +155,38 @@ mod atomic_bitset {
 }
 
 #[cfg(test)]
+mod enable_in_range {
+    use crate::bitset::enable_in_range;
+    #[test]
+    fn bit_range_setter() {
+        let r01: usize = enable_in_range(0, 1);
+        assert_eq!(r01, 1);
+        assert_eq!(r01.count_ones(), 1);
+    
+        let r23: usize = enable_in_range(2, 3);
+        assert_eq!(r23, 1 << 2);
+        assert_eq!(r23.count_ones(), 1);
+    
+        let all: usize = enable_in_range(0, usize::BITS as usize);
+        assert_eq!(all, usize::MAX);
+        assert_eq!(all.count_ones(), usize::BITS as u32);
+    
+        let none: usize = enable_in_range(0, 0);
+        assert_eq!(none, usize::MIN);
+        assert_eq!(none.count_ones(), 0);
+    
+        let half: usize = enable_in_range(usize::BITS as usize / 2, usize::BITS as usize);
+        assert_eq!(half.count_ones(), usize::BITS as u32 / 2);
+        assert_eq!(half.count_zeros(), usize::BITS as u32 / 2);
+    
+        let test: usize = enable_in_range(usize::BITS as usize - 1, usize::BITS as usize);
+        assert_eq!(test, 1 << (usize::BITS as usize - 1));
+    }
+}
+
+#[cfg(test)]
 mod storage {
-    use crate::Storage;
+    use crate::storage::Storage;
 
     #[test]
     fn init() {
