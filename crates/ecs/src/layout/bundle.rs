@@ -1,4 +1,9 @@
-use crate::{mask::{Mask, MaskHashMap}, archetype::{Archetype, StateFlags}, vec::UntypedVec, registry::{Component, mask}};
+use crate::{
+    archetype::{Archetype, StateFlags},
+    mask::{Mask, MaskHashMap},
+    registry::{mask, Component},
+    vec::UntypedVec,
+};
 
 /// An owned layout trait will be implemented for owned tuples that contain a set of components.
 /// This will also handle the synchronization between the states/component columns whenever we add bundles.

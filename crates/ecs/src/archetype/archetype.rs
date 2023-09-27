@@ -1,9 +1,12 @@
 use crate::{
     entity::{Entity, EntityLinkings},
-    mask::{self, MaskHashMap, Mask}, layout::{Bundle, PrefabBundle}, scene::{EntitySet, RemovedComponents, ArchetypeSet}, registry::{Component, mask}
+    layout::{Bundle, PrefabBundle},
+    mask::{self, Mask, MaskHashMap},
+    registry::{mask, Component},
+    scene::{ArchetypeSet, EntitySet, RemovedComponents},
 };
 
-use super::{UntypedColumn, StateColumn};
+use super::{StateColumn, UntypedColumn};
 
 /// The table that will be stored internally the archetype
 pub type Table = MaskHashMap<UntypedColumn>;

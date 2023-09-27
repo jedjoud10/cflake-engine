@@ -1,8 +1,11 @@
-
+use crate::{
+    axis::Axis,
+    button::{Button, ButtonState},
+    ids::{InputAxisId, InputButtonId},
+};
 use ahash::AHashMap;
 use serde::*;
 use std::collections::BTreeMap;
-use crate::{button::{Button, ButtonState}, axis::Axis, ids::{InputButtonId, InputAxisId}};
 
 /// Main input resource responsible for keyboard / mouse / gamepad input events.
 /// This resource will automatically be added into the world at startup.

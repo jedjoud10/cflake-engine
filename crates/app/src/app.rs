@@ -8,8 +8,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 /// An app that can be built that will use cFlake engine.
 /// It uses the builder pattern to set settings and to register custom events
-pub struct App {
-}
+pub struct App {}
 
 impl Default for App {
     fn default() -> Self {
@@ -29,23 +28,21 @@ impl App {
             winit::event::Event::WindowEvent {
                 window_id: _,
                 mut event,
-            } => {
-            }
+            } => {}
 
             winit::event::Event::DeviceEvent {
                 device_id: _,
                 event,
-            } => {
-            }
+            } => {}
 
             winit::event::Event::AboutToWait => {
                 window.request_redraw();
             }
 
-            winit::event::Event::RedrawRequested(id) => {
-            }
+            winit::event::Event::RedrawRequested(id) => {}
 
             _ => {}
-        }).unwrap();
+        })
+        .unwrap();
     }
 }

@@ -1,6 +1,6 @@
-mod system;
-mod registry;
 mod inject;
+mod registry;
+mod system;
 pub use inject::*;
-pub use system::*;
 pub use registry::*;
+pub use system::*;

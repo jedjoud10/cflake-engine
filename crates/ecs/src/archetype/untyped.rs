@@ -1,6 +1,5 @@
-use crate::{vec::UntypedVec, registry::Component};
 use super::StateColumn;
-
+use crate::{registry::Component, vec::UntypedVec};
 
 /// Untyped column that contains the untyped vec (for components) and the delta frame and delta tick states.
 pub struct UntypedColumn {

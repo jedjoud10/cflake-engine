@@ -1,5 +1,10 @@
-use crate::{archetype::Archetype, registry::{Component, mask}, mask::Mask, entity::Entity};
 use super::LayoutAccess;
+use crate::{
+    archetype::Archetype,
+    entity::Entity,
+    mask::Mask,
+    registry::{mask, Component},
+};
 
 /// Immutable query slice that will be fetched from each archetype.
 pub trait QueryItemRef: Sized {

@@ -22,6 +22,6 @@ pub mod prelude {
     pub use crate::axis::*;
     pub use crate::button::*;
     pub use crate::ids::*;
-    pub use crate::system::*;
     pub use crate::input::*;
+    pub use crate::system::*;
 }

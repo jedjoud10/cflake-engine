@@ -10,8 +10,8 @@ use std::{
     },
 };
 
-use super::Weak;
 use super::Handle;
+use super::Weak;
 
 // Internal storage cache
 pub(super) struct Trackers {

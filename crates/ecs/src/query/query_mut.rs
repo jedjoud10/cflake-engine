@@ -1,8 +1,13 @@
-use utils::bitset::BitSet;
 use std::{iter::FusedIterator, marker::PhantomData};
+use utils::bitset::BitSet;
 
-use crate::{layout::{QueryLayoutMut, LayoutAccess}, archetype::Archetype, scene::Scene, mask::Mask};
-use super::{Wrap, QueryFilter, Always};
+use super::{Always, QueryFilter, Wrap};
+use crate::{
+    archetype::Archetype,
+    layout::{LayoutAccess, QueryLayoutMut},
+    mask::Mask,
+    scene::Scene,
+};
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator.

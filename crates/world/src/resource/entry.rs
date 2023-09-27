@@ -1,7 +1,6 @@
-use std::marker::PhantomData;
-use crate::prelude::World;
 use super::Resource;
-
+use crate::prelude::World;
+use std::marker::PhantomData;
 
 /// A resource entry is another way for the user to access unique resources from the world
 /// Entries allow us to insert default values if the actual underlying resource is missing

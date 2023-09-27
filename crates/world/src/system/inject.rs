@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
-use crate::events::Event;
 use super::System;
+use crate::events::Event;
+use std::marker::PhantomData;
 
 /// How this system is going to execute in relation to other systems
 /// This allows us to set dependencies, dependants, or inject systems within both
@@ -11,7 +11,9 @@ pub struct InjectionOrder<E: Event> {
 
 impl<E: Event> Default for InjectionOrder<E> {
     fn default() -> Self {
-        Self { _phantom: Default::default() }
+        Self {
+            _phantom: Default::default(),
+        }
     }
 }
 

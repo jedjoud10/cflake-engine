@@ -1,5 +1,5 @@
-use crate::prelude::{Event, World};
 use super::InjectionOrder;
+use crate::prelude::{Event, World};
 
 /// A system is executed whenever something interesting happens
 /// like an update event, tick event, or window event
@@ -11,8 +11,8 @@ pub trait System<E: Event> {
 
     /// Execute the system with the appropriate event context
     fn execute(&mut self, world: &mut World);
-    
-    /// Handle the order of system execution compared to other systems 
+
+    /// Handle the order of system execution compared to other systems
     fn inject(&mut self) -> InjectionOrder<E>;
 }
 
@@ -24,8 +24,8 @@ pub trait System<E: Event> {
 pub trait Barrier<E: Event> {
     /// Execute the barrier with the appropriate world
     fn execute(&mut self, world: &mut TryWorld);
-    
-    /// Handle the order of system execution compared to other systems 
+
+    /// Handle the order of system execution compared to other systems
     fn inject(&mut self) -> InjectionOrder<E>;
 }
 */

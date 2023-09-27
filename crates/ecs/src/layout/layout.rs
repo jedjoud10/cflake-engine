@@ -1,6 +1,6 @@
 use crate::{archetype::Archetype, mask::Mask};
 
-use super::{LayoutAccess, QueryItemRef, QueryItemMut};
+use super::{LayoutAccess, QueryItemMut, QueryItemRef};
 
 /// A query layout ref is a combination of multiple immutable query items.
 /// I separated mutable and immutable query for the sake of type safety.

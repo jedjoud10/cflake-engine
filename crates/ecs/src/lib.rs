@@ -9,8 +9,8 @@ pub mod mask;
 pub mod query;
 pub mod registry;
 pub mod scene;
-pub mod vec;
 mod tests;
+pub mod vec;
 
 pub mod prelude {
     pub use crate::archetype::*;

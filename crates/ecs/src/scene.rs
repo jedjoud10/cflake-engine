@@ -3,7 +3,15 @@ use itertools::Itertools;
 use slotmap::SlotMap;
 use std::iter::once;
 
-use crate::{mask::{MaskHashMap, Mask}, entity::{Entity, EntityLinkings, EntryRef, EntryMut}, vec::UntypedVec, archetype::Archetype, layout::{PrefabBundle, Bundle, QueryLayoutMut, QueryLayoutRef}, registry::{Component, mask}, query::{QueryFilter, Wrap, QueryMut, QueryRef}};
+use crate::{
+    archetype::Archetype,
+    entity::{Entity, EntityLinkings, EntryMut, EntryRef},
+    layout::{Bundle, PrefabBundle, QueryLayoutMut, QueryLayoutRef},
+    mask::{Mask, MaskHashMap},
+    query::{QueryFilter, QueryMut, QueryRef, Wrap},
+    registry::{mask, Component},
+    vec::UntypedVec,
+};
 //use world::{post_user, user, System, World};
 
 // Convenience type aliases

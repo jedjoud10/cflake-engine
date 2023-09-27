@@ -1,6 +1,6 @@
-use std::ops::{BitAnd, BitOr, BitXor};
+use super::{QueryLayoutMut, QueryLayoutRef};
 use crate::mask::Mask;
-use super::{QueryLayoutRef, QueryLayoutMut};
+use std::ops::{BitAnd, BitOr, BitXor};
 
 /// Layout access that contain the shared access mask and unique access mask.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

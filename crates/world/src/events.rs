@@ -1,4 +1,4 @@
-use winit::event::{WindowEvent, DeviceEvent};
+use winit::event::{DeviceEvent, WindowEvent};
 /// An event is something that a system can "subscribe" to to execute specific code when something interesting happens
 pub trait Event: 'static + Sized {}
 impl Event for WindowEvent {}

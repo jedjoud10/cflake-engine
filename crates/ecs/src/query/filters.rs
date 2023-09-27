@@ -1,7 +1,12 @@
 use std::marker::PhantomData;
 use utils::bitset::BitSet;
 
-use crate::{archetype::{Archetype, UntypedColumn, StateColumn}, layout::{LayoutAccess, QueryLayoutRef, QueryLayoutMut}, scene::ArchetypeSet, mask::Mask};
+use crate::{
+    archetype::{Archetype, StateColumn, UntypedColumn},
+    layout::{LayoutAccess, QueryLayoutMut, QueryLayoutRef},
+    mask::Mask,
+    scene::ArchetypeSet,
+};
 
 /// Result value whenever we call evaluate_chunk within QueryFilter.
 /// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation.
@@ -172,10 +177,7 @@ pub(crate) fn get_either_states(col: &UntypedColumn, ticked: bool) -> &StateColu
     }
 }
 
-pub(crate) fn get_either_states_mut(
-    col: &mut UntypedColumn,
-    ticked: bool,
-) -> &mut StateColumn {
+pub(crate) fn get_either_states_mut(col: &mut UntypedColumn, ticked: bool) -> &mut StateColumn {
     match ticked {
         true => col.delta_tick_states_mut(),
         false => col.delta_frame_states_mut(),

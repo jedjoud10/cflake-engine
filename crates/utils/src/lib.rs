@@ -25,5 +25,5 @@ pub mod prelude {
     pub use crate::time::*;
 }
 
-pub use pretty_type_name;
 pub use log;
+pub use pretty_type_name;

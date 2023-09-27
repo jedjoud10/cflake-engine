@@ -2,8 +2,8 @@ use std::ops::{Deref, DerefMut};
 
 use atomic_refcell::{AtomicRef, AtomicRefMut};
 
-use crate::prelude::World;
 use super::Resource;
+use crate::prelude::World;
 
 /// An immutably/mutably borrowed resource
 /// Could also represent a "partially" bound resource (Option<T>)

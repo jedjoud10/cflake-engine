@@ -1,9 +1,9 @@
+use crate::mask::{Mask, MaskHashMap, RawBitMask};
 use ahash::AHashMap;
 pub use ecs_derive::Component;
 use lazy_static::lazy_static;
 use parking_lot::{Mutex, RwLock};
 use std::{any::TypeId, borrow::Cow};
-use crate::mask::{RawBitMask, Mask, MaskHashMap};
 
 /// This is a certified hood classic
 pub trait Component

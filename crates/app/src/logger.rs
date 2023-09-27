@@ -1,6 +1,6 @@
-use std::{sync::mpsc, str::FromStr};
 use fern::colors::ColoredLevelConfig;
 use log::LevelFilter;
+use std::{str::FromStr, sync::mpsc};
 
 fn file_logger(sender: mpsc::Sender<String>) -> fern::Dispatch {
     fern::Dispatch::new()
@@ -21,8 +21,9 @@ fn console_logger(
     colors_level: ColoredLevelConfig,
     colors_line: ColoredLevelConfig,
 ) -> fern::Dispatch {
-    fern::Dispatch::new().format(move |out, message, record| {
-        out.finish(format_args!(
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
             "{color_line}[{thread_name}][{date}][{target}][{level}{color_line}] {message}\x1B[0m",
             color_line = format_args!(
                 "\x1B[{}m",
@@ -34,7 +35,8 @@ fn console_logger(
             message = message,
             thread_name = std::thread::current().name().unwrap_or("none"),
         ));
-    }).chain(std::io::stdout())
+        })
+        .chain(std::io::stdout())
 }
 
 pub(crate) fn init_logger(mut logging_level: LevelFilter, sender: mpsc::Sender<String>) {

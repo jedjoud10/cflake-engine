@@ -1,8 +1,8 @@
-use crate::mask::{Mask, MaskHashMap};
-use crate::registry::{Component, mask};
-use super::{LayoutAccess, Bundle, QueryItemRef, QueryItemMut, QueryLayoutMut, QueryLayoutRef};
-use crate::vec::UntypedVec;
+use super::{Bundle, LayoutAccess, QueryItemMut, QueryItemRef, QueryLayoutMut, QueryLayoutRef};
 use crate::archetype::{Archetype, StateColumn, StateFlags};
+use crate::mask::{Mask, MaskHashMap};
+use crate::registry::{mask, Component};
+use crate::vec::UntypedVec;
 use casey::lower;
 use paste::paste;
 use seq_macro::seq;

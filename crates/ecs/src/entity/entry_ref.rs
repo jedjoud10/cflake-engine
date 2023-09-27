@@ -1,5 +1,10 @@
-use crate::{archetype::Archetype, scene::Scene, registry::Component, layout::{Bundle, QueryLayoutRef}};
 use super::{Entity, EntityLinkings};
+use crate::{
+    archetype::Archetype,
+    layout::{Bundle, QueryLayoutRef},
+    registry::Component,
+    scene::Scene,
+};
 
 /// Immutable entity entries allow the user to be able to read and get some data about a specific entity.
 /// This data can represent the archetype of the entity or even an immutable reference to a component.
