@@ -1,4 +1,5 @@
 use std::{iter::FusedIterator, marker::PhantomData};
+use rayon::prelude::{IndexedParallelIterator, ParallelIterator};
 use utils::bitset::BitSet;
 
 use super::{Always, QueryFilter, Wrap};
@@ -227,6 +228,32 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
         Some(items)
     }
 }
+
+/*
+impl<'b, L: QueryLayoutMut + Send + Sync> ParallelIterator for QueryMutIter<'b, L> {
+    type Item;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: rayon::iter::plumbing::UnindexedConsumer<Self::Item> {
+        todo!()
+    }
+}
+
+impl<'b, L: QueryLayoutMut + Send + Sync> IndexedParallelIterator for QueryMutIter<'b, L> {
+    fn len(&self) -> usize {
+        todo!()
+    }
+
+    fn drive<C: rayon::iter::plumbing::Consumer<Self::Item>>(self, consumer: C) -> C::Result {
+        todo!()
+    }
+
+    fn with_producer<CB: rayon::iter::plumbing::ProducerCallback<Self::Item>>(self, callback: CB) -> CB::Output {
+        todo!()
+    }
+}
+*/
 
 impl<'b, L: QueryLayoutMut> ExactSizeIterator for QueryMutIter<'b, L> {}
 

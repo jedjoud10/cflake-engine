@@ -1,7 +1,5 @@
-use std::ops::{Deref, DerefMut};
-
+use std::{ops::{Deref, DerefMut}, sync::atomic::AtomicPtr};
 use atomic_refcell::{AtomicRef, AtomicRefMut};
-
 use super::Resource;
 use crate::prelude::World;
 

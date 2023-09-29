@@ -84,7 +84,8 @@ impl Archetype {
 
         // Reserve more memory to reduce the number of reallocation
         let iter = components.into_iter();
-        self.reserve(iter.size_hint().0);
+        let (lower, upper) = iter.size_hint();
+        self.reserve(upper.unwrap_or(lower));
         let old_len = self.entities.len();
 
         // Add the components first (so we know how many entities we need to add)
@@ -416,11 +417,6 @@ pub(crate) fn remove_bundle<B: Bundle>(
     entities: &mut EntitySet,
     removed: &mut RemovedComponents,
 ) -> bool {
-    assert!(
-        B::is_valid(),
-        "Bundle is not valid, check the bundle for component collisions"
-    );
-
     // Get the old and new masks
     let old = entities[entity].mask;
     let bundle_mask = B::reduce(|a, b| a | b);

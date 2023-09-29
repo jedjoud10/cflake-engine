@@ -9,46 +9,12 @@ use crate::{
 };
 
 /// Result value whenever we call evaluate_chunk within QueryFilter.
-/// This is an enum because in the Contains<T> filter source we want to not care about the chunk evaluation.
-pub enum ChunkEval {
-    /// Chunk evaluation that gave us a predictable answer that is taken acount when using modifiers
-    Evaluated(u64),
-
-    /// Value that isn't needed or that SHOULD NOT be taken account when using modifiers
-    /// This will propagate up whenever we use combinational modifiers, and it will always return true
-    Passthrough,
-}
-
-impl ChunkEval {
-    /// Same function as Option::zip_with, but stable.
-    pub fn zip_with<F: FnOnce((u64, u64)) -> u64>(self, other: Self, fun: F) -> Self {
-        match (self, other) {
-            (ChunkEval::Evaluated(a), ChunkEval::Evaluated(b)) => Self::Evaluated(fun((a, b))),
-            _ => Self::Passthrough,
-        }
-    }
-
-    /// Map, only used for modifiers.
-    pub fn map<F: FnOnce(u64) -> u64>(self, fun: F) -> Self {
-        match self {
-            ChunkEval::Evaluated(x) => Self::Evaluated(fun(x)),
-            ChunkEval::Passthrough => Self::Passthrough,
-        }
-    }
-
-    /// Return the inner value if Valid, or return usize::MAX if [passthrough](ChunkEval::Passthrough).
-    pub fn into_inner(self) -> u64 {
-        match self {
-            ChunkEval::Evaluated(x) => x,
-            ChunkEval::Passthrough => u64::MAX,
-        }
-    }
-}
+pub struct ChunkEval(u64);
 
 /// Basic evaluator that will be implemented for the filter sources and modifiers.
 /// These filters allow users to discard certain entries when iterating.
 pub trait QueryFilter {
-    /// Cached data for fast traversal (only stores the bitmask of a specific component).
+    /// Cached data for fast traversal (stores the bitmask of a specific component for eaxmple).
     type Cached: 'static + Clone + Copy;
 
     /// Cached columns that we fetch from an archetypes.
@@ -69,7 +35,7 @@ pub trait QueryFilter {
 
     /// Evaluate a single chunk to check if all the entries within it pass the filter.
     /// When the bit is set, it means that the entry passed. If it's not set, then the entry didn't pass the filter.
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval;
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64;
 }
 
 // Given a scene and a specific filter, filter out the archetypes
@@ -124,7 +90,7 @@ pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
         BitSet::<u64>::from_chunks_iter(
             (0..chunks)
                 .into_iter()
-                .map(move |i| F::evaluate_chunk(&columns, i).into_inner()),
+                .map(move |i| F::evaluate_chunk(&columns, i)),
         )
     });
 
@@ -212,19 +178,17 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
             .collect::<Vec<_>>()
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
         // IDK IF THIS WORKS IT MAKES SENSE ON PAPER THO
         // FIXME: MUST TEST
-        ChunkEval::Evaluated(
-            columns
-                .iter()
-                .map(|c| {
-                    c.map(|c| c.get_chunk(index).unwrap().added)
-                        .unwrap_or_default()
-                })
-                .reduce(|a, b| a & b)
-                .unwrap_or_default(),
-        )
+        columns
+            .iter()
+            .map(|c| {
+                c.map(|c| c.get_chunk(index).unwrap().added)
+                    .unwrap_or_default()
+            })
+            .reduce(|a, b| a & b)
+            .unwrap_or_default()
     }
 }
 
@@ -256,19 +220,18 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
             .collect::<Vec<_>>()
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
         // IDK IF THIS WORKS IT MAKES SENSE ON PAPER THO
         // FIXME: MUST TEST
-        ChunkEval::Evaluated(
-            columns
-                .iter()
-                .map(|c| {
-                    c.map(|c| c.get_chunk(index).unwrap().modified)
-                        .unwrap_or_default()
-                })
-                .reduce(|a, b| a & b)
-                .unwrap_or_default(),
-        )
+        columns
+            .iter()
+            .map(|c| {
+                c.map(|c| c.get_chunk(index).unwrap().modified)
+                    .unwrap_or_default()
+            })
+            .reduce(|a, b| a & b)
+            .unwrap_or_default()
+        
     }
 }
 
@@ -291,8 +254,8 @@ impl<L: QueryLayoutRef> QueryFilter for Contains<L> {
     ) -> Self::Columns<'_> {
     }
 
-    fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> ChunkEval {
-        ChunkEval::Passthrough
+    fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> u64 {
+        u64::MAX
     }
 }
 
@@ -313,8 +276,8 @@ impl QueryFilter for Always {
     ) -> Self::Columns<'_> {
     }
 
-    fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> ChunkEval {
-        ChunkEval::Evaluated(u64::MAX)
+    fn evaluate_chunk(_columns: &Self::Columns<'_>, _index: usize) -> u64 {
+        u64::MAX
     }
 }
 
@@ -342,10 +305,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for And<A, B> {
         )
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
         let a = A::evaluate_chunk(&columns.0, index);
         let b = B::evaluate_chunk(&columns.1, index);
-        a.zip_with(b, |(a, b)| a & b)
+        a & b
     }
 }
 
@@ -372,10 +335,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Or<A, B> {
         )
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
         let a = A::evaluate_chunk(&columns.0, index);
         let b = B::evaluate_chunk(&columns.1, index);
-        a.zip_with(b, |(a, b)| a | b)
+        a | b
     }
 }
 
@@ -402,10 +365,10 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for Xor<A, B> {
         )
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
         let a = A::evaluate_chunk(&columns.0, index);
         let b = B::evaluate_chunk(&columns.1, index);
-        a.zip_with(b, |(a, b)| a ^ b)
+        a ^ b
     }
 }
 
@@ -429,8 +392,8 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
         A::cache_columns(cached, archetype, ticked)
     }
 
-    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> ChunkEval {
-        A::evaluate_chunk(columns, index).map(|x| !x)
+    fn evaluate_chunk(columns: &Self::Columns<'_>, index: usize) -> u64 {
+        !A::evaluate_chunk(columns, index)
     }
 }
 

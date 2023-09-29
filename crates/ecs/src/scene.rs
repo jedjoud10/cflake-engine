@@ -61,15 +61,11 @@ impl Default for Scene {
 impl Scene {
     /// Spawn an entity with specific components using the given [bundle](Bundle).
     pub fn insert<B: Bundle>(&mut self, components: B) -> Entity {
-        assert!(
-            B::is_valid(),
-            "Bundle is not valid, check the bundle for component collisions"
-        );
-        self.extend_from_iter(once(components))[0]
+        self.extend(once(components))[0]
     }
 
     /// Spawn a batch of entities with specific components from an iterator that creates [bundles](Bundle).
-    pub fn extend_from_iter<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
+    pub fn extend<B: Bundle>(&mut self, iter: impl IntoIterator<Item = B>) -> &[Entity] {
         assert!(
             B::is_valid(),
             "Bundle is not valid, check the bundle for component collisions"

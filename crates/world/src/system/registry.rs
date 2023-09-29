@@ -1,7 +1,5 @@
 use crate::events::Event;
-
-
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 /// A registry is what will contain all the different stages, and their appropriate systems
 /// Stages are executed sequentially, although the systems within them are executed in parallel (if possible)
@@ -19,9 +17,10 @@ impl<E: Event> Default for Registry<E> {
 }
 
 impl<E: Event> Registry<E> {
-    /// Sort all the systems stored in the registry using the stages
+    /// Sort all the systems stored in the registry using their given injection order
     pub fn sort(&mut self) {}
 
     /// Execute all the systems that are stored in this registry
+    /// in parallel if possible
     pub fn execute(&mut self, _args: E) {}
 }
