@@ -15,7 +15,7 @@ fn main() {
     let mut scene = Scene::default();
     scene.extend((0..100000).into_iter().map(|i| (Position(i), Rotation(i), Matrix(i))));
     
-    for (a, b, c) in scene.query_mut::<(&mut Position, &Matrix, &Rotation)>() {
+    for (a, b, c) in scene.query_mut::<(&mut Position, &Matrix, &Rotation)>().into_iter() {
         a.0 = b.0 + c.0; 
     }
 }

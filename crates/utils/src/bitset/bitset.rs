@@ -6,8 +6,8 @@ use std::fmt::Display;
 use std::mem::size_of;
 
 // TODO: Maybe replace with a better alternative for hopping? Hibitset maybe?
-/// Simple bitset that allocates using usize chunks
-/// This bitset contains a specific number of elements per chunk
+/// Simple bitset that allocates using usize chunks.
+/// This bitset contains a specific number of elements per chunk (specified by the size of T).
 #[derive(Default, Clone)]
 pub struct BitSet<T: PrimInt>(Vec<T>);
 
@@ -119,8 +119,8 @@ impl<T: PrimInt> BitSet<T> {
         self.0.iter().map(|chunk| chunk.count_ones() as usize).sum()
     }
 
-    /// Starting from a specific index, read forward and check if there is any set bits
-    /// Returns None if it could not find an set bit, returns Some with it's index if it did
+    /// Starting from a specific index, read forward and check if there is any set bits.
+    /// Returns None if it could not find an set bit, returns Some with it's index if it did.
     pub fn find_one_from(&self, index: usize) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
@@ -144,8 +144,8 @@ impl<T: PrimInt> BitSet<T> {
             .next()
     }
 
-    /// Starting from a specific index, read forward and check if there is any unset bits
-    /// Returns None if it could not find an unset bit, returns Some with it's index if it did
+    /// Starting from a specific index, read forward and check if there is any unset bits.
+    /// Returns None if it could not find an unset bit, returns Some with it's index if it did.
     pub fn find_zero_from(&self, index: usize) -> Option<usize> {
         let (start_chunk, start_location) = Self::coords(index);
         self.chunks()
