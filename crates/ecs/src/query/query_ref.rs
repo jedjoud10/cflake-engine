@@ -63,7 +63,8 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
 
     /// Get the number of entries that we will have to iterate through.
     pub fn len(&self) -> usize {
-        len(&self.archetypes, &self.bitsets)
+        todo!()
+        //len(&self.archetypes, &self.bitsets)
     }
 
     /// Check if the query is empty.

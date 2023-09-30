@@ -61,7 +61,8 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
 
     /// Get the number of entries that we will have to iterate through.
     pub fn len(&self) -> usize {
-        len(&self.archetypes, &self.bitsets)
+        todo!()
+        //len(&self.archetypes, &self.bitsets)
     }
 
     /// Check if the query is empty.

@@ -117,7 +117,7 @@ impl<'a> EntryMut<'a> {
     }
 
     /// Read certain components from the entry as if they were used in an immutable query.
-    pub fn as_query<L: QueryLayoutRef>(&self) -> Option<L> {
+    pub fn as_query<L: QueryLayoutRef<'a>>(&self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let search = L::reduce(|a, b| a | b).search();
         if search & self.archetype().mask() != search {
@@ -126,8 +126,8 @@ impl<'a> EntryMut<'a> {
 
         // Fetch the layout from the archetype
         let index = self.linkings().index;
-        let ptrs = unsafe { L::ptrs_from_archetype_unchecked(self.archetype()) };
-        let layout = unsafe { L::read_unchecked(ptrs, index) };
+        let ptrs = L::from_archetype(self.archetype());
+        let layout = L::read(ptrs, index);
         Some(layout)
     }
 

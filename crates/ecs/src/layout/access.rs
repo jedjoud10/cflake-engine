@@ -6,7 +6,7 @@ use std::ops::{BitAnd, BitOr, BitXor};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LayoutAccess {
     // Used for searching for valid archetypes
-    pub(super) arch_search: Mask,
+    pub(super) archetype_search: Mask,
 
     // Used for query validation
     pub(super) validation_shared: Mask,
@@ -16,7 +16,7 @@ pub struct LayoutAccess {
 impl LayoutAccess {
     /// Get the archetype search mask.
     pub const fn search(&self) -> Mask {
-        self.arch_search
+        self.archetype_search
     }
 
     /// Get the shared validation mask.
@@ -35,7 +35,7 @@ impl LayoutAccess {
     }
 
     /// Create a layout access mask from a layout ref.
-    pub fn from_layout_ref<L: QueryLayoutRef>() -> Self {
+    pub fn from_layout_ref<L: for<'a> QueryLayoutRef<'a>>() -> Self {
         L::reduce(|a, b| a | b)
     }
 
@@ -50,7 +50,7 @@ impl BitOr for LayoutAccess {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Self {
-            arch_search: self.arch_search | rhs.arch_search,
+            archetype_search: self.archetype_search | rhs.archetype_search,
             validation_shared: self.validation_shared | rhs.validation_shared,
             validation_unique: self.validation_unique | rhs.validation_unique,
         }
@@ -62,7 +62,7 @@ impl BitAnd for LayoutAccess {
 
     fn bitand(self, rhs: Self) -> Self::Output {
         Self {
-            arch_search: self.arch_search & rhs.arch_search,
+            archetype_search: self.archetype_search & rhs.archetype_search,
             validation_shared: self.validation_shared & rhs.validation_shared,
             validation_unique: self.validation_unique & rhs.validation_unique,
         }
@@ -74,7 +74,7 @@ impl BitXor for LayoutAccess {
 
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self {
-            arch_search: self.arch_search ^ rhs.arch_search,
+            archetype_search: self.archetype_search ^ rhs.archetype_search,
             validation_shared: self.validation_shared ^ rhs.validation_shared,
             validation_unique: self.validation_unique ^ rhs.validation_unique,
         }

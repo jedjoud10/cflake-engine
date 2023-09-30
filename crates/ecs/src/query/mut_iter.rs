@@ -62,40 +62,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
     type IntoIter = QueryMutIter<'b, L>;
 
     fn into_iter(mut self) -> Self::IntoIter {
-        /*
-        for (i, archetype) in self.archetypes.iter_mut().enumerate() {
-            let bitset = self.bitsets.as_ref().map(|bitset| &bitset[i]);
-            apply_mutability_states(
-                archetype,
-                archetype.mask() & self.access.unique(),
-                bitset,
-                false,
-            );
-            apply_mutability_states(
-                archetype,
-                archetype.mask() & self.access.unique(),
-                bitset,
-                true,
-            );
-        }
-        */
-
-        let archetype = self.archetypes.pop().unwrap();
-        let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
-        let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
-        let length = archetype.len();
-
-        QueryMutIter {
-            archetypes: self.archetypes,
-            bitsets: self.bitsets,
-            chunk: Some(Chunk {
-                bitset,
-                ptrs,
-                length,
-            }),
-            index: 0,
-            _phantom2: PhantomData,
-        }
+        todo!()
     }
 }
 
@@ -103,49 +70,12 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = len(&self.archetypes, &self.bitsets);
+        let len = len(&self.archetypes);
         (len, Some(len))
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        let chunk = unsafe { self.chunk.as_ref().unwrap_unchecked() };
-        if (self.index >= chunk.length) {
-            return None;
-        }
-
-        /*
-        loop {
-            // Always hop to the next chunk at the start of the hop iteration / normal iteration
-            self.check_hop_chunk()?;
-
-            if let Some(chunk) = &self.chunk {
-                // Check for bitset
-                if let Some(bitset) = &chunk.bitset {
-                    // Check the next entry that is valid (that passed the filter)
-                    if let Some(hop) = bitset.find_one_from(self.index) {
-                        self.index = hop;
-                        break;
-                    } else {
-                        // Hop to the next archetype if we could not find one
-                        // This will force the iterator to hop to the next archetype
-                        self.index = chunk.length;
-                        continue;
-                    }
-                } else {
-                    // If we do not have a bitset, don't do anything
-                    break;
-                }
-            }
-        }
-        */
-
-        // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
-        //self.chunk.as_mut()?;
-        let ptrs = chunk.ptrs;
-        let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
-        self.index += 1;
-
-        Some(items)
+        None
     }
 }
 

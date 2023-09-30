@@ -159,6 +159,7 @@ macro_rules! tuple_impls {
     };
 }
 
+/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -172,7 +173,9 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11, 12 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12, 13 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
+*/
 
+/*
 #[cfg(feature = "extended-tuples")]
 mod extend {
     use crate::{
@@ -190,3 +193,4 @@ mod extend {
 
 #[cfg(feature = "extended-tuples")]
 use extend::*;
+*/

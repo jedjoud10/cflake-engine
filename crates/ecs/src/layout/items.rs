@@ -7,24 +7,18 @@ use crate::{
 };
 
 /// Immutable query slice that will be fetched from each archetype.
-pub trait QueryItemRef: Sized {
+pub trait QueryItemRef<'s>: Sized {
     /// Immutable slice of the query item.
-    type Slice<'s>: 's;
-
-    /// Immutable pointer of the query item.
-    type Ptr: 'static + Copy;
+    type Slice: 's + Copy;
 
     /// Get the layout access mask for this item.
     fn access() -> LayoutAccess;
 
-    /// Get a pointer from an immutable archetype.
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr;
+    /// Get a slice from an immutable archetype.
+    fn from_archetype(archetype: &'s Archetype) -> Self::Slice;
 
-    /// Convert the pointer into a slice.
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s>;
-
-    /// Read from a raw pointer directly.
-    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self;
+    /// Read from a the slice directly at a specified index.
+    fn read(slice: Self::Slice, index: usize) -> Self;
 }
 
 /// Mutable query slice that will be fetched from each archetype.
@@ -48,115 +42,97 @@ pub trait QueryItemMut: Sized {
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self;
 }
 
-impl<T: Component> QueryItemRef for &T {
-    type Slice<'s> = &'s [T];
-    type Ptr = *const T;
+impl<'a, T: Component> QueryItemRef<'a> for &'a T {
+    type Slice = &'a [T];
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: mask::<T>(),
+            archetype_search: mask::<T>(),
             validation_shared: mask::<T>(),
             validation_unique: Mask::zero(),
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        archetype.components::<T>().unwrap().as_slice().as_ptr() as _
+    #[inline]
+    fn from_archetype(archetype: &'a Archetype) -> Self::Slice {
+        archetype.components::<T>().unwrap().as_slice()
     }
-
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        std::slice::from_raw_parts(ptr, length)
-    }
-
-    #[inline(always)]
-    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        &*ptr.add(index)
+    
+    #[inline]
+    fn read(slice: Self::Slice, index: usize) -> Self {
+        &slice[index]
     }
 }
 
+/*
 impl<T: Component> QueryItemRef for Option<&T> {
     type Slice<'s> = Option<&'s [T]>;
-    type Ptr = Option<*const T>;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: mask::<T>(),
             validation_unique: Mask::zero(),
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
+    #[inline]
+    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
         archetype
             .components::<T>()
-            .map(|col| col.as_slice().as_ptr() as _)
+            .map(|col| col.as_slice())        
     }
-
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
-    }
-
-    #[inline(always)]
-    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        ptr.map(|ptr| &*ptr.add(index))
+    
+    #[inline]
+    fn read(slice: Self::Slice<'_>, index: usize) -> Self {
+        slice.map(|slice| &slice[index])
     }
 }
+
 
 impl QueryItemRef for &Entity {
     type Slice<'s> = &'s [Entity];
-    type Ptr = *const Entity;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: Mask::zero(),
             validation_unique: Mask::zero(),
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(archetype: &Archetype) -> Self::Ptr {
-        archetype.entities().as_ptr()
+    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
+        archetype.entities()
     }
 
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        std::slice::from_raw_parts(ptr, length)
-    }
-
-    #[inline(always)]
-    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        &*ptr.add(index)
+    #[inline]
+    fn read<'a>(slice: Self::Slice<'a>, index: usize) -> Self where Self: 'a {
+        &slice[index]
     }
 }
+
 
 impl QueryItemRef for &() {
     type Slice<'s> = &'s [()];
-    type Ptr = *const ();
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: Mask::zero(),
             validation_unique: Mask::zero(),
         }
     }
 
-    unsafe fn ptr_from_archetype_unchecked(_archetype: &Archetype) -> Self::Ptr {
-        // I AM HARDWARE
-        // I WILL OUTLIVE YOU
-        // I WILL OUTLIVE YOUR SOFTWARE
-        // THERE IS NO DEATH
-        std::ptr::NonNull::<()>::dangling().as_ptr()
+    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
+        &[]
     }
 
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        std::slice::from_raw_parts(ptr, length)
-    }
-
-    #[inline(always)]
-    unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        &*ptr.add(index)
+    #[inline]
+    fn read(slice: Self::Slice<'_>, index: usize) -> Self {
+        &()
     }
 }
+*/
 
 impl<T: Component> QueryItemMut for &T {
     type Slice<'s> = &'s [T];
@@ -164,7 +140,7 @@ impl<T: Component> QueryItemMut for &T {
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: mask::<T>(),
+            archetype_search: mask::<T>(),
             validation_shared: mask::<T>(),
             validation_unique: Mask::zero(),
         }
@@ -194,7 +170,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: mask::<T>(),
             validation_unique: Mask::zero(),
         }
@@ -222,7 +198,7 @@ impl<T: Component> QueryItemMut for &mut T {
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: mask::<T>(),
+            archetype_search: mask::<T>(),
             validation_shared: Mask::zero(),
             validation_unique: mask::<T>(),
         }
@@ -252,7 +228,7 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: Mask::zero(),
             validation_unique: mask::<T>(),
         }
@@ -280,7 +256,7 @@ impl QueryItemMut for &Entity {
 
     fn access() -> LayoutAccess {
         LayoutAccess {
-            arch_search: Mask::zero(),
+            archetype_search: Mask::zero(),
             validation_shared: Mask::zero(),
             validation_unique: Mask::zero(),
         }

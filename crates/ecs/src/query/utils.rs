@@ -76,18 +76,9 @@ pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
     (mask, archetypes, cached)
 }
 
-// Calculate the number of elements there are in the archetypes, but also take in consideration
-// the bitsets (if specified)
-pub(super) fn len<'a, A: Deref<Target = Archetype>>(archetypes: &[A], bitsets: &Option<Vec<BitSet<u64>>>) -> usize {
-    if let Some(bitsets) = bitsets {
-        bitsets
-            .iter()
-            .zip(archetypes.iter())
-            .map(|(b, a)| b.count_ones().min(a.deref().len()))
-            .sum()
-    } else {
-        archetypes.iter().map(|a| a.deref().len()).sum()
-    }
+// Sum the number of entities there are in the archetypes in total
+pub(super) fn len<'a, A: Deref<Target = Archetype>>(archetypes: &[A]) -> usize {
+    archetypes.iter().map(|a| a.deref().len()).sum()
 }
 
 // Create a vector of bitsets in case we are using query filtering
