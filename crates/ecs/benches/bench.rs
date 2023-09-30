@@ -1,6 +1,6 @@
 use std::iter::repeat;
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, black_box};
 use ecs::prelude::*;
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator, IntoParallelIterator, IndexedParallelIterator};
 
@@ -18,9 +18,10 @@ struct BigStack([u128; 32]);
 
 const ITEMS_PER_BATCH: u64 = 5000;
 const MIN_BATCH: u64 = 1;
-const MAX_BATCH: u64 = 10;
+const MAX_BATCH: u64 = 20;
 
 fn benchmark(c: &mut Criterion) {
+    /*
     let mut group = c.benchmark_group("Insertion (1 comp)");
 
     for x in MIN_BATCH..MAX_BATCH {
@@ -75,6 +76,7 @@ fn benchmark(c: &mut Criterion) {
     }
 
     drop(group);
+    */
     let mut group = c.benchmark_group("Query (2 comp + matrix calc)");
 
     for x in MIN_BATCH..MAX_BATCH {
@@ -84,16 +86,20 @@ fn benchmark(c: &mut Criterion) {
         // ECS
         let mut scene = Scene::default();
         scene.extend(repeat((Position::default(), Matrix::default())).take(count as usize));
+        let mut scene = black_box(scene);
         
         // SoA
         let mut positions = Vec::<Position>::default();
         positions.extend(repeat(Position::default()).take(count as usize));
         let mut matrices = Vec::<Matrix>::default();
         matrices.extend(repeat(Matrix::default()).take(count as usize));
+        let mut matrices = black_box(matrices);
+        let mut positions = black_box(positions);
 
         // AoS
         let mut comps = Vec::<(Position, Matrix)>::default();
         comps.extend(repeat((Position::default(), Matrix::default())).take(count as usize));
+        let mut comps = black_box(comps);
 
         // Single threaded ECS
         group.bench_function(
@@ -107,6 +113,7 @@ fn benchmark(c: &mut Criterion) {
             }
         );
 
+        /*
         // Single threaded SoA
         group.bench_function(
             BenchmarkId::new("Vec SoA Single-threaded", count),
@@ -130,6 +137,7 @@ fn benchmark(c: &mut Criterion) {
                 });
             }
         );
+        */
 
         // Multithreaded threaded ECS
         group.bench_function(
@@ -145,6 +153,7 @@ fn benchmark(c: &mut Criterion) {
             }
         );
 
+        /*
         // Multithreaded threaded SoA
         group.bench_function(
             BenchmarkId::new("Vec SoA Mutli-threaded", count),
@@ -168,6 +177,7 @@ fn benchmark(c: &mut Criterion) {
                 });
             }
         );
+        */
     }
 }
 

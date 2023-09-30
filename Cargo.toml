@@ -25,3 +25,6 @@ ahash = "0.7.6"
 parking_lot = "0.12.0"
 lazy_static = "1.4.0"
 thiserror = "1.0.37"
+
+[profile.dev]
+opt-level = 3

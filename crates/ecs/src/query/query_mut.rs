@@ -1,8 +1,8 @@
-use std::{iter::FusedIterator, marker::PhantomData};
+use std::{iter::FusedIterator, marker::PhantomData, ops::Deref};
 use rayon::prelude::{IndexedParallelIterator, ParallelIterator};
 use utils::bitset::BitSet;
 
-use super::{Always, QueryFilter, Wrap};
+use super::{Always, QueryFilter, Wrap, len};
 use crate::{
     archetype::Archetype,
     layout::{LayoutAccess, QueryLayoutMut},
@@ -96,25 +96,13 @@ fn apply_mutability_states(
     }
 }
 
-// Calculate the number of elements there are in the archetypes, but also take in consideration
-// the bitsets (if specified)
-fn len(archetypes: &[&mut Archetype], bitsets: &Option<Vec<BitSet<u64>>>) -> usize {
-    if let Some(bitsets) = bitsets {
-        bitsets
-            .iter()
-            .zip(archetypes.iter())
-            .map(|(b, a)| b.count_ones().min(a.len()))
-            .sum()
-    } else {
-        archetypes.iter().map(|a| a.len()).sum()
-    }
-}
 
 impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
     type Item = L;
     type IntoIter = QueryMutIter<'b, L>;
 
     fn into_iter(mut self) -> Self::IntoIter {
+        /*
         for (i, archetype) in self.archetypes.iter_mut().enumerate() {
             let bitset = self.bitsets.as_ref().map(|bitset| &bitset[i]);
             apply_mutability_states(
@@ -130,11 +118,21 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
                 true,
             );
         }
+        */
+
+        let archetype = self.archetypes.pop().unwrap();
+        let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
+        let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
+        let length = archetype.len();
 
         QueryMutIter {
             archetypes: self.archetypes,
             bitsets: self.bitsets,
-            chunk: None,
+            chunk: Some(Chunk {
+                bitset,
+                ptrs,
+                length,
+            }),
             index: 0,
             _phantom2: PhantomData,
         }
@@ -195,6 +193,12 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
     }
 
     fn next(&mut self) -> Option<Self::Item> {
+        let chunk = unsafe { self.chunk.as_ref().unwrap_unchecked() };
+        if (self.index >= chunk.length) {
+            return None;
+        }
+
+        /*
         loop {
             // Always hop to the next chunk at the start of the hop iteration / normal iteration
             self.check_hop_chunk()?;
@@ -218,16 +222,20 @@ impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
                 }
             }
         }
+        */
 
         // I have to do this since iterators cannot return data that they are referencing, but in this case, it is safe to do so
-        self.chunk.as_mut()?;
-        let ptrs = self.chunk.as_ref().unwrap().ptrs;
+        //self.chunk.as_mut()?;
+        let ptrs = chunk.ptrs;
         let items = unsafe { L::read_mut_unchecked(ptrs, self.index) };
         self.index += 1;
 
         Some(items)
     }
 }
+
+impl<'b, L: QueryLayoutMut> ExactSizeIterator for QueryMutIter<'b, L> {}
+impl<'b, 's, L: QueryLayoutMut> FusedIterator for QueryMutIter<'b, L> {}
 
 /*
 impl<'b, L: QueryLayoutMut + Send + Sync> ParallelIterator for QueryMutIter<'b, L> {
@@ -254,7 +262,3 @@ impl<'b, L: QueryLayoutMut + Send + Sync> IndexedParallelIterator for QueryMutIt
     }
 }
 */
-
-impl<'b, L: QueryLayoutMut> ExactSizeIterator for QueryMutIter<'b, L> {}
-
-impl<'b, 's, L: QueryLayoutMut> FusedIterator for QueryMutIter<'b, L> {}

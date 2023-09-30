@@ -104,6 +104,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
+            #[inline(always)]
             unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N = <C~N as QueryItemRef>::read_unchecked(ptrs.N, index);
@@ -144,6 +145,7 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
+            #[inline(always)]
             unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
                     let c~N = <C~N as QueryItemMut>::read_mut_unchecked(ptrs.N, index);

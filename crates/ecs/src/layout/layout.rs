@@ -86,6 +86,7 @@ impl<I: QueryItemRef> QueryLayoutRef for I {
         <I as QueryItemRef>::from_raw_parts(ptrs, length)
     }
 
+    #[inline(always)]
     unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
         <I as QueryItemRef>::read_unchecked(ptrs, index)
     }
@@ -110,6 +111,7 @@ impl<I: QueryItemMut> QueryLayoutMut for I {
         <I as QueryItemMut>::from_raw_parts(ptrs, length)
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
         <I as QueryItemMut>::read_mut_unchecked(ptrs, index)
     }

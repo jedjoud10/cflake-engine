@@ -14,4 +14,20 @@ pub struct WorldView<'a> {
     mutable: AHashMap<TypeId, &'a mut dyn Resource>,
 }
 
+impl WorldView<'_> {
+    // Fetch an immutable resource from the world view
+    // This can only be called once, as it would remove the reference internally
+    pub fn get<T: Resource>(&mut self) -> &T {
+        let value = self.immutable.remove(&TypeId::of::<T>());
+        value.unwrap().as_any().downcast_ref::<T>().unwrap()
+    }
+    
+    // Fetch a mutable  resource from the world view
+    // This can only be called once, as it would remove the reference internally
+    pub fn get_mut<T: Resource>(&mut self) -> &mut T {
+        let value = self.mutable.remove(&TypeId::of::<T>());
+        value.unwrap().as_any_mut().downcast_mut::<T>().unwrap()
+    }
+}
+
 impl World {}

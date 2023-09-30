@@ -68,6 +68,7 @@ impl<T: Component> QueryItemRef for &T {
         std::slice::from_raw_parts(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
@@ -95,6 +96,7 @@ impl<T: Component> QueryItemRef for Option<&T> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
+    #[inline(always)]
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         ptr.map(|ptr| &*ptr.add(index))
     }
@@ -120,6 +122,7 @@ impl QueryItemRef for &Entity {
         std::slice::from_raw_parts(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
@@ -149,6 +152,7 @@ impl QueryItemRef for &() {
         std::slice::from_raw_parts(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
@@ -178,6 +182,7 @@ impl<T: Component> QueryItemMut for &T {
         std::slice::from_raw_parts(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }
@@ -205,6 +210,7 @@ impl<T: Component> QueryItemMut for Option<&T> {
         ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         ptr.map(|ptr| &*ptr.add(index))
     }
@@ -234,6 +240,7 @@ impl<T: Component> QueryItemMut for &mut T {
         std::slice::from_raw_parts_mut(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &mut *ptr.add(index)
     }
@@ -261,6 +268,7 @@ impl<T: Component> QueryItemMut for Option<&mut T> {
         ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         ptr.map(|ptr| &mut *ptr.add(index))
     }
@@ -286,6 +294,7 @@ impl QueryItemMut for &Entity {
         std::slice::from_raw_parts(ptr, length)
     }
 
+    #[inline(always)]
     unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
         &*ptr.add(index)
     }

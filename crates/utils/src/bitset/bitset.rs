@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::mem::size_of;
 
+// TODO: Maybe replace with a better alternative for hopping? Hibitset maybe?
 /// Simple bitset that allocates using usize chunks
 /// This bitset contains a specific number of elements per chunk
 #[derive(Default, Clone)]

@@ -8,7 +8,7 @@ use crate::{
     scene::Scene,
 };
 
-use super::{Always, QueryFilter, Wrap};
+use super::{Always, QueryFilter, Wrap, len};
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lifetime, I don't use them in this query, I only use them in the query iterator.
@@ -69,20 +69,6 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
     /// Check if the query is empty.
     pub fn is_empty(&self) -> bool {
         self.archetypes.is_empty()
-    }
-}
-
-// Calculate the number of elements there are in the archetypes, but also take in consideration
-// the bitsets (if specified)
-fn len(archetypes: &[&Archetype], bitsets: &Option<Vec<BitSet<u64>>>) -> usize {
-    if let Some(bitsets) = bitsets {
-        bitsets
-            .iter()
-            .zip(archetypes.iter())
-            .map(|(b, a)| b.count_ones().min(a.len()))
-            .sum()
-    } else {
-        archetypes.iter().map(|a| a.len()).sum()
     }
 }
 
