@@ -11,45 +11,42 @@ use crate::{
 use super::{Always, QueryFilter, Wrap, len, QueryRef};
 
 // Currently loaded chunk in the immutable query iterator
-struct Chunk<'a, L: QueryLayoutRef> {
-    slice: L::SliceTuple<'a>,
+struct Chunk<'s, L: QueryLayoutRef<'s>> {
+    slices: L::SliceTuple,
     length: usize,
 }
 
 /// This is a immutable query iterator that will iterate through all the query entries in arbitrary order.
-pub struct QueryRefIter<'b, L: QueryLayoutRef> {
-    // Inputs from the query
-    slices: Vec<Chunk<'b, L>>,
-
-    // Unique to the iterator
-    chunk: Option<Chunk<'b, L>>,
+pub struct QueryRefIter<'s, L: QueryLayoutRef<'s>> {
+    slices: Vec<Chunk<'s, L>>,
+    chunk: Option<Chunk<'s, L>>,
     index: usize,
     length: usize,
-    _phantom2: PhantomData<L>,
+    _phantom: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, 'it, L: QueryLayoutRef> IntoIterator for QueryRef<'a, 'b, 'it, L> {
+impl<'s, L: QueryLayoutRef<'s>> IntoIterator for QueryRef<'s, L> {
     type Item = L;
-    type IntoIter = QueryRefIter<'b, L>;
+    type IntoIter = QueryRefIter<'s, L>;
 
     fn into_iter(self) -> Self::IntoIter {
         let length = len(&self.archetypes);
-        let slices = self.archetypes.into_iter().map(|x| Chunk {
-            slice: L::from_archetype(x),
+        let mut slices = self.archetypes.into_iter().map(|x| Chunk {
+            slices: L::from_archetype(x),
             length: x.len(),
-        }).collect();
+        }).collect::<Vec<_>>();
         
         QueryRefIter {
+            chunk: slices.pop(),
             slices,
-            chunk: None,
             index: 0,
             length,
-            _phantom2: PhantomData,
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
+impl<'s, L: QueryLayoutRef<'s>> Iterator for QueryRefIter<'s, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -57,29 +54,18 @@ impl<'b, L: QueryLayoutRef> Iterator for QueryRefIter<'b, L> {
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-        /*
-        let chunk = self.chunk.as_ref()?;
-
-        if self.index >= chunk.length {
-            let slice = self.slices.pop()?;
-            let ptrs = unsafe { L::ptrs_from_archetype_unchecked(archetype) };
-            let length = archetype.len();
-            let slice = unsafe { L::from_raw_parts(ptrs, length) };
+        if self.index >= self.chunk.as_ref()?.length {
+            let chunk = self.slices.pop()?;
+            self.chunk = Some(chunk);
             self.index = 0;
-            self.chunk = Some(Chunk {
-                slice,
-                length,
-            });
         }
 
-        let items = unsafe { L::read(ptrs, self.index) };
+        let chunk = unsafe { self.chunk.as_ref().unwrap_unchecked() };
+        let out = L::read(chunk.slices, self.index);
         self.index += 1;
-
-        Some(items)
-        */
+        Some(out)
     }
 }
 
-impl<'b, L: QueryLayoutRef> ExactSizeIterator for QueryRefIter<'b, L> {}
-impl<'b, 's, L: QueryLayoutRef> FusedIterator for QueryRefIter<'b, L> {}
+impl<'s, L: QueryLayoutRef<'s>> ExactSizeIterator for QueryRefIter<'s, L> {}
+impl<'s, L: QueryLayoutRef<'s>> FusedIterator for QueryRefIter<'s, L> {}

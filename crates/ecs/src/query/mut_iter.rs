@@ -12,72 +12,67 @@ use crate::{
 };
 
 // Currently loaded chunk in the mutable query iterator
-struct Chunk<L: QueryLayoutMut> {
-    bitset: Option<BitSet<u64>>,
-    ptrs: L::PtrTuple,
+struct Chunk<'s, L: QueryLayoutMut<'s>> {
+    slices: L::SliceTuple,
     length: usize,
 }
 
 /// This is a mutable query iterator that will iterate through all the query entries in arbitrary order.
-pub struct QueryMutIter<'b, L: QueryLayoutMut> {
-    // Inputs from the query
-    archetypes: Vec<&'b mut Archetype>,
-    bitsets: Option<Vec<BitSet<u64>>>,
-
-    // Unique to the iterator
-    chunk: Option<Chunk<L>>,
+pub struct QueryMutIter<'s, L: QueryLayoutMut<'s>> {
+    slices: Vec<Chunk<'s, L>>,
+    chunk: Option<Chunk<'s, L>>,
     index: usize,
-    _phantom2: PhantomData<L>,
+    length: usize,
+    _phantom: PhantomData<L>,
 }
 
-impl<'b, L: QueryLayoutMut> QueryMutIter<'b, L> {
-    // Hop onto the next archetype if we are done iterating through the current one
-    fn check_hop_chunk(&mut self) -> Option<()> {
-        let len = self
-            .chunk
-            .as_ref()
-            .map(|chunk| chunk.length)
-            .unwrap_or_default();
-
-        if self.index + 1 > len {
-            let archetype = self.archetypes.pop()?;
-            let bitset = self.bitsets.as_mut().map(|vec| vec.pop().unwrap());
-            let ptrs = unsafe { L::ptrs_from_mut_archetype_unchecked(archetype) };
-            let length = archetype.len();
-            self.index = 0;
-            self.chunk = Some(Chunk {
-                bitset,
-                ptrs,
-                length,
-            });
-        }
-
-        Some(())
-    }
-}
-
-
-impl<'a: 'b, 'b, L: QueryLayoutMut> IntoIterator for QueryMut<'a, 'b, L> {
+impl<'s, L: QueryLayoutMut<'s>> IntoIterator for QueryMut<'s, L> {
     type Item = L;
-    type IntoIter = QueryMutIter<'b, L>;
+    type IntoIter = QueryMutIter<'s, L>;
 
     fn into_iter(mut self) -> Self::IntoIter {
-        todo!()
+        let length = len(&self.archetypes);
+        let mut slices = self.archetypes.into_iter().map(|x| Chunk {
+            length: x.len(),
+            slices: L::from_mut_archetype(x),
+        }).collect::<Vec<_>>();
+        
+        QueryMutIter {
+            chunk: slices.pop(),
+            slices,
+            index: 0,
+            length,
+            _phantom: PhantomData,
+        }
     }
 }
 
-impl<'b, L: QueryLayoutMut> Iterator for QueryMutIter<'b, L> {
+impl<'s, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'s, L> {
     type Item = L;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = len(&self.archetypes);
-        (len, Some(len))
+        (self.length, Some(self.length))
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        None
+        if self.index >= self.chunk.as_ref()?.length {
+            let chunk = self.slices.pop()?;
+            self.chunk = Some(chunk);
+            self.index = 0;
+        }
+
+        let chunk = unsafe { self.chunk.as_mut().unwrap_unchecked() };
+
+        // Iterators don't allow returning internal references, so we can cheat a bit
+        // NOTE: There is most definitely a way to make this safe but I don't know how exactly
+        // TODO: Not important (cause it works), but it's a hack. Pls fix
+        let val = &mut chunk.slices;
+        let copied = unsafe { std::mem::transmute_copy::<_, L::SliceTuple>(val) };
+        let out = L::read_mut(copied, self.index);
+        self.index += 1;
+        Some(out)
     }
 }
 
-impl<'b, L: QueryLayoutMut> ExactSizeIterator for QueryMutIter<'b, L> {}
-impl<'b, 's, L: QueryLayoutMut> FusedIterator for QueryMutIter<'b, L> {}
+impl<'s, L: QueryLayoutMut<'s>> ExactSizeIterator for QueryMutIter<'s, L> {}
+impl<'s, L: QueryLayoutMut<'s>> FusedIterator for QueryMutIter<'s, L> {}

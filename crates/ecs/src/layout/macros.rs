@@ -75,18 +75,18 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<$($name: QueryItemRef, )+> QueryLayoutRef for ($($name,)+) {
-            type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
+        impl<'s, $($name: QueryItemRef<'s>, )+> QueryLayoutRef<'s> for ($($name,)+) {
+            type SliceTuple = ($($name::Slice,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
                 layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            unsafe fn ptrs_from_archetype_unchecked(archetype: &Archetype) -> Self::PtrTuple {
+            #[inline]
+            fn from_archetype(archetype: &'s Archetype) -> Self::SliceTuple {
                 seq!(N in 0..$max {
-                    let c~N = C~N::ptr_from_archetype_unchecked(archetype);
+                    let c~N = C~N::from_archetype(archetype);
                 });
 
                 ($(
@@ -94,20 +94,10 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
+            #[inline]
+            fn read(slice: Self::SliceTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = C~N::from_raw_parts(ptrs.N, length);
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
-            }
-
-            #[inline(always)]
-            unsafe fn read_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
-                seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemRef>::read_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemRef>::read(slice.N, index);
                 });
 
                 ($(
@@ -116,18 +106,21 @@ macro_rules! tuple_impls {
             }
         }
 
-        impl<$($name: QueryItemMut, )+> QueryLayoutMut for ($($name,)+) {
-            type PtrTuple = ($($name::Ptr,)+);
-            type SliceTuple<'s> = ($($name::Slice<'s>,)+);
+        impl<'s, $($name: QueryItemMut<'s>, )+> QueryLayoutMut<'s> for ($($name,)+) {
+            type SliceTuple = ($($name::Slice,)+);
 
             fn reduce(mut lambda: impl FnMut(LayoutAccess, LayoutAccess) -> LayoutAccess) -> LayoutAccess {
                 let layouts = [$($name::access()),+];
                 layouts[..].into_iter().cloned().reduce(|a, b| lambda(a, b)).unwrap()
             }
 
-            unsafe fn ptrs_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::PtrTuple {
+            #[inline]
+            fn from_mut_archetype(archetype: &'s mut Archetype) -> Self::SliceTuple {
+                let ptr = archetype as *mut Archetype;
+                
                 seq!(N in 0..$max {
-                    let c~N = C~N::ptr_from_mut_archetype_unchecked(archetype);
+                    let archetype~N = unsafe { &mut *ptr };
+                    let c~N = C~N::from_mut_archetype(archetype~N);
                 });
 
                 ($(
@@ -135,20 +128,10 @@ macro_rules! tuple_impls {
                 ),+,)
             }
 
-            unsafe fn from_raw_parts<'s>(ptrs: Self::PtrTuple, length: usize) -> Self::SliceTuple<'s> {
+            #[inline]
+            fn read_mut(slice: Self::SliceTuple, index: usize) -> Self {
                 seq!(N in 0..$max {
-                    let c~N = C~N::from_raw_parts(ptrs.N, length);
-                });
-
-                ($(
-                    lower!($name)
-                ),+,)
-            }
-
-            #[inline(always)]
-            unsafe fn read_mut_unchecked(ptrs: Self::PtrTuple, index: usize) -> Self {
-                seq!(N in 0..$max {
-                    let c~N = <C~N as QueryItemMut>::read_mut_unchecked(ptrs.N, index);
+                    let c~N = <C~N as QueryItemMut>::read_mut(slice.N, index);
                 });
 
                 ($(
@@ -159,7 +142,6 @@ macro_rules! tuple_impls {
     };
 }
 
-/*
 tuple_impls! { C0 C1, 2 }
 tuple_impls! { C0 C1 C2, 3 }
 tuple_impls! { C0 C1 C2 C3, 4 }
@@ -173,7 +155,7 @@ tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10, 11 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11, 12 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12, 13 }
 tuple_impls! { C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 C11 C12 C13, 14 }
-*/
+
 
 /*
 #[cfg(feature = "extended-tuples")]

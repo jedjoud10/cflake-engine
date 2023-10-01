@@ -40,7 +40,7 @@ impl LayoutAccess {
     }
 
     /// Create a layout access mask from a query layout mut.
-    pub fn from_layout_mut<L: QueryLayoutMut>() -> Self {
+    pub fn from_layout_mut<L: for<'a> QueryLayoutMut<'a>>() -> Self {
         L::reduce(|a, b| a | b)
     }
 }

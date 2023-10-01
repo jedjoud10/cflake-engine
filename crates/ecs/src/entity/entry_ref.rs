@@ -56,7 +56,7 @@ impl<'a> EntryRef<'a> {
     }
 
     /// Read certain components from the entry as if they were used in an immutable query.
-    pub fn as_query<L: QueryLayoutRef<'a>>(&self) -> Option<L> {
+    pub fn as_query<L: QueryLayoutRef<'a>>(&'a self) -> Option<L> {
         // Make sure the layout can be fetched from the archetype
         let search = L::reduce(|a, b| a | b).search();
         if search & self.archetype().mask() != search {

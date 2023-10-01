@@ -51,15 +51,15 @@ impl<T: QueryFilter> Copy for Wrap<T> {}
 
 /// Filter sources that passes if the [QueryLayoutRef] was added into the entities
 /// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
-pub struct Added<T: QueryLayoutRef>(PhantomData<T>);
+pub struct Added<T: for<'a> QueryLayoutRef<'a>>(PhantomData<T>);
 
 /// Filter sources that passes if the [QueryLayoutRef] was modified before the query was executed
 /// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
-pub struct Modified<T: QueryLayoutRef>(PhantomData<T>);
+pub struct Modified<T: for<'a> QueryLayoutRef<'a>>(PhantomData<T>);
 
 /// Filter sources that passes if the [QueryLayoutRef] is used by the entities
 /// All the components within the [QueryLayoutRef] must be within the archetype for this filter to pass the coarse test
-pub struct Contains<T: QueryLayoutRef>(PhantomData<T>);
+pub struct Contains<T: for<'a> QueryLayoutRef<'a>>(PhantomData<T>);
 
 // Note: ONLY USED INTERNALLY. THIS IS LITERALLY USELESS
 pub(crate) struct Always;
@@ -90,7 +90,7 @@ pub(crate) fn get_either_states_mut(col: &mut UntypedColumn, ticked: bool) -> &m
     }
 }
 
-impl<L: QueryLayoutRef> QueryFilter for Added<L> {
+impl<L: for<'a> QueryLayoutRef<'a>> QueryFilter for Added<L> {
     type Cached = Mask;
     type Columns<'a> = Vec<Option<&'a StateColumn>>;
 
@@ -132,7 +132,7 @@ impl<L: QueryLayoutRef> QueryFilter for Added<L> {
     }
 }
 
-impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
+impl<L: for<'a> QueryLayoutRef<'a>> QueryFilter for Modified<L> {
     type Cached = Mask;
     type Columns<'a> = Vec<Option<&'a StateColumn>>;
 
@@ -175,7 +175,7 @@ impl<L: QueryLayoutRef> QueryFilter for Modified<L> {
     }
 }
 
-impl<L: QueryLayoutRef> QueryFilter for Contains<L> {
+impl<L: for<'a> QueryLayoutRef<'a>> QueryFilter for Contains<L> {
     type Cached = Mask;
     type Columns<'a> = ();
 
@@ -338,17 +338,17 @@ impl<A: QueryFilter> QueryFilter for Not<A> {
 }
 
 /// Source to check if we have modified a specific component before this call.
-pub fn modified<L: QueryLayoutRef>() -> Wrap<Modified<L>> {
+pub fn modified<L: for<'a> QueryLayoutRef<'a>>() -> Wrap<Modified<L>> {
     Wrap::<Modified<L>>(PhantomData)
 }
 
 /// Source to check if we added a specific component before this call.
-pub fn added<L: QueryLayoutRef>() -> Wrap<Added<L>> {
+pub fn added<L: for<'a> QueryLayoutRef<'a>>() -> Wrap<Added<L>> {
     Wrap::<Added<L>>(PhantomData)
 }
 
 /// Source to check if we contain a specific component within the archetype.
-pub fn contains<L: QueryLayoutRef>() -> Wrap<Contains<L>> {
+pub fn contains<L: for<'a> QueryLayoutRef<'a>>() -> Wrap<Contains<L>> {
     Wrap::<Contains<L>>(PhantomData)
 }
 

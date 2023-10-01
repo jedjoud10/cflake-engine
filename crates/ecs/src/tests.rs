@@ -22,6 +22,19 @@ fn cleanup(ecs: &mut Scene) {
     ecs.removed.clear();
 }
 
+
+fn test() {
+    fn consume<T>(a: &T, b: &T) {
+    }
+
+    let mut scene = Scene::default();
+    let entity = scene.insert(Health(0));
+    let entry = scene.entry_mut(entity).unwrap();
+    let layout = entry.as_query::<&Health>().unwrap();
+    let layout2 = entry.as_query::<&Health>().unwrap();
+    consume(layout, layout2)
+}
+
 /*
 #[test]
 fn entries() {

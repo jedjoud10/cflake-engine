@@ -12,29 +12,26 @@ use super::{Always, QueryFilter, Wrap, len};
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lifetime, I don't use them in this query, I only use them in the query iterator.
-pub struct QueryRef<'a: 'b, 'b, 's, L: QueryLayoutRef> {
+pub struct QueryRef<'a, L: QueryLayoutRef<'a>> {
     pub(super) archetypes: Vec<&'a Archetype>,
     pub(super) access: LayoutAccess,
-    pub(super) bitsets: Option<Vec<BitSet<u64>>>,
-    _phantom1: PhantomData<&'b ()>,
-    _phantom2: PhantomData<&'s ()>,
+    //pub(super) bitsets: Option<Vec<BitSet<u64>>>,
     _phantom3: PhantomData<L>,
 }
 
-impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
+impl<'a, L: QueryLayoutRef<'a>> QueryRef<'a, L> {
     // Create a new mut query from the scene for active entities
     pub(crate) fn new(scene: &'a Scene) -> Self {
         let (mask, archetypes, _) = super::archetypes::<L, Always>(scene.archetypes());
         Self {
             archetypes,
-            bitsets: None,
+            //bitsets: None,
             _phantom3: PhantomData,
             access: mask,
-            _phantom1: PhantomData,
-            _phantom2: PhantomData,
         }
     }
 
+    /*
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
     pub(crate) fn new_with_filter<F: QueryFilter>(
         scene: &'a Scene,
@@ -51,10 +48,9 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
             access,
             bitsets: Some(bitsets),
             _phantom3: PhantomData,
-            _phantom1: PhantomData,
-            _phantom2: PhantomData,
         }
     }
+    */
 
     /// Get the access masks that we have calculated.
     pub fn layout_access(&self) -> LayoutAccess {
@@ -63,8 +59,7 @@ impl<'a: 'b, 'b, 's, L: QueryLayoutRef> QueryRef<'a, 'b, 's, L> {
 
     /// Get the number of entries that we will have to iterate through.
     pub fn len(&self) -> usize {
-        todo!()
-        //len(&self.archetypes, &self.bitsets)
+        len(&self.archetypes)
     }
 
     /// Check if the query is empty.

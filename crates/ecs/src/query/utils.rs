@@ -41,8 +41,8 @@ fn apply_mutability_states(
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the mutable query
-pub(super) fn archetypes_mut<L: QueryLayoutMut, F: QueryFilter>(
-    archetypes: &mut ArchetypeSet,
+pub(super) fn archetypes_mut<'a, L: QueryLayoutMut<'a>, F: QueryFilter>(
+    archetypes: &'a mut ArchetypeSet,
 ) -> (LayoutAccess, Vec<&mut Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
@@ -60,8 +60,8 @@ pub(super) fn archetypes_mut<L: QueryLayoutMut, F: QueryFilter>(
 // Given a scene and a specific filter, filter out the archetypes
 // This will also prepare the filter for later by caching required data
 // Only used internally by the immutable query
-pub(super) fn archetypes<L: QueryLayoutRef, F: QueryFilter>(
-    archetypes: &ArchetypeSet,
+pub(super) fn archetypes<'a, L: QueryLayoutRef<'a>, F: QueryFilter>(
+    archetypes: &'a ArchetypeSet,
 ) -> (LayoutAccess, Vec<&Archetype>, F::Cached) {
     let mask = L::reduce(|a, b| a | b);
     let cached = F::prepare();
