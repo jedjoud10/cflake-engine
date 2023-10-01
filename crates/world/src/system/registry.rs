@@ -17,10 +17,6 @@ impl<E: Event> Default for Registry<E> {
 }
 
 impl<E: Event> Registry<E> {
-    /// Sort all the systems stored in the registry using their given injection order
-    pub fn sort(&mut self) {}
-
     /// Execute all the systems that are stored in this registry
-    /// in parallel if possible
     pub fn execute(&mut self, _args: E) {}
 }

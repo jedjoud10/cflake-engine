@@ -26,7 +26,7 @@ impl InputButtonId for &'static str {
             .bindings
             .key_bindings
             .get(self)
-            .map(|key| Button::get(*key, input))
+            .map(|key| Button::get(key.clone(), input))
             .unwrap_or(ButtonState::None)
     }
 }

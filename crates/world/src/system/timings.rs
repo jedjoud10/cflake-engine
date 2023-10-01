@@ -1,20 +1,16 @@
 use std::time::Duration;
 
-/// Number of samples to use for event timings
-pub const EVENT_TIMINGS_SAMPLE_COUNT: usize = 8;
-
 /// Persistent system timings for systems that get called more than one time
+/// This assumes that the samples are sorted before we calculate any of the following methods
 #[derive(Clone, Copy)]
 pub struct SystemTimings {
     samples: [Duration; 8],
-    min: Duration,
-    max: Duration,
 }
 
 impl SystemTimings {
-    // Get the median time
+    /// Get the median time
     pub fn median(&self) -> Duration {
-        todo!()
+        self.samples[3]
     }
 
     /// Get the average time of execution for this system
@@ -25,11 +21,11 @@ impl SystemTimings {
 
     /// Get the minimum time
     pub fn min(&self) -> Duration {
-        self.min
+        self.samples[0]
     }
 
     /// Get the maximum time
     pub fn max(&self) -> Duration {
-        self.max
+        self.samples[7]
     }
 }
