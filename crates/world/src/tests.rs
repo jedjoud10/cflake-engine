@@ -2,22 +2,13 @@ use crate::prelude::*;
 
 // Simple empty system that WILL execute in parallel
 // This will also execute BEFORE SampleSystemB
-struct SampleSystemA;
+fn init(world: &mut World) {
 
-impl System<Init> for SampleSystemA {
-    fn execute(&mut self, view: &mut WorldView) {
-        let resource = view.get_mut::<u32>();
-    }
-
-    fn inject(&mut self) -> InjectionOrder<Init> {
-        InjectionOrder::default()
-            .before::<SampleSystemB>()
-    }
 }
 
-impl ParSystem<Init> for SampleSystemA {
-    fn scheduling(&mut self) -> SystemScheduling {
-        SystemScheduling::default()
+impl Plugin {
+    fn register(systems: &mut Systems) {
+        systems.insert(init);
     }
 }
 

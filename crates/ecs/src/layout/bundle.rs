@@ -57,13 +57,12 @@ impl<B: Clone + Bundle> PrefabBundle for B {
 
 // Implement the bundle for single component
 impl<T: Component> Bundle for T {
+    #[inline]
     fn reduce(lambda: impl FnMut(Mask, Mask) -> Mask) -> Mask {
-        std::iter::once(mask::<T>())
-            .into_iter()
-            .reduce(lambda)
-            .unwrap()
+        mask::<T>()
     }
 
+    #[inline(always)]
     fn is_valid() -> bool {
         true
     }

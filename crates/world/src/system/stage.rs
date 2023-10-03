@@ -7,6 +7,6 @@ use super::System;
 /// but they must write to unique resources that are not being currently read
 /// by other systems
 pub struct Stage<E: Event> {
-    systems: Vec<Box<dyn System<E>>>,
+    systems: Vec<Box<dyn System<Event = E>>>,
     _phantom: PhantomData<E>,
 }

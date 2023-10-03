@@ -1,8 +1,8 @@
 use std::any::Any;
 
 /// A resource is a global data type that will be stored within the world for the duration of the program
-/// Resources can be shared amongst events, thus allowing us to share data between ECS systems
-pub trait Resource: 'static + Sync + Send {
+/// Resources can be shared amongst systems, thus allowing us to share data between ECS systems
+pub trait Resource: 'static {
     /// Convert self to dyn Any
     fn as_any(&self) -> &dyn Any;
 
@@ -24,7 +24,7 @@ pub enum State {
     Stopped,
 }
 
-impl<T: 'static + Sync + Send> Resource for T {
+impl<T: 'static> Resource for T {
     fn as_any(&self) -> &dyn Any {
         self
     }

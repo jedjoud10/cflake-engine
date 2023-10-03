@@ -179,18 +179,6 @@ impl Scene {
         self.prefabs.insert(name, (boxed, mask));
     }
 
-    /*
-    /// Fetch an entry for a corresponding entity with the given name
-    pub fn find_by_name_mut(&mut self, name: &str) -> Option<EntryMut> {
-        todo!()
-    }
-
-    /// Fetch an entry for a corresponding entity with the given tag
-    pub fn find_by_tag_mut(&mut self, tag: &str) -> Option<EntryMut> {
-        todo!()
-    }
-    */
-
     /// Get the internally stored prefab hashmap.
     pub fn prefabs(&self) -> &AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)> {
         &self.prefabs
