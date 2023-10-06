@@ -10,6 +10,7 @@ app = { path = "crates/app" }
 
 [workspace]
 members = [
+    "crates/assets",
     "crates/app",
     "crates/world",
     "crates/graphics",

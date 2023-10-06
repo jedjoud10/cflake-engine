@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 winit = "0.29.1-beta"
 spin_sleep = "1.1.0"
+pollster = "0.2.5"
 mimalloc = "0.1.28"
+assets = { path = "../assets" }
 graphics = { path = "../graphics" }
 world = { path = "../world" }
 input = { path = "../input" }

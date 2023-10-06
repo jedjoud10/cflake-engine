@@ -53,7 +53,7 @@ impl App {
         let el = self.el;
         let mut sleeper = super::app_utils::init_spin_sleeper(self.window.limit);
 
-        let test = graphics::context::initialize_phobos_context(&el);
+        let (window, mut graphics) = graphics::context::initialize_phobos_context(&el);
 
         el.run(move |event, _, cf| match event {
             winit::event::Event::WindowEvent {
@@ -67,7 +67,7 @@ impl App {
             } => {}
 
             winit::event::Event::AboutToWait => {
-                //window.request_redraw();
+                window.request_redraw();
             }
 
             winit::event::Event::RedrawRequested(_id) => {

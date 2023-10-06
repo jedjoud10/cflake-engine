@@ -31,11 +31,10 @@ pub fn initialize_phobos_context(el: &EventLoop<()>) -> (winit::window::Window, 
         surface_format: None,
         present_mode: None,
         window: &window,
-    }))
-    .surface(None);
+    }));
 
     let (
-        init,
+        instance,
         physical_device,
         device,
         allocator,
@@ -47,10 +46,14 @@ pub fn initialize_phobos_context(el: &EventLoop<()>) -> (winit::window::Window, 
     ) = phobos::init(&settings.build()).unwrap();
     
     (window, Graphics {
-        physical_device: Arc::new(physical_device),
+        instance,
+        physical_device,
         device,
         allocator,
         pool,
         exec,
+        debug_messenger,
+        frame,
+        surface,
     })
 }
