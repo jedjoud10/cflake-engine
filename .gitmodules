@@ -1,3 +1,4 @@
 [submodule "crates/phobos-rs"]
 	path = crates/phobos-rs
 	url = https://github.com/jedjoud10/phobos-rs
+	branch = cflake

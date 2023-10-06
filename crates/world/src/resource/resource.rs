@@ -8,6 +8,9 @@ pub trait Resource: 'static {
 
     /// Convert self to &mut dyn Any
     fn as_any_mut(&mut self) -> &mut dyn Any;
+
+    /// Convert a Boxed resource into a Boxed trait object of the Any trait
+    fn into_any(self: Box<Self>) -> Box<dyn Any>;
 }
 
 /// This is the main world state that the user can manually update to force the engine to stop running
@@ -30,6 +33,10 @@ impl<T: 'static> Resource for T {
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn into_any(self: Box<Self>) -> Box<dyn Any> {
         self
     }
 }

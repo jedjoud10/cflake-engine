@@ -10,7 +10,7 @@ world = { path = "../world" }
 utils = { path = "../utils" }
 
 # Phobos and Window creation
-phobos = { git = "https://github.com/jedjoud10/phobos-rs" }
+phobos = { path = "../phobos-rs" }
 spirq = "0.6.3"
 spirv = "0.2.0"
 winit = "0.29.1-beta"

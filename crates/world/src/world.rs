@@ -1,46 +1,64 @@
-use crate::{resource::Resource, system::System};
+use crate::{resource::{Resource, Entry}, system::System};
 use ahash::AHashMap;
 use atomic_refcell::{AtomicRefCell, AtomicRef, AtomicRefMut};
-use std::{any::TypeId, sync::Arc, marker::PhantomData};
+use std::{any::TypeId, sync::Arc, marker::PhantomData, cell::{RefCell, Ref, RefMut}};
 
 /// A world is a container for resources that are stored persistently throughout the game lifetime
-pub struct World(pub(crate) AHashMap<TypeId, Arc<AtomicRefCell<Box<dyn Resource>>>>);
+#[derive(Default)]
+pub struct World(pub(crate) AHashMap<TypeId, RefCell<Box<dyn Resource>>>);
 
-/// A WorldView allows you to access immutable/mutable resources from the world in parallel with other systems
-/// You can access resources that you are allowed to access given by your systems' "access" mask
-/// If you try accessing a resource that you are not allowed to, the system will panic
-pub struct WorldView<'a> {
-    resources: &'a AHashMap<TypeId, Arc<AtomicRefCell<Box<dyn Resource>>>>,
-}
-
-impl WorldView<'_> {
-    /// Get a resource immutably
-    /// Panics if the SystemData does not allow it
-    pub fn get<T: Resource>(&self) -> AtomicRef<T> {
-        todo!()
-    }
-    
-    /// Get a resource mutably
-    /// Panics if the SystemData does not allow it
-    pub fn get_mut<T: Resource>(&self) -> AtomicRefMut<T> {
-        todo!()
+impl World {
+    // Insert a new resource into the world
+    pub fn insert<R: Resource>(&mut self, resource: R) {
+        let id = TypeId::of::<R>();
+        let returned = self.0.insert(id, RefCell::new(Box::new(resource)));
+        /*
+        if returned.is_some() {
+            let name = pretty_type_name::pretty_type_name::<R>();
+            log::warn!("Replaced resource {} since it was already present", name);
+        }
+        */
     }
 
-    /// Add a resource to the world
-    /// Internally stored in a command buffer first
-    /// Panics if the SystemData does not allow it
-    pub fn insert<T: Resource>(&mut self, resource: T) {
-        todo!()
+    // Get an immutable reference (read guard) to a resource
+    pub fn get<R: Resource>(&self) -> Ref<R> {
+        let cell = self
+            .0
+            .get(&TypeId::of::<R>())
+            .unwrap();
+        Ref::map(cell.borrow(), |x| x.as_any().downcast_ref::<R>().unwrap())
     }
 
-    /// Create an entry for a resource to initialize it
-    /// Internally stored in a command buffer first
-    /// Panics if the SystemData does not allow it
-    
-    /// Remove a resource from the world
-    /// Panics if the SystemData does not allow it
-    fn remove<T: Resource>(&mut self) -> T {
-        todo!()
+    // Get a mutable reference (write guard) to a resource
+    pub fn get_mut<R: Resource>(&self) -> RefMut<R> {
+        let cell = self
+            .0
+            .get(&TypeId::of::<R>())
+            .unwrap();
+        RefMut::map(cell.borrow_mut(), |x| x.as_any_mut().downcast_mut::<R>().unwrap())
+    }
+
+    // Get an entry for a specific resource
+    pub fn entry<R: Resource>(&mut self) -> Entry<'_, R> {
+        Entry {
+            world: self,
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    // Remove a specific resource from the world
+    pub fn remove<R: Resource>(&mut self) -> Option<R> {
+        self.0.remove(&TypeId::of::<R>()).map(|cell| {
+            let boxed = cell.into_inner();
+            let any = boxed.into_any();
+            let downcasted = any.downcast::<R>().unwrap();
+            *downcasted
+        })
+    }
+
+    // Check if a resource is present in the world
+    pub fn contains<R: Resource>(&self) -> bool {
+        self.0.contains_key(&TypeId::of::<R>())
     }
 }
 

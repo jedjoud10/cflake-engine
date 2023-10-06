@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+/*
 // Simple empty system that WILL execute in parallel
 // This will also execute BEFORE SampleSystemB
 fn init(world: &mut World) {
@@ -20,3 +21,4 @@ impl System<Init> for SampleSystemB {
         let resource = view.get_mut::<u32>();
     }
 }
+*/

@@ -1,8 +1,9 @@
 #![allow(ambiguous_glob_reexports)]
 
 pub mod app;
-mod logger;
 pub use ecs;
+pub use graphics;
+mod app_utils;
 pub use input;
 pub use utils;
 
@@ -10,6 +11,7 @@ pub use utils;
 pub mod prelude {
     pub use crate::app::*;
     pub use crate::ecs::prelude::*;
+    pub use crate::graphics::prelude::*;
     pub use crate::input::prelude::*;
     pub use crate::utils::prelude::*;
 }
