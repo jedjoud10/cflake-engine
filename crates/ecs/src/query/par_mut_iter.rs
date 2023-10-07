@@ -12,6 +12,7 @@ use crate::{
     scene::Scene,
 };
 
+/*
 /// Mutable parallel iterator that makes use of rayon's thread pool for multithreading
 /// This must be able to "split" off 
 pub struct QueryMutParIter<'b, L: QueryLayoutMut> {
@@ -61,3 +62,4 @@ impl<'b, L: QueryLayoutMut + Sync + Send + 'b> IntoParallelIterator for QueryMut
         todo!()
     }
 }
+*/

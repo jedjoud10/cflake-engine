@@ -1,29 +1,19 @@
+use std::any::TypeId;
+
 use super::InjectionOrder;
-use crate::prelude::{Event, World, WorldView};
+use crate::{prelude::{Event, World}, resource::Resource};
 
 /// A system is executed whenever something interesting happens
 /// like an update event, tick event, or window event
-/// Systems could be executed in parallel by making use of the "resources" type
-/// to handle scheduling automatically
-pub trait System<E: Event>: 'static + Send + Sync {
-    /// List of resources that we can access in the world
-    fn access(&mut self) -> Vec<()>;
-
-    /// Execute the system with the appropriate event context
-    fn execute(&mut self, view: &mut WorldView);
-
-    /// Handle the order of system execution compared to other systems
-    fn inject(&mut self) -> InjectionOrder<E>;
+/// Events are implemented for all function types like raw fns and closures,
+/// but nothing would stop you from implementing it yourself on your own type
+pub trait System<E: Event>: 'static {
+    /// Execute the system with the given event type
+    fn execute(&mut self, world: &mut World, e: &E);
 }
 
-/*
-/// A sync system is like a normal system, but it is executed sequentially, on the main thread
-/// The good thing about sync systems is that they allow you to add/remove resources from the world, s
-pub trait SyncSystem<E: Event> {
-    /// Execute the barrier with the appropriate world
-    fn execute(&mut self, world: &mut TryWorld);
-
-    /// Handle the order of system execution compared to other systems
-    fn inject(&mut self) -> InjectionOrder<E>;
+impl<E: Event, F: FnMut(&mut World, &E) + 'static> System<E> for F {
+    fn execute(&mut self, world: &mut World, e: &E) {
+        (self)(world, e);
+    }
 }
-*/

@@ -7,10 +7,10 @@ use std::{
 
 use super::Trackers;
 
-// A weak handle is just like a normal handle, although it does not require that its
-// owned element stays alive for the duration of the handle
-// This can be used to "reserve" spots for non-initialized values and initialize them afterwards or
-// for faillible fetching of values
+/// A weak handle is just like a normal handle, although it does not require that its
+/// owned element stays alive for the duration of the handle
+/// This can be used to "reserve" spots for non-initialized values and initialize them afterwards or
+/// for faillible fetching of values
 pub struct Weak<T: 'static> {
     pub(super) _phantom: PhantomData<T>,
     pub(super) trackers: Arc<Trackers>,
@@ -38,12 +38,12 @@ impl<T: 'static> Ord for Weak<T> {
 }
 
 impl<T: 'static> Weak<T> {
-    // Check if the owned value is still alive in the corresponding storage
+    /// Check if the owned value is still alive in the corresponding storage
     pub fn valid(&self) -> bool {
         self.count() > 0
     }
 
-    // Try to upcast this weak handle to a strong one if it's value is still alive
+    /// Try to upcast this weak handle to a strong one if it's value is still alive
     pub fn upgrade(self) -> Option<Handle<T>> {
         self.valid().then(|| unsafe {
             self.increment_count();
@@ -55,7 +55,7 @@ impl<T: 'static> Weak<T> {
         })
     }
 
-    // Get the current reference count for this handle
+    /// Get the current reference count for this handle
     pub fn count(&self) -> u32 {
         self.trackers
             .counters
@@ -65,12 +65,12 @@ impl<T: 'static> Weak<T> {
             .load(Ordering::Relaxed)
     }
 
-    // Get the raw key FFI for this weak handle
+    /// Get the raw key FFI for this weak handle
     pub fn as_raw(&self) -> u64 {
         slotmap::KeyData::as_ffi(self.key.data())
     }
 
-    // Overwrite the current reference counted value directly
+    /// Overwrite the current reference counted value directly
     pub unsafe fn set_count(&self, count: u32) {
         let borrowed = self.trackers.counters.read();
         borrowed
@@ -79,7 +79,7 @@ impl<T: 'static> Weak<T> {
             .store(count, Ordering::Relaxed);
     }
 
-    // This will manually incremememnt the underlying reference counter
+    /// This will manually incremememnt the underlying reference counter
     pub unsafe fn increment_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
         borrowed
@@ -88,7 +88,7 @@ impl<T: 'static> Weak<T> {
             .fetch_add(1, Ordering::Relaxed)
     }
 
-    // This will manually decrement the underlying reference counter
+    /// This will manually decrement the underlying reference counter
     pub unsafe fn decrement_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
         borrowed

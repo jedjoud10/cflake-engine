@@ -10,7 +10,11 @@ app = { path = "crates/app" }
 
 [workspace]
 members = [
+    "crates/assets",
     "crates/app",
+    "crates/world",
+    "crates/graphics",
+    "crates/phobos-rs",
     "crates/utils",
     "crates/input",    
     "crates/ecs",  

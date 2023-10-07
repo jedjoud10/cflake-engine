@@ -5,8 +5,8 @@ use std::{
     sync::{atomic::Ordering, Arc},
 };
 
-// A handle is what keeps the values within Storage<T> alive
-// Fetching data using this type of Handle is always successful
+/// A handle is what keeps the values within Storage<T> alive
+/// Fetching data using this type of Handle is always successful
 pub struct Handle<T: 'static> {
     pub(super) _phantom: PhantomData<T>,
     pub(super) trackers: Arc<Trackers>,
@@ -34,7 +34,7 @@ impl<T: 'static> Ord for Handle<T> {
 impl<T: 'static> Eq for Handle<T> {}
 
 impl<T: 'static> Handle<T> {
-    // Get the current reference count for this handle
+    /// Get the current reference count for this handle
     pub fn count(&self) -> u32 {
         self.trackers
             .counters
@@ -44,12 +44,12 @@ impl<T: 'static> Handle<T> {
             .load(Ordering::Relaxed)
     }
 
-    // Get the raw key FFI for this weak handle
+    /// Get the raw key FFI for this weak handle
     pub fn as_raw(&self) -> u64 {
         slotmap::KeyData::as_ffi(self.key.data())
     }
 
-    // Overwrite the current reference counted value directly
+    /// Overwrite the current reference counted value directly
     pub unsafe fn set_count(&self, count: u32) {
         let borrowed = self.trackers.counters.read();
         borrowed
@@ -58,7 +58,7 @@ impl<T: 'static> Handle<T> {
             .store(count, Ordering::Relaxed);
     }
 
-    // This will manually incremememnt the underlying reference counter
+    /// This will manually incremememnt the underlying reference counter
     pub unsafe fn increment_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
         borrowed
@@ -67,7 +67,7 @@ impl<T: 'static> Handle<T> {
             .fetch_add(1, Ordering::Relaxed)
     }
 
-    // This will manually decrement the underlying reference counter
+    /// This will manually decrement the underlying reference counter
     pub unsafe fn decrement_count(&self) -> u32 {
         let borrowed = self.trackers.counters.read();
         borrowed

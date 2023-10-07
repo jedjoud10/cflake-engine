@@ -44,7 +44,7 @@ impl ButtonState {
 }
 
 /// Keyboard button / key
-pub type KeyboardButton = winit::event::VirtualKeyCode;
+pub type KeyboardButton = winit::keyboard::Key;
 
 /// Mouse button / key
 pub type MouseButton = winit::event::MouseButton;
@@ -53,7 +53,7 @@ pub type MouseButton = winit::event::MouseButton;
 pub type GamepadButton = gilrs::Button;
 
 /// A button that might come from the keyboard, mouse, or a gamepad
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq, Clone)]
 #[repr(u32)]
 pub enum Button {
     /// Any sort of keyboard button

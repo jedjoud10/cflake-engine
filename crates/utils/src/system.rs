@@ -2,7 +2,7 @@ use std::{
     sync::mpsc,
 };
 
-// Utils resources that is added to the world at the very start
+/// Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
     pub author_name: String,
     pub app_name: String,

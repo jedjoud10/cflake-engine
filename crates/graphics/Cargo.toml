@@ -1,0 +1,30 @@
+[package]
+name = "graphics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+world = { path = "../world" }
+utils = { path = "../utils" }
+
+# Phobos and Window creation
+phobos = { path = "../phobos-rs" }
+spirq = "0.6.3"
+spirv = "0.2.0"
+winit = "0.29.1-beta"
+pollster = "0.2.5"
+shaderc = "0.8.2"
+
+# Utils and helpers
+half = { version = "2.1.0", features = ["bytemuck", "num-traits"] }
+image = "0.24.5"
+
+# Common utils
+log = { workspace = true }
+thiserror = { workspace = true }
+ahash = { workspace = true } 
+vek = { workspace = true, features = ["bytemuck"] }
+parking_lot = { workspace = true }
+lazy_static = { workspace = true }

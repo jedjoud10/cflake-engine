@@ -12,31 +12,28 @@ use crate::{
 
 /// This is a query that will be fetched from the main scene that we can use to get components out of entries with a specific layout.
 /// Even though I define the 'it, 'b, and 's lfietimes, I don't use them in this query, I only use them in the query iterator.
-pub struct QueryMut<'a: 'b, 'b, L: QueryLayoutMut> {
-    pub(super) archetypes: Vec<&'a mut Archetype>,
+pub struct QueryMut<'s, L: QueryLayoutMut<'s>> {
+    pub(super) archetypes: Vec<&'s mut Archetype>,
     pub(super) access: LayoutAccess,
-    pub(super) bitsets: Option<Vec<BitSet<u64>>>,
-    _phantom1: PhantomData<&'b ()>,
-    _phantom3: PhantomData<L>,
+    _phantom: PhantomData<&'s L>,
 }
 
-impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
+impl<'s, L: QueryLayoutMut<'s>> QueryMut<'s, L> {
     // Create a new mut query from the scene
-    pub(crate) fn new(scene: &'a mut Scene) -> Self {
+    pub(crate) fn new(scene: &'s mut Scene) -> Self {
         let (access, archetypes, _) = super::archetypes_mut::<L, Always>(scene.archetypes_mut());
 
         Self {
             archetypes,
             access,
-            bitsets: None,
-            _phantom1: PhantomData,
-            _phantom3: PhantomData,
+            _phantom: PhantomData,
         }
     }
 
+    /*
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
     pub(crate) fn new_with_filter<F: QueryFilter>(
-        scene: &'a mut Scene,
+        scene: &'s mut Scene,
         _: Wrap<F>,
         ticked: bool,
     ) -> Self {
@@ -53,6 +50,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
             _phantom3: PhantomData,
         }
     }
+    */
 
     /// Get the access masks that we have calculated.
     pub fn layout_access(&self) -> LayoutAccess {
@@ -61,7 +59,7 @@ impl<'a: 'b, 'b, L: QueryLayoutMut> QueryMut<'a, 'b, L> {
 
     /// Get the number of entries that we will have to iterate through.
     pub fn len(&self) -> usize {
-        len(&self.archetypes, &self.bitsets)
+        len(&self.archetypes)
     }
 
     /// Check if the query is empty.

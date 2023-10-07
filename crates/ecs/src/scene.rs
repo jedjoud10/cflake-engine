@@ -179,18 +179,6 @@ impl Scene {
         self.prefabs.insert(name, (boxed, mask));
     }
 
-    /*
-    /// Fetch an entry for a corresponding entity with the given name
-    pub fn find_by_name_mut(&mut self, name: &str) -> Option<EntryMut> {
-        todo!()
-    }
-
-    /// Fetch an entry for a corresponding entity with the given tag
-    pub fn find_by_tag_mut(&mut self, tag: &str) -> Option<EntryMut> {
-        todo!()
-    }
-    */
-
     /// Get the internally stored prefab hashmap.
     pub fn prefabs(&self) -> &AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)> {
         &self.prefabs
@@ -232,7 +220,7 @@ impl Scene {
     }
 
     /// Create a new mutable [query](QueryLayoutMut) from this scene (with no filter).
-    pub fn query_mut<'a, L: QueryLayoutMut>(&'a mut self) -> QueryMut<'a, '_, L> {
+    pub fn query_mut<'a, L: QueryLayoutMut<'a>>(&'a mut self) -> QueryMut<'a, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
@@ -240,23 +228,26 @@ impl Scene {
         QueryMut::new(self)
     }
 
+    /*
     /// Create a new mutable [query](QueryLayoutMut) from this scene using a [filter](QueryFilter).
-    pub fn query_mut_with<'a, L: QueryLayoutMut>(
+    pub fn query_mut_with<'a, L: QueryLayoutMut<'a>>(
         &'a mut self,
         filter: Wrap<impl QueryFilter>,
-    ) -> QueryMut<'a, '_, L> {
+    ) -> QueryMut<'a, L> {
         assert!(
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
         );
         QueryMut::new_with_filter(self, filter, self.ticked)
     }
+    */
 
     /// Create a new immutable [query](QueryLayoutRef) from this scene (with no filter).
-    pub fn query<'a, L: QueryLayoutRef>(&'a self) -> QueryRef<'a, '_, '_, L> {
+    pub fn query<'a, L: QueryLayoutRef<'a>>(&'a self) -> QueryRef<'a, L> {
         QueryRef::new(self)
     }
 
+    /*
     /// Create a new immutable [query](QueryLayoutRef) from this scene using a [filter](QueryFilter).
     pub fn query_with<'a, L: QueryLayoutRef>(
         &'a self,
@@ -264,18 +255,7 @@ impl Scene {
     ) -> QueryRef<'a, '_, '_, L> {
         QueryRef::new_with_filter(self, filter, self.ticked)
     }
-
-    /// Find the a layout ref (if it's the only one that exists in the scene).
-    pub fn find<'a, L: QueryLayoutRef>(&'a self) -> Option<L> {
-        let mut iterator = self.query::<L>().into_iter().fuse();
-        iterator.next().xor(iterator.next())
-    }
-
-    /// Find the a layout mut (if it's the only one that exists in the scene).
-    pub fn find_mut<'a, L: QueryLayoutMut>(&'a mut self) -> Option<L> {
-        let mut iterator = self.query_mut::<L>().into_iter().fuse();
-        iterator.next().xor(iterator.next())
-    }
+    */
 }
 
 /*

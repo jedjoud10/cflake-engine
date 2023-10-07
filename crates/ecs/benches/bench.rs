@@ -21,7 +21,6 @@ const MIN_BATCH: u64 = 1;
 const MAX_BATCH: u64 = 20;
 
 fn benchmark(c: &mut Criterion) {
-    /*
     let mut group = c.benchmark_group("Insertion (1 comp)");
 
     for x in MIN_BATCH..MAX_BATCH {
@@ -76,7 +75,6 @@ fn benchmark(c: &mut Criterion) {
     }
 
     drop(group);
-    */
     let mut group = c.benchmark_group("Query (2 comp + matrix calc)");
 
     for x in MIN_BATCH..MAX_BATCH {
@@ -113,7 +111,6 @@ fn benchmark(c: &mut Criterion) {
             }
         );
 
-        /*
         // Single threaded SoA
         group.bench_function(
             BenchmarkId::new("Vec SoA Single-threaded", count),
@@ -137,7 +134,6 @@ fn benchmark(c: &mut Criterion) {
                 });
             }
         );
-        */
 
         // Multithreaded threaded ECS
         group.bench_function(
@@ -153,7 +149,6 @@ fn benchmark(c: &mut Criterion) {
             }
         );
 
-        /*
         // Multithreaded threaded SoA
         group.bench_function(
             BenchmarkId::new("Vec SoA Mutli-threaded", count),
@@ -177,7 +172,6 @@ fn benchmark(c: &mut Criterion) {
                 });
             }
         );
-        */
     }
 }
 
