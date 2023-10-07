@@ -20,8 +20,7 @@ pub(super) struct Trackers {
     pub(super) cleaned: AtomicBool,
 }
 
-// Strongly typed utility cache that stores some values that can be fetched by a ``Handle``
-//
+/// Strongly typed utility cache that stores some values that can be fetched by a ``Handle``
 pub struct Storage<T: 'static> {
     map: SlotMap<DefaultKey, Option<T>>,
     trackers: Arc<Trackers>,
@@ -41,7 +40,7 @@ impl<T: 'static> Default for Storage<T> {
 }
 
 impl<T: 'static> Storage<T> {
-    // Insert a new value into the storage, returning a strong handle
+    /// Insert a new value into the storage, returning a strong handle
     pub fn insert(&mut self, value: T) -> Handle<T> {
         self.clean();
         let key = self.map.insert(Some(value));
@@ -57,7 +56,7 @@ impl<T: 'static> Storage<T> {
         }
     }
 
-    // Reserve a new storage value that might be inserted later
+    /// Reserve a new storage value that might be inserted later
     pub fn reserve(&mut self) -> Weak<T> {
         let key = self.map.insert(None);
         self.trackers
@@ -72,46 +71,46 @@ impl<T: 'static> Storage<T> {
         }
     }
 
-    // Fill a reserved spot by a weak handle
+    /// Fill a reserved spot by a weak handle
     pub fn shove(&mut self, weak: &Weak<T>, value: T) {
         *self.map.get_mut(weak.key).unwrap() = Some(value);
     }
 
-    // Get an immutable reference to a value using a strong handle
+    /// Get an immutable reference to a value using a strong handle
     pub fn get(&self, handle: &Handle<T>) -> &T {
         self.map.get(handle.key).unwrap().as_ref().unwrap()
     }
 
-    // Try to get an immutable reference to a value using a weak handle
+    /// Try to get an immutable reference to a value using a weak handle
     pub fn try_get(&self, weak: &Weak<T>) -> Option<&T> {
         let slot = self.map.get(weak.key)?;
         let initialized = slot.as_ref()?;
         Some(initialized)
     }
 
-    // Get a mutable reference to a value using a strong handle
+    /// Get a mutable reference to a value using a strong handle
     pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         self.map.get_mut(handle.key).unwrap().as_mut().unwrap()
     }
 
-    // Try to get a mutable reference to a value using a weak handle
+    /// Try to get a mutable reference to a value using a weak handle
     pub fn try_get_mut(&mut self, weak: &Weak<T>) -> Option<&mut T> {
         let slot = self.map.get_mut(weak.key)?;
         let initialized = slot.as_mut()?;
         Some(initialized)
     }
 
-    // Get an immutable iterator over all the values in the storage
+    /// Get an immutable iterator over all the values in the storage
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.map.iter().filter_map(|(_, x)| x.as_ref())
     }
 
-    // Get a mutable iterator over all the values in the storage
+    /// Get a mutable iterator over all the values in the storage
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.map.iter_mut().filter_map(|(_, x)| x.as_mut())
     }
 
-    // Clean the storage of any values that do not have any strong handles any more
+    /// Clean the storage of any values that do not have any strong handles any more
     pub fn clean(&mut self) {
         if !self.trackers.cleaned.load(Ordering::Relaxed) {
             self.trackers.cleaned.store(true, Ordering::Relaxed);

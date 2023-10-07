@@ -55,7 +55,7 @@ impl App {
 
         let (window, mut graphics) = graphics::context::initialize_phobos_context(&el);
 
-        el.run(move |event, _, cf| match event {
+        el.run(move |event, target, cf| match event {
             winit::event::Event::WindowEvent {
                 window_id: _,
                 event: _,
@@ -72,7 +72,6 @@ impl App {
 
             winit::event::Event::RedrawRequested(_id) => {
                 sleeper.loop_start();
-
                 sleeper.loop_sleep();
             }
 

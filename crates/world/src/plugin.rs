@@ -5,4 +5,4 @@ use crate::system::Registry;
 pub trait Plugin {
     /// Register the plugin's resources and systems
     fn register();
-}
+} 
