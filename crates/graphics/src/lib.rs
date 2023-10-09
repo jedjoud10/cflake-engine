@@ -5,9 +5,13 @@
 /// Contains core information and resources used for context initialization
 pub mod context;
 
+/// Main graphics plugin that will register the phobos context
+pub mod plugin;
+
 /// Re-exports everything
 pub mod prelude {
     pub use crate::context::*;
+    pub use phobos::prelude::*;
 }
 
 pub use phobos;

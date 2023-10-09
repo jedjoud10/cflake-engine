@@ -2,12 +2,14 @@
 mod tests {
     use crate::prelude::*;
 
+    const TEST_FILE_CONTENTS: &str = "this is a test file. 1234567890";
+
     #[test]
     fn read() {
         let loader = Assets::new();
         asset!(loader, "test/text.txt", "/src/assets/");
         let string = loader.load::<String>("test/text.txt");
-        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
+        assert_eq!(string.unwrap(), TEST_FILE_CONTENTS);
     }
 
     #[test]
@@ -31,7 +33,7 @@ mod tests {
         asset!(loader, "test/text.txt", "/src/assets/");
         let mut strings = loader.load_from_iter::<String>(["test/text.txt"]);
         let string = strings.pop().unwrap();
-        assert_eq!(string.unwrap(), "this is a test file\n1234567890");
+        assert_eq!(string.unwrap(), TEST_FILE_CONTENTS);
     }
 
     #[test]
@@ -51,7 +53,7 @@ mod tests {
         asset!(loader, "test/text.txt", "/src/assets/");
         let handle = loader.async_load::<String>("test/text.txt");
         let string = loader.wait(handle).unwrap();
-        assert_eq!(string, "this is a test file\n1234567890");
+        assert_eq!(string, TEST_FILE_CONTENTS);
     }
 
     #[test]
@@ -74,7 +76,7 @@ mod tests {
         let mut vec = loader.wait_from_iter([handle]);
         let last = vec.pop().unwrap();
         assert!(last.is_ok());
-        assert_eq!(last.unwrap(), "this is a test file\n1234567890");
+        assert_eq!(last.unwrap(), TEST_FILE_CONTENTS);
     }
 
     #[test]
@@ -117,6 +119,6 @@ mod tests {
         asset!(loader, "test/text.txt", "/src/assets/");
         let context = 69u32;
         let string = loader.load::<Contextual>(("test/text.txt", &context));
-        assert_eq!(string.unwrap().0, "this is a test file\n1234567890");
+        assert_eq!(string.unwrap().0, TEST_FILE_CONTENTS);
     }
 }

@@ -8,8 +8,8 @@ pub mod bitset;
 /// Storage utitilies with handles and weak handles
 pub mod storage;
 
-/// TODO
-pub mod system;
+/// Main plugin that will create the file logger and time manager
+pub mod plugin;
 
 mod tests;
 
@@ -20,7 +20,6 @@ pub mod time;
 pub mod prelude {
     pub use crate::bitset::*;
     pub use crate::storage::*;
-    pub use crate::system::*;
     pub use crate::tests::*;
     pub use crate::time::*;
     pub use log;

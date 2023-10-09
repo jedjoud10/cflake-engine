@@ -43,17 +43,17 @@ impl Event for WindowEvent {}
 impl Event for DeviceEvent {}
 
 /// Initialization event that occurs during initialization
-pub struct Init(());
+pub struct Init;
 impl Event for Init {}
 
 /// Update event that occurs every frame
-pub struct Update(());
+pub struct Update;
 impl Event for Update {}
 
 /// Shutdown event that only occurs when the engine is shutting down
-pub struct Shutdown(());
+pub struct Shutdown;
 impl Event for Shutdown {}
 
 /// Tick event that occurs a specific amount per second
-pub struct Tick(());
+pub struct Tick;
 impl Event for Tick {}

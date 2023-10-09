@@ -21,11 +21,11 @@ impl<'a, R: Resource> Entry<'a, R> {
     /// If the resource is missing, this will call the given function and insert the resource into the world
     pub fn or_insert_with<F: FnOnce(&mut World) -> R>(self, default: F) -> RefMut<'a, R> {
         if self.world.contains::<R>() {
-            self.world.get_mut::<R>()
+            self.world.get_mut::<R>().unwrap()
         } else {
             let resource = default(self.world);
             self.world.insert(resource);
-            self.world.get_mut::<R>()
+            self.world.get_mut::<R>().unwrap()
         }
     }
 

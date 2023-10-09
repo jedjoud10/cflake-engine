@@ -66,7 +66,7 @@ fn console_logger(
 pub(crate) fn init_logger(mut logging_level: LevelFilter, sender: mpsc::Sender<String>) {
     use fern::colors::*;
 
-    let overwrite = std::env::var("CFLAKE_LOGGING_TRACE")
+    let overwrite = std::env::var("CFLAKE_LOGGING_LEVEL")
         .as_deref()
         .ok()
         .and_then(|x| <LevelFilter as FromStr>::from_str(x).ok());

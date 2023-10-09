@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
 use super::InjectionOrder;
-use crate::{prelude::{Event, World}, resource::Resource};
+use crate::{prelude::{Event, World}, resource::Resource, events::Init};
 
 /// A system is executed whenever something interesting happens
 /// like an update event, tick event, or window event

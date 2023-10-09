@@ -1,6 +1,9 @@
-/*
-// Initialize a load and add it to the world
-fn init(world: &mut World) {
+use world::{prelude::Init, world::World, system::Registries};
+use crate::prelude::{Assets, asset};
+
+
+/// Initialize a loader and add it to the world
+pub fn init(world: &mut World, _: &Init) {
     let loader = Assets::new();
 
     macro_rules! internal {
@@ -73,10 +76,7 @@ fn init(world: &mut World) {
     world.insert(loader);
 }
 
-// This system will add the asset loader resource into the world and automatically pre-load the default assets as well
-// This system will also insert the GlobalPaths resource into the world
-
-pub fn system(system: &mut System) {
-    system.insert_init(init).before(user);
+/// This plugin will add the asset loader resource into the world and automatically pre-load the default assets as well
+pub fn plugin(registries: &mut Registries) {
+    registries.init.insert(init);
 }
-*/

@@ -6,9 +6,11 @@ pub use graphics;
 mod app_utils;
 pub use input;
 pub use utils;
+pub use world;
 
 /// Prelude that re-exports most of the types and interfaces used within cFlake engine
 pub mod prelude {
+    pub use crate::world::prelude::*;
     pub use crate::app::*;
     pub use crate::ecs::prelude::*;
     pub use crate::graphics::prelude::*;

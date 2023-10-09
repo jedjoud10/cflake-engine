@@ -1,6 +1,10 @@
 use app::prelude::*;
 
 fn main() {
-    let app = App::new().unwrap()
+    App::new()
+        .insert_init(init)
         .execute().unwrap();
+}
+
+fn init(world: &mut World, _: &Init) {
 }

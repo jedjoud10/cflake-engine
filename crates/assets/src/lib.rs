@@ -17,8 +17,8 @@ pub mod loader;
 /// Macros for defining assets and their paths
 pub mod macros;
 
-/// TODO: System management
-pub mod system;
+/// Main asset loading system
+pub mod plugin;
 
 mod tests;
 
@@ -28,6 +28,6 @@ pub mod prelude {
     pub use crate::error::*;
     pub use crate::input::*;
     pub use crate::loader::*;
-    pub use crate::system::*;
+    pub use crate::plugin::*;
     pub use crate::macros::asset;
 }

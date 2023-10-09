@@ -4,10 +4,19 @@ use std::{
 
 /// Utils resources that is added to the world at the very start
 pub struct UtilsSettings {
+    /// Name of the author (for the log file)
     pub author_name: String,
+
+    /// Name of the app (for the log file)
     pub app_name: String,
+
+    /// Tick rate per second
     pub tick_rate: u32,
+
+    /// Max number of ticks allowed in one frame
     pub tick_rate_max: u32,
+
+    /// Optional log receiver for the log file
     pub log_receiver: Option<mpsc::Receiver<String>>,
 }
 
@@ -134,20 +143,5 @@ pub fn time(system: &mut System) {
             time.ticks_to_execute = None;
         })
         .before(user);
-}
-
-// Add the event cleaner system
-pub fn per_frame_event_clean(system: &mut System) {
-    system
-        .insert_update(|world: &mut World| {
-            if let Some(cleaner) = crate::PER_FRAME_EVENTS_CACHE_CLEANER.get() {
-                let locked = cleaner.lock();
-
-                for (_, callback) in locked.iter() {
-                    callback(world)
-                }
-            }
-        })
-        .after(post_user);
 }
 */

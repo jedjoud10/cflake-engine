@@ -1,6 +1,5 @@
 mod graphics;
 mod window;
-use std::sync::Arc;
 
 pub use graphics::*;
 use phobos::{AppBuilder, GPURequirements, SurfaceSettings, QueueRequest, QueueType};
@@ -8,9 +7,9 @@ pub use window::*;
 use winit::{window::WindowBuilder, event_loop::EventLoop};
 
 /// Create a graphics context and winit window
-pub fn initialize_phobos_context(el: &EventLoop<()>) -> (winit::window::Window, Graphics) {
+pub fn initialize_phobos_context(el: &EventLoop<()>, settings: WindowSettings) -> (winit::window::Window, Graphics) {
     let window = WindowBuilder::new()
-        .with_title("a")
+        .with_title(settings.title)
         .build(&el)
         .unwrap();
 
@@ -29,7 +28,7 @@ pub fn initialize_phobos_context(el: &EventLoop<()>) -> (winit::window::Window, 
     .validation(true)
     .surface(Some(SurfaceSettings {
         surface_format: None,
-        present_mode: None,
+        present_mode: Some(phobos::vk::PresentModeKHR::IMMEDIATE),
         window: &window,
     }));
 

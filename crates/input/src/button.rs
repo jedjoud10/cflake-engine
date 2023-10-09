@@ -44,7 +44,7 @@ impl ButtonState {
 }
 
 /// Keyboard button / key
-pub type KeyboardButton = winit::keyboard::Key;
+pub type KeyboardButton = winit::keyboard::KeyCode;
 
 /// Mouse button / key
 pub type MouseButton = winit::event::MouseButton;

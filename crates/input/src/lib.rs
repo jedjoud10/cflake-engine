@@ -11,8 +11,8 @@ pub mod button;
 /// Identifier traits
 pub mod ids;
 
-/// TODO
-pub mod system;
+/// Main input plugin that will register keys and other inputs
+pub mod plugin;
 
 /// Main module
 pub mod input;
@@ -23,5 +23,5 @@ pub mod prelude {
     pub use crate::button::*;
     pub use crate::ids::*;
     pub use crate::input::*;
-    pub use crate::system::*;
+    pub use crate::plugin::*;
 }

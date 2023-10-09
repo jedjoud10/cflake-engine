@@ -1,8 +1,12 @@
-//use world::{post_user, user, System, WindowEvent, World};
+use std::collections::hash_map::Entry;
 
-/*
-// Init event (called once at the start of program)
-fn init(world: &mut World) {
+use winit::event::{WindowEvent, ElementState, DeviceEvent};
+use world::{prelude::{Init, Update}, system::Registries, world::World};
+use crate::{button::{Button, ButtonState}, input::Input, axis::{Axis, MouseAxis}};
+
+
+/// Init event (called once at the start of program)
+pub fn init(world: &mut World, _: &Init) {
     world.insert(Input {
         bindings: Default::default(),
         keys: Default::default(),
@@ -12,9 +16,9 @@ fn init(world: &mut World) {
     });
 }
 
-// Winit window event since it seems that DeviceEvent::Key is broken on other machines
-// TODO: Report bug
-fn window_event(world: &mut World, ev: &mut WindowEvent) {
+/// Winit window system since it seems that [winit::event::DeviceEvent::Key] is broken on other machines
+/// TODO: Report bug
+pub fn window(world: &mut World, ev: &WindowEvent) {
     fn handle_button_input(input: &mut Input, key: Button, state: ElementState) {
         match input.keys.entry(key) {
             Entry::Occupied(mut current) => {
@@ -36,10 +40,8 @@ fn window_event(world: &mut World, ev: &mut WindowEvent) {
 
     match ev {
         // Handles keyboard keys
-        WindowEvent::KeyboardInput { input: key, .. } => {
-            if let Some(keycode) = key.virtual_keycode {
-                handle_button_input(&mut input, Button::Keyboard(keycode), key.state);
-            }
+        WindowEvent::KeyboardInput { event, .. } => {
+            handle_button_input(&mut input, Button::Keyboard(event.physical_key), event.state);
         }
 
         // Handles mouse buttons
@@ -51,8 +53,8 @@ fn window_event(world: &mut World, ev: &mut WindowEvent) {
     }
 }
 
-// Winit device event (called by handler when needed)
-fn device_event(world: &mut World, ev: &DeviceEvent) {
+/// [winit] device event system (called by handler when needed)
+pub fn device(world: &mut World, ev: &DeviceEvent) {
     let mut input = world.get_mut::<Input>().unwrap();
 
     match ev {
@@ -94,18 +96,18 @@ fn device_event(world: &mut World, ev: &DeviceEvent) {
     }
 }
 
-// Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
-// This will also read the state from gamepads using gilrs
-fn update(world: &mut World) {
+/// Update event that will change the state of the keyboard keys (some states are sticky while others are not sticky)
+/// This will also read the state from gamepads using gilrs
+pub fn update(world: &mut World, _: &Update) {
     let mut input = world.get_mut::<Input>().unwrap();
 
     // Update the state of the keys/buttons
     for (_, state) in input.keys.iter_mut() {
         *state = match state {
-            crate::ButtonState::Pressed => ButtonState::Held,
-            crate::ButtonState::Released => ButtonState::None,
-            crate::ButtonState::Held => ButtonState::Held,
-            crate::ButtonState::None => ButtonState::None,
+            ButtonState::Pressed => ButtonState::Held,
+            ButtonState::Released => ButtonState::None,
+            ButtonState::Held => ButtonState::Held,
+            ButtonState::None => ButtonState::None,
         };
     }
 
@@ -125,7 +127,7 @@ fn update(world: &mut World) {
         let info = gamepad.power_info();
 
         match info {
-            PowerInfo::Discharging(val) if val < 10 => {
+            gilrs::PowerInfo::Discharging(val) if val < 10 => {
                 log::warn!("Gamepad {name} is reaching critical battery levels.")
             }
             _ => {}
@@ -185,12 +187,10 @@ fn update(world: &mut World) {
     }
 }
 
-// This system will automatically insert the input resource and update it each frame using the window events
-
-pub fn system(system: &mut System) {
-    system.insert_init(init).before(user);
-    system.insert_device(device_event).before(user);
-    system.insert_window(window_event).before(user);
-    system.insert_update(update).after(post_user);
+/// This plugin will automatically register the required systems
+pub fn plugin(registries: &mut Registries) {
+    registries.init.insert(init);
+    registries.device_event.insert(device);
+    registries.window_event.insert(window);
+    registries.update.insert(update);
 }
-*/
