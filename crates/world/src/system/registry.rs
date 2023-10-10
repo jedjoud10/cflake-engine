@@ -60,7 +60,8 @@ impl<E: Event> Default for Registry<E> {
 
 impl<E: Event> Registry<E> {
     /// Insert a new system into the registry.
-    /// Returns an [InjectionOrder<E>] that you can use to set the system's execution stage
+    /// Returns an [InjectionOrder<E>] that you can use to set the system's execution stage.
+    /// Automatically sets the system to execute after [super::pre_user] and before [super::post_user].
     pub fn insert<S: System<E>>(&mut self, system: S) -> InjectionOrder<E> {
         let type_id = TypeId::of::<S>();
         
@@ -69,22 +70,20 @@ impl<E: Event> Registry<E> {
         }
         
         self.rules.insert(type_id, Vec::new());
-        let rules = self.rules.get_mut(&type_id).unwrap();
         self.unsorted.insert(type_id, Box::new(system));
-
+        let rules = self.rules.get_mut(&type_id).unwrap();
+        rules.push(InjectionRule::After(super::type_id_of_val(super::pre_user::<E>)));
+        rules.push(InjectionRule::Before(super::type_id_of_val(super::post_user::<E>)));
+        
         InjectionOrder {
             rules: rules,
+            default: true,
             _phantom: PhantomData,
-        }.before(super::pre_user).after(super::post_user)
+        }
     }
 
     /// Sort all the systems stored in the registry using their rules.
     pub fn sort(&mut self) -> Result<(), RegistrySortingError> {
-        // Type ID of passed value
-        fn type_id<T: 'static>(_: T) -> TypeId {
-            TypeId::of::<T>()
-        }
-
         // Create a topologically sorted graph that will take acount the rules of all systems
         let mut graph = Graph::<TypeId, ()>::new();
 
@@ -94,12 +93,12 @@ impl<E: Event> Registry<E> {
         ).collect::<AHashMap<TypeId, (NodeIndex, &[InjectionRule])>>();
     
         // Insert the default pre user system
-        let id = type_id(super::pre_user::<E>);
+        let id = super::type_id_of_val(super::pre_user::<E>);
         let index = graph.add_node(id);
         nodes.insert(id, (index, &[]));
     
         // Insert the default post user system
-        let id = type_id(super::post_user::<E>);
+        let id = super::type_id_of_val(super::post_user::<E>);
         let index = graph.add_node(id);
         nodes.insert(id, (index, &[]));
     
@@ -130,7 +129,7 @@ impl<E: Event> Registry<E> {
                 };
             }
 
-            log::trace!("Add {} rules for system {}", rules.len(), self.unsorted[this_type_id].name());
+            log::trace!("{}: {} rules", self.unsorted[this_type_id].name(), rules.len());
         }
     
         // Topoligcally sort the graph (stage ordering)
@@ -147,13 +146,19 @@ impl<E: Event> Registry<E> {
             counter += 1;
         }
 
-        // If there are missing nodes then we must have a cylic reference
-        if self.sorted.len() < self.rules.len() {
-            return Err(RegistrySortingError::GraphVisitMissingNodes);
-        }    
-
         // We do quite a considerable amount of mental trickery and mockery who are unfortunate enough to fall victim to our dever little trap of social teasing
         self.sorted.sort_by_key(|(_, int)| *int);
+
+        // If there are missing nodes then we must have a cylic reference
+        if self.sorted.len() < self.rules.len() {
+            log::error!("There are {} sorted systems, but there must be {}", self.sorted.len(), self.rules.len());
+            log::trace!("available systems: ");
+            for (system, _) in self.sorted.iter() {
+                log::trace!("{}", system.name());
+            }
+
+            return Err(RegistrySortingError::GraphVisitMissingNodes);
+        }    
 
         log::debug!(
             "Sorted {} systems for {} registry",

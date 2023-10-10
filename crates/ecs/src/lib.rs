@@ -29,12 +29,10 @@ pub mod vec;
 
 /// Re-export everything
 pub mod prelude {
-    pub use crate::archetype::*;
-    pub use crate::entity::*;
-    pub use crate::layout::*;
-    pub use crate::mask::*;
+    pub use crate::archetype::Archetype;
+    pub use crate::entity::{Entity, EntryRef, EntryMut};
+    pub use crate::layout::{Bundle, PrefabBundle, QueryItemRef, QueryLayoutRef, QueryItemMut, QueryLayoutMut};
     pub use crate::query::*;
-    pub use crate::registry::*;
+    pub use crate::registry::Component;
     pub use crate::scene::*;
-    pub use crate::vec::*;
 }

@@ -2,7 +2,7 @@ use graphics::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
 use mimalloc::MiMalloc;
 use utils::plugin::UtilsSettings;
-use world::{system::{Registries, System}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World};
+use world::{system::{Registries, System, pre_user, post_user}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World};
 
 use std::sync::mpsc;
 use winit::{
@@ -65,44 +65,51 @@ impl App {
     }
 
     /// Insert a plugin with it's registry callback
+    /// Systems inserted with plugins must 
     pub fn insert_plugin(mut self, plugin: impl Plugin) -> Self {
         plugin.register(&mut self.registries);
         self
     }
 
     /// Insert a single init system that will be called during initialization.
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_init(mut self, init: impl System<Init>) -> Self {
-        self.registries.init.insert(init);
+        self.registries.init.insert(init).after(pre_user).before(post_user);
         self
     }
 
     /// Insert a single update system that will be called every frame.
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_update(mut self, update: impl System<Update>) -> Self {
-        self.registries.update.insert(update);
+        self.registries.update.insert(update).after(pre_user).before(post_user);
         self
     }
 
     /// Insert a single shutdown system that will be called when the engine shuts down.
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_shutdown(mut self, shutdown: impl System<Shutdown>) -> Self {
-        self.registries.shutdown.insert(shutdown);
+        self.registries.shutdown.insert(shutdown).after(pre_user).before(post_user);
         self
     }
 
     /// Insert a single tick system that will execute [`N times`](utils::TICKS_PER_SEC) per second.
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_tick(mut self, tick: impl System<Tick>) -> Self {
-        self.registries.tick.insert(tick);
+        self.registries.tick.insert(tick).after(pre_user).before(post_user);
         self
     }
 
     /// Insert a single window system that receives [winit::event::WindowEvent].
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_window(mut self, system: impl System<WindowEvent>) -> Self {
-        self.registries.window_event.insert(system);
+        self.registries.window_event.insert(system).after(pre_user).before(post_user);
         self
     }
 
     /// Insert a single device system that receives [winit::event::DeviceEvent].
+    /// This system will be inserted after the [pre_user] and before the [post_user] systems
     pub fn insert_device(mut self, system: impl System<DeviceEvent>) -> Self {
-        self.registries.device_event.insert(system);
+        self.registries.device_event.insert(system).after(pre_user).before(post_user);
         self
     }
 

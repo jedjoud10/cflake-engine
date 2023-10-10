@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use winit::event::{WindowEvent, ElementState, DeviceEvent};
-use world::{prelude::{Init, Update}, system::Registries, world::World};
+use world::{prelude::{Init, Update}, system::{Registries, pre_user, post_user}, world::World};
 use crate::{button::{Button, ButtonState}, input::Input, axis::{Axis, MouseAxis}};
 
 
@@ -189,8 +189,8 @@ pub fn update(world: &mut World, _: &Update) {
 
 /// This plugin will automatically register the required systems
 pub fn plugin(registries: &mut Registries) {
-    registries.init.insert(init);
-    registries.device_event.insert(device);
-    registries.window_event.insert(window);
-    registries.update.insert(update);
+    registries.init.insert(init).before(pre_user);
+    registries.device_event.insert(device).before(pre_user);
+    registries.window_event.insert(window).before(pre_user);
+    registries.update.insert(update).after(post_user);
 }

@@ -71,6 +71,7 @@ fn entries() {
 
 #[test]
 fn mask() {
+    use crate::mask::Mask;
     let mask1 = Mask::from(0b0100u64);
     let mask2 = Mask::from(0b1111u64);
     assert!(mask2.contains(mask1));

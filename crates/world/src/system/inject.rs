@@ -7,6 +7,7 @@ use std::{marker::PhantomData, any::TypeId};
 /// using "rules" that define what must execute before a system and after a system
 pub struct InjectionOrder<'a, E: Event> {
     pub(crate) rules: &'a mut Vec<InjectionRule>,
+    pub(crate) default: bool,
     pub(crate) _phantom: PhantomData<E>,
 }
 
@@ -23,12 +24,20 @@ pub enum InjectionRule {
 impl<'a, E: Event> InjectionOrder<'a, E> {
     /// Make this system execute before the "other" system
     pub fn before<S: System<E>>(mut self, system: S) -> Self {
+        if std::mem::take(&mut self.default) {
+            self.rules.clear();
+        }
+
         self.rules.push(InjectionRule::Before(TypeId::of::<S>()));
         self
     }
 
     /// Make this system execute after the "other" system
     pub fn after<S: System<E>>(mut self, system: S) -> Self {
+        if std::mem::take(&mut self.default) {
+            self.rules.clear();
+        }
+
         self.rules.push(InjectionRule::After(TypeId::of::<S>()));
         self
     }
@@ -39,3 +48,8 @@ pub fn pre_user<E: Event>(_: &mut World, _: &E) {}
 
 /// Default post-user system
 pub fn post_user<E: Event>(_: &mut World, _: &E) {}
+
+// Type ID of passed value
+pub(super) fn type_id_of_val<T: 'static>(_: T) -> TypeId {
+    TypeId::of::<T>()
+}
