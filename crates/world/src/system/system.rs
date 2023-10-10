@@ -10,6 +10,12 @@ use crate::{prelude::{Event, World}, resource::Resource, events::Init};
 pub trait System<E: Event>: 'static {
     /// Execute the system with the given event type
     fn execute(&mut self, world: &mut World, e: &E);
+
+    /// Get a unique name for this system
+    /// Solely used for debug purposes
+    fn name(&self) -> &'static str {
+        std::any::type_name::<Self>()
+    }
 }
 
 impl<E: Event, F: FnMut(&mut World, &E) + 'static> System<E> for F {

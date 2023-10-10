@@ -22,11 +22,4 @@ pub mod prelude {
     pub use crate::storage::*;
     pub use crate::tests::*;
     pub use crate::time::*;
-    pub use log;
-    pub use pretty_type_name;
-    pub use vek;
-    pub use rayon;
 }
-
-pub use log;
-pub use pretty_type_name;

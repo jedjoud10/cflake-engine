@@ -9,15 +9,14 @@ edition = "2021"
 arrayvec = "0.7.2"
 num-traits = "0.2.15"
 itertools = "0.10.3"
-pretty-type-name = "1.0.1"
 atomic-traits = "0.3.0"
 world = { path = "../world" }
 slotmap = "1.0.6"
 rayon = "1.8.0"
+chrono = "0.4.23"
+dirs = "5.0.1"
 parking_lot = { workspace = true }
-ahash = { workspace = true }
 log = { workspace = true }
-vek = { workspace = true }
 
 [features]
 extended-tuples = []

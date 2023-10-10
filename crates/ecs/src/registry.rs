@@ -24,7 +24,7 @@ pub struct Tagged(pub Cow<'static, str>);
 lazy_static! {
     static ref NEXT: Mutex<Mask> = Mutex::new(Mask::one());
     static ref REGISTERED: RwLock<AHashMap<TypeId, Mask>> = RwLock::new(AHashMap::new());
-    static ref NAMES: RwLock<MaskHashMap<String>> = RwLock::new(MaskHashMap::default());
+    static ref NAMES: RwLock<MaskHashMap<&'static str>> = RwLock::new(MaskHashMap::default());
 }
 
 /// Return the registered mask of the component (or register it if needed).
@@ -42,9 +42,9 @@ pub fn mask<T: Component>() -> Mask {
 
         // Le bitshifting
         let copy = *bit;
-        let name = utils::pretty_type_name::pretty_type_name::<T>();
+        let name = std::any::type_name::<T>();
         locked.insert(TypeId::of::<T>(), copy);
-        NAMES.write().insert(copy, name.clone());
+        NAMES.write().insert(copy, name);
         const ERR: &str = "Ran out of component bits to use!
         Use the 'extended-bitmasks' feature to add more bits in the bitmask if needed";
         *bit = RawBitMask::from(copy).checked_shl(1).expect(ERR).into();
@@ -59,7 +59,7 @@ pub fn mask<T: Component>() -> Mask {
 }
 
 /// Get the name of a component mask.
-pub fn name(mask: Mask) -> Option<String> {
+pub fn name(mask: Mask) -> Option<&'static str> {
     if mask.count_ones() != 1 {
         return None;
     }

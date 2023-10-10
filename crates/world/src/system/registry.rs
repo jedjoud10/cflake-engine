@@ -104,7 +104,7 @@ impl<E: Event> Registry<E> {
         nodes.insert(id, (index, &[]));
     
         // Create the edges (rules) between the nodes (systems)
-        for (_, (this, rules)) in nodes.iter() {
+        for (this_type_id, (this, rules)) in nodes.iter().filter(|(_, (_, r))| !r.is_empty()) {
             for rule in *rules {
                 let reference = match rule {
                     InjectionRule::Before(x) => x,
@@ -113,7 +113,11 @@ impl<E: Event> Registry<E> {
 
                 let (reference, _) = *nodes
                     .get(reference)
-                    .ok_or(RegistrySortingError::MissingSystem("a", "b"))?;
+                    .ok_or_else(|| {
+                        let referencer = self.unsorted[this_type_id].name();
+                        let referencee = self.unsorted[reference].name();
+                        RegistrySortingError::MissingSystem(referencer, referencee)
+                    })?;
     
                 match rule {
                     // dir: a -> b.
@@ -125,6 +129,8 @@ impl<E: Event> Registry<E> {
                     InjectionRule::After(_) => graph.add_edge(reference, *this, ()),
                 };
             }
+
+            log::trace!("Add {} rules for system {}", rules.len(), self.unsorted[this_type_id].name());
         }
     
         // Topoligcally sort the graph (stage ordering)
@@ -156,17 +162,14 @@ impl<E: Event> Registry<E> {
         );
 
         // Show a debug GUI of the systems
-        // TODO: Make this a proper tree system with depth
-        /*
-        if !self.events.is_empty() {
-            let slice = &self.events[..(self.events.len() - 1)];
+        if !self.sorted.is_empty() {
+            let slice = &self.sorted[..(self.sorted.len() - 1)];
             for (stage, _) in slice.iter() {
-                log::debug!("├── {}", stage.system.name);
+                log::debug!("├── {}", stage.name());
             }
-            log::debug!("└── {}", self.events.last().unwrap().0.system.name);
+            log::debug!("└── {}", self.sorted.last().unwrap().0.name());
         }
-        */
-
+        
         Ok(())
     }
 

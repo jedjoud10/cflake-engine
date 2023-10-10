@@ -1,6 +1,7 @@
 use graphics::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
 use mimalloc::MiMalloc;
+use utils::plugin::UtilsSettings;
 use world::{system::{Registries, System}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World};
 
 use std::sync::mpsc;
@@ -17,6 +18,8 @@ static GLOBAL: MiMalloc = MiMalloc;
 pub struct App {
     window: WindowSettings,
     logging_level: log::LevelFilter,
+    author_name: String,
+    app_name: String,
     registries: Registries,
 }
 
@@ -29,9 +32,24 @@ impl App {
                 limit: FrameRateLimit::default(),
                 fullscreen: false,
             },
+            author_name: "cFlake Dev".to_string(),
+            app_name: "cFlake Prototype Game".to_string(),
             registries: Registries::default(),
             logging_level: log::LevelFilter::Debug,
         }
+    }
+
+    /// Set the author name of the app.
+    pub fn set_author_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
+        self
+    }
+
+    /// Set the app name (and also the window title).
+    pub fn set_app_name(mut self, name: &str) -> Self {
+        self.app_name = name.to_string();
+        self.window.title = name.to_string();
+        self
     }
 
     /// Set the initial window settings that we will pass to [winit].
@@ -98,11 +116,19 @@ impl App {
         let mut world = World::default();
         world.insert(EventLoop::<()>::new()?);
         world.insert(self.window);
-
+        world.insert(UtilsSettings {
+            author_name: self.author_name,
+            app_name: self.app_name,
+            tick_rate: 128,
+            tick_rate_max: 16,
+            log_receiver: Some(rx),
+        });
+        
         // Register main plugins
         graphics::plugin::plugin(&mut self.registries);
         input::plugin::plugin(&mut self.registries);
         assets::plugin::plugin(&mut self.registries);
+        utils::plugin::plugin(&mut self.registries);
 
         // Sort the registries
         self.registries.init.sort().unwrap();
