@@ -397,6 +397,7 @@ name = "cflake-engine"
 version = "0.0.1"
 dependencies = [
  "app",
+ "packer",
 ]
 
 [[package]]
@@ -1748,6 +1749,10 @@ checksum = "706de7e2214113d63a8238d1910463cfce781129a6f263d13fdb09ff64355ba4"
 dependencies = [
  "ttf-parser",
 ]
+
+[[package]]
+name = "packer"
+version = "0.1.0"
 
 [[package]]
 name = "parking_lot"

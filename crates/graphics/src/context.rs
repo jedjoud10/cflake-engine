@@ -1,13 +1,16 @@
 mod graphics;
 mod window;
 
+use std::sync::Arc;
+
 pub use graphics::*;
 use phobos::{AppBuilder, GPURequirements, SurfaceSettings, QueueRequest, QueueType};
 pub use window::*;
 use winit::{window::WindowBuilder, event_loop::EventLoop};
 
 /// Create a graphics context and winit window
-pub fn initialize_phobos_context(el: &EventLoop<()>, settings: WindowSettings) -> (winit::window::Window, Graphics) {
+/// If the given settings option is None, then the phobos context will be headless
+pub fn initialize_phobos_context(settings: Option<(&EventLoop<()>, WindowSettings)>) -> Graphics {
     let window = WindowBuilder::new()
         .with_title(settings.title)
         .build(&el)
@@ -40,19 +43,21 @@ pub fn initialize_phobos_context(el: &EventLoop<()>, settings: WindowSettings) -
         pool,
         exec,
         surface,
-        frame,
+        frame_manager,
         debug_messenger
     ) = phobos::init(&settings.build()).unwrap();
     
-    (window, Graphics {
-        instance,
-        physical_device,
+    (Window {
+        raw: window,
+        frame_manager: frame_manager.unwrap(),
+        surface: surface.unwrap(),
+    }, Graphics {
+        instance: Arc::new(instance),
+        physical_device: Arc::new(physical_device),
         device,
         allocator,
         pool,
         exec,
-        debug_messenger,
-        frame,
-        surface,
+        debug_messenger: Arc::new(debug_messenger),
     })
 }
