@@ -13,7 +13,7 @@ members = [
     "crates/assets",
     "crates/app",
     "crates/world",
-    "crates/graphics",
+    "crates/rendering",
     "crates/phobos-rs",
     "crates/utils",
     "crates/input",    

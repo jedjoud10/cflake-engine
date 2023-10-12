@@ -1,4 +1,4 @@
-use graphics::context::{FrameRateLimit, WindowSettings};
+use rendering::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
 use mimalloc::MiMalloc;
 use utils::plugin::UtilsSettings;
@@ -123,6 +123,7 @@ impl App {
         let mut world = World::default();
         world.insert(EventLoop::<()>::new()?);
         world.insert(self.window);
+        world.insert(State::Running);
         world.insert(UtilsSettings {
             author_name: self.author_name,
             app_name: self.app_name,
@@ -132,7 +133,7 @@ impl App {
         });
         
         // Register main plugins
-        graphics::plugin::plugin(&mut self.registries);
+        rendering::plugin::plugin(&mut self.registries);
         input::plugin::plugin(&mut self.registries);
         assets::plugin::plugin(&mut self.registries);
         utils::plugin::plugin(&mut self.registries);
@@ -171,7 +172,9 @@ impl App {
                 }
             }
 
-            winit::event::Event::LoopExiting => self.registries.shutdown.execute(&mut world, &Shutdown),
+            winit::event::Event::LoopExiting => {
+                self.registries.shutdown.execute(&mut world, &Shutdown)
+            },
 
             _ => {}
         })?;

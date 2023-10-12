@@ -31,15 +31,8 @@ pub struct WindowSettings {
 
 /// A window wrapper that contains the winit window
 pub struct Window {
-    pub(crate) raw: winit::window::Window,
+    /// Raw winit stored that's stored inside this wrapper
+    pub raw: winit::window::Window,
     pub(crate) frame_manager: phobos::FrameManager,
     pub(crate) surface: phobos::Surface,
-}
-
-
-impl Window {
-    // Get the raw winit window
-    pub fn raw(&self) -> &winit::window::Window {
-        &self.raw
-    }
 }

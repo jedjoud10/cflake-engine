@@ -6,11 +6,11 @@ use phobos::{Instance, PhysicalDevice, Device, DefaultAllocator, pool::ResourceP
 /// wish to multithread some CPU intensive application (like model/image loading)
 #[derive(Clone)]
 pub struct Graphics {
-    pub instance: Arc<Instance>,
-    pub physical_device: Arc<PhysicalDevice>,
-    pub device: Device,
-    pub allocator: DefaultAllocator,
     pub pool: ResourcePool,
+    pub allocator: DefaultAllocator,
     pub exec: ExecutionManager,
+    pub device: Device,
+    pub physical_device: Arc<PhysicalDevice>,
     pub debug_messenger: Option<Arc<DebugMessenger>>,
+    pub instance: Arc<Instance>,
 }

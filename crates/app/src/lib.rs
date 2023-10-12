@@ -2,7 +2,7 @@
 
 pub mod app;
 pub use ecs;
-pub use graphics;
+pub use rendering;
 mod app_utils;
 pub use input;
 pub use utils;
@@ -13,7 +13,7 @@ pub mod prelude {
     pub use crate::world::*;
     pub use crate::app::*;
     pub use crate::ecs::*;
-    pub use crate::graphics::*;
+    pub use crate::rendering::*;
     pub use crate::input::*;
     pub use crate::utils::*;
 }

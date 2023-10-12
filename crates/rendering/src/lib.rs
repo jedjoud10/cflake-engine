@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
-//! Graphics wrapper around phobos for quality of life improvements like type safe buffers and typed texture formats
+//! Main rendering crate that creates some QoL wrapeprs around phobos types
+//! Still allows you to fetch the underlying phobos types to rely on its strong pass / graph system
 
 /// Contains core information and resources used for context initialization
 pub mod context;

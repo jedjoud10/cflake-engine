@@ -1,6 +1,7 @@
 use phobos::sync::submit_batch::SubmitBatch;
+use utils::Time;
 use winit::{event_loop::EventLoop, event::WindowEvent};
-use world::{prelude::{Plugin, Init, Update}, world::World, system::{Registries, pre_user, post_user}, resource::State};
+use world::{prelude::{Plugin, Init, Update}, world::World, system::{Registries, pre_user, post_user}, resource::State, Shutdown};
 use crate::context::{WindowSettings, Window, Graphics};
 
 /// Initialization function
@@ -52,14 +53,21 @@ pub fn present(world: &mut World, _: &Update) {
 
     let ifc = world.remove::<phobos::InFlightContext>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
+    graphics.pool.next_frame();
     let mut _window = world.get_mut::<crate::Window>().unwrap();
     let window = &mut *_window;
-    let surface = &window.surface;
     
     let swapchain = phobos::image!("swapchain");
+    let time = world.get::<Time>().unwrap();
+
+    let val = time.elapsed().as_secs_f32() % 10.0;
+    let color = [val.sin(), val.cos(), val.cbrt(), 1.0];
 
     let clear_pass = PassBuilder::<domain::All>::render("clear")
-        .clear_color_attachment(&swapchain, ClearColor::Float([1.0; 4])).unwrap()
+        .clear_color_attachment(&swapchain, ClearColor::Float(color)).unwrap()
+        .execute_fn(|mut cmd, pool, bindings, _, | {
+            Ok(cmd)
+        })
         .build(); 
 
     let present_pass = PassBuilder::present("present", clear_pass.output(&swapchain).unwrap());
@@ -88,11 +96,21 @@ pub fn present(world: &mut World, _: &Update) {
     drop(graphics);
 }
 
+/// Remove all resources from the world when we shutdown
+pub fn shutdown(world: &mut World, _: &Shutdown) {
+    let window = world.remove::<Window>().unwrap();
+    let graphics = world.remove::<Graphics>().unwrap();
+    graphics.device.wait_idle().unwrap();
+    drop(window);
+    drop(graphics);
+}
+
 /// Graphics plugin that will create the [phobos] context and [winit] window
 pub fn plugin(registries: &mut Registries) {
     registries.init.insert(init).before(pre_user);
     registries.window_event.insert(window_event).before(pre_user);
     registries.update.insert(acquire).before(pre_user);
     registries.update.insert(present).after(post_user);
+    registries.shutdown.insert(shutdown).after(post_user);
 }
 

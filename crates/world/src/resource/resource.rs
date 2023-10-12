@@ -16,10 +16,7 @@ pub trait Resource: 'static {
 /// This is the main world state that the user can manually update to force the engine to stop running
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum State {
-    /// This is the default state for frame 0
     #[default]
-    Initializing,
-
     /// This is the default state from frame 1 to frame n
     Running,
 
