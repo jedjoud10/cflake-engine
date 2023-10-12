@@ -12,5 +12,5 @@ pub struct Graphics {
     pub allocator: DefaultAllocator,
     pub pool: ResourcePool,
     pub exec: ExecutionManager,
-    pub debug_messenger: Arc<Option<DebugMessenger>>,
+    pub debug_messenger: Option<Arc<DebugMessenger>>,
 }

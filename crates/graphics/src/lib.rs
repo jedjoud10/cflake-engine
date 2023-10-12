@@ -11,7 +11,7 @@ pub mod plugin;
 /// Re-exports everything
 pub mod prelude {
     pub use crate::context::*;
-    pub use phobos::prelude::*;
 }
 
 pub use phobos;
+pub use prelude::*;

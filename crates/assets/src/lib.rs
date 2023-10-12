@@ -31,3 +31,5 @@ pub mod prelude {
     pub use crate::plugin::*;
     pub use crate::macros::asset;
 }
+
+pub use prelude::*;

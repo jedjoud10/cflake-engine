@@ -23,3 +23,5 @@ pub mod prelude {
     pub use crate::tests::*;
     pub use crate::time::*;
 }
+
+pub use prelude::*;

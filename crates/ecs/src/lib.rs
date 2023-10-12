@@ -36,3 +36,5 @@ pub mod prelude {
     pub use crate::registry::Component;
     pub use crate::scene::*;
 }
+
+pub use prelude::*;

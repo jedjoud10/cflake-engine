@@ -25,3 +25,5 @@ pub mod prelude {
     pub use crate::input::*;
     pub use crate::plugin::*;
 }
+
+pub use prelude::*;

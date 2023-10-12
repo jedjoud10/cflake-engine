@@ -2,7 +2,7 @@ use graphics::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
 use mimalloc::MiMalloc;
 use utils::plugin::UtilsSettings;
-use world::{system::{Registries, System, pre_user, post_user}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World};
+use world::{system::{Registries, System, pre_user, post_user}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World, resource::State};
 
 use std::sync::mpsc;
 use winit::{
@@ -165,6 +165,10 @@ impl App {
                 sleeper.loop_start();
                 self.registries.update.execute(&mut world, &Update);
                 sleeper.loop_sleep();
+
+                if let Some(State::Stopped) = world.get::<State>().map(|x| *x) {
+                    *cf = ControlFlow::Exit;
+                }
             }
 
             winit::event::Event::LoopExiting => self.registries.shutdown.execute(&mut world, &Shutdown),

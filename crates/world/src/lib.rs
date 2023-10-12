@@ -26,3 +26,5 @@ pub mod prelude {
     pub use crate::system::*;
     pub use crate::world::*;
 }
+
+pub use prelude::*;

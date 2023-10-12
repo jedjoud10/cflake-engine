@@ -2,7 +2,6 @@
 name = "cflake-engine"
 version = "0.0.1"
 edition = "2021"
-build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,9 +29,3 @@ ahash = "0.7.6"
 parking_lot = "0.12.0"
 lazy_static = "1.4.0"
 thiserror = "1.0.37"
-
-[dev-dependencies]
-packer = { path = "crates/packer" }
-
-[profile.dev]
-opt-level = 3

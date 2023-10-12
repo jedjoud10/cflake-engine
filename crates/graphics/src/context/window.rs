@@ -29,7 +29,7 @@ pub struct WindowSettings {
 }
 
 
-/// A window wrapper that contains the winit window and other auxiliary data
+/// A window wrapper that contains the winit window
 pub struct Window {
     pub(crate) raw: winit::window::Window,
     pub(crate) frame_manager: phobos::FrameManager,

@@ -42,7 +42,6 @@ pub struct Registry<E: Event> {
     sorted: Vec<(Box<dyn System<E>>, u32)>,
 
     // System timings for the sorted events
-    timings: Vec<Option<SystemTimings>>,
     _phantom: PhantomData<E>,
 }
 
@@ -52,7 +51,6 @@ impl<E: Event> Default for Registry<E> {
             sorted: Default::default(),
             unsorted: Default::default(),
             rules: Default::default(),
-            timings: Default::default(),
             _phantom: Default::default(),
         }
     }

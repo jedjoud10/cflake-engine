@@ -8,6 +8,12 @@ pub struct SystemTimings {
 }
 
 impl SystemTimings {
+    /// Add a new sample to the system timings
+    pub fn add(&mut self, sample: Duration) {
+        self.samples.rotate_right(1);
+        self.samples[0] = sample;
+    }
+
     /// Get the median time
     pub fn median(&self) -> Duration {
         self.samples[3]

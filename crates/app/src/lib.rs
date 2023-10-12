@@ -10,10 +10,10 @@ pub use world;
 
 /// Prelude that re-exports most of the types and interfaces used within cFlake engine
 pub mod prelude {
-    pub use crate::world::prelude::*;
+    pub use crate::world::*;
     pub use crate::app::*;
-    pub use crate::ecs::prelude::*;
-    pub use crate::graphics::prelude::*;
-    pub use crate::input::prelude::*;
-    pub use crate::utils::prelude::*;
+    pub use crate::ecs::*;
+    pub use crate::graphics::*;
+    pub use crate::input::*;
+    pub use crate::utils::*;
 }
