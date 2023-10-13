@@ -56,29 +56,28 @@ pub fn present(world: &mut World, _: &Update) {
     graphics.pool.next_frame();
     let mut _window = world.get_mut::<crate::Window>().unwrap();
     let window = &mut *_window;
-    
+
     let swapchain = phobos::image!("swapchain");
-    let time = world.get::<Time>().unwrap();
 
-    let val = time.elapsed().as_secs_f32() % 10.0;
-    let color = [val.sin(), val.cos(), val.cbrt(), 1.0];
-
+    // First pass will clear the swapchain
     let clear_pass = PassBuilder::<domain::All>::render("clear")
-        .clear_color_attachment(&swapchain, ClearColor::Float(color)).unwrap()
-        .execute_fn(|mut cmd, pool, bindings, _, | {
-            Ok(cmd)
-        })
+        .clear_color_attachment(&swapchain, ClearColor::Float([0.0f32; 4])).unwrap()
         .build(); 
 
+    // Second pass will present the swapchain
     let present_pass = PassBuilder::present("present", clear_pass.output(&swapchain).unwrap());
     
+    // Create a render graph
     let mut graph = PassGraph::<domain::All>::new()
         .add_pass(clear_pass).unwrap()
         .add_pass(present_pass).unwrap()
         .build().unwrap();
 
+    // Bind the image to the virtual resource
     let mut bindings = PhysicalResourceBindings::new();
     bindings.bind_image("swapchain", &ifc.swapchain_image);
+
+    // Record the command buffer
     let mut local_pool = phobos::pool::LocalPool::new(graphics.pool.clone()).unwrap();
     let cmd = graphics.exec.on_domain::<domain::All>().unwrap();
     let final_cmd = graph.record(
@@ -89,9 +88,13 @@ pub fn present(world: &mut World, _: &Update) {
         &mut ()
     ).unwrap().finish().unwrap();
 
+    // Submit the command buffer
     let mut batch = graphics.exec.start_submit_batch::<domain::All>().unwrap();
     batch.submit_for_present(final_cmd, ifc, local_pool).unwrap();
+
+    // Present
     window.frame_manager.end(graphics.exec.clone(), batch).unwrap();
+    
     drop(_window);
     drop(graphics);
 }

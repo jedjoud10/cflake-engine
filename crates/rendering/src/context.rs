@@ -18,7 +18,7 @@ pub fn initialize_phobos_context(el: &EventLoop<()>, settings: WindowSettings) -
 
     let settings = AppBuilder::new()
         .name("cFlake engine")
-        .scratch_chunk_size(2048u64)
+        .scratch_chunk_size(8192u64)
         .raytracing(false)
         .gpu(GPURequirements {
             queues: vec![
