@@ -40,7 +40,6 @@ pub struct Scene {
 
     // These contain the boxed bundles that can be used for prefab generation
     pub(crate) prefabs: AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)>,
-
     pub(crate) ticked: bool,
 }
 

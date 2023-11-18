@@ -58,9 +58,8 @@ impl<'s, T: Component> QueryItemRef<'s> for &'s T {
     }
 }
 
-/*
-impl<T: Component> QueryItemRef for Option<&T> {
-    type Slice<'s> = Option<&'s [T]>;
+impl<'s, T: Component> QueryItemRef<'s> for Option<&'s T> {
+    type Slice = Option<&'s [T]>;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -71,21 +70,21 @@ impl<T: Component> QueryItemRef for Option<&T> {
     }
 
     #[inline]
-    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
+    fn from_archetype(archetype: &'s Archetype) -> Self::Slice {
         archetype
             .components::<T>()
-            .map(|col| col.as_slice())        
+            .map(|col| col.as_slice()) 
     }
     
     #[inline]
-    fn read(slice: Self::Slice<'_>, index: usize) -> Self {
+    fn read(slice: Self::Slice, index: usize) -> Self {
         slice.map(|slice| &slice[index])
     }
 }
 
 
-impl QueryItemRef for &Entity {
-    type Slice<'s> = &'s [Entity];
+impl<'s> QueryItemRef<'s> for &'s Entity {
+    type Slice = &'s [Entity];
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -95,19 +94,19 @@ impl QueryItemRef for &Entity {
         }
     }
 
-    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
+    fn from_archetype(archetype: &'s Archetype) -> Self::Slice {
         archetype.entities()
     }
 
     #[inline]
-    fn read<'s>(slice: Self::Slice<'s>, index: usize) -> Self where Self: 's {
+    fn read(slice: Self::Slice, index: usize) -> Self {
         &slice[index]
     }
 }
 
 
-impl QueryItemRef for &() {
-    type Slice<'s> = &'s [()];
+impl<'s> QueryItemRef<'s> for &'s () {
+    type Slice = &'s [()];
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -117,16 +116,15 @@ impl QueryItemRef for &() {
         }
     }
 
-    fn from_archetype<'s>(archetype: &'s Archetype) -> Self::Slice<'s> {
+    fn from_archetype(archetype: &'s Archetype) -> Self::Slice {
         &[]
     }
 
     #[inline]
-    fn read(slice: Self::Slice<'_>, index: usize) -> Self {
+    fn read(slice: Self::Slice, index: usize) -> Self {
         &()
     }
 }
-*/
 
 impl<'s, T: Component> QueryItemMut<'s> for &'s T {
     type Slice = &'s [T];
@@ -172,10 +170,10 @@ impl<'s, T: Component> QueryItemMut<'s> for &'s mut T {
     }
 }
 
-/*
-impl<T: Component> QueryItemMut for Option<&T> {
-    type Slice<'s> = Option<&'s [T]>;
-    type Ptr = Option<*const T>;
+
+
+impl<'s, T: Component> QueryItemMut<'s> for Option<&'s T> {
+    type Slice = Option<&'s [T]>;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -185,54 +183,46 @@ impl<T: Component> QueryItemMut for Option<&T> {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    #[inline]
+    fn from_mut_archetype(archetype: &'s mut Archetype) -> Self::Slice {
         archetype
-            .components_mut::<T>()
-            .map(|vec| vec.as_slice().as_ptr() as _)
+            .components::<T>()
+            .map(|col| col.as_slice()) 
     }
-
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        ptr.map(|ptr| std::slice::from_raw_parts(ptr, length))
-    }
-
-    #[inline(always)]
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        ptr.map(|ptr| &*ptr.add(index))
+    
+    #[inline]
+    fn read_mut(slice: Self::Slice, index: usize) -> Self {
+        slice.map(|slice| &slice[index])
     }
 }
 
-
-impl<T: Component> QueryItemMut for Option<&mut T> {
-    type Slice<'s> = Option<&'s mut [T]>;
-    type Ptr = Option<*mut T>;
+impl<'s, T: Component> QueryItemMut<'s> for Option<&'s mut T> {
+    type Slice = Option<&'s mut [T]>;
 
     fn access() -> LayoutAccess {
         LayoutAccess {
             archetype_search: Mask::zero(),
-            validation_shared: Mask::zero(),
-            validation_unique: mask::<T>(),
+            validation_shared: mask::<T>(),
+            validation_unique: Mask::zero(),
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
+    #[inline]
+    fn from_mut_archetype(archetype: &'s mut Archetype) -> Self::Slice {
         archetype
             .components_mut::<T>()
-            .map(|vec| vec.as_mut_slice().as_mut_ptr() as _)
+            .map(|col| col.as_mut_slice()) 
     }
-
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        ptr.map(|ptr| std::slice::from_raw_parts_mut(ptr, length))
-    }
-
-    #[inline(always)]
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        ptr.map(|ptr| &mut *ptr.add(index))
+    
+    #[inline]
+    fn read_mut(slice: Self::Slice, index: usize) -> Self {
+        slice.map(|slice| &mut slice[index])
     }
 }
 
-impl QueryItemMut for &Entity {
-    type Slice<'s> = &'s [Entity];
-    type Ptr = *const Entity;
+
+impl<'s> QueryItemMut<'s> for &'s Entity {
+    type Slice = &'s [Entity];
 
     fn access() -> LayoutAccess {
         LayoutAccess {
@@ -242,17 +232,36 @@ impl QueryItemMut for &Entity {
         }
     }
 
-    unsafe fn ptr_from_mut_archetype_unchecked(archetype: &mut Archetype) -> Self::Ptr {
-        archetype.entities().as_ptr()
+    #[inline]
+    fn from_mut_archetype(archetype: &'s mut Archetype) -> Self::Slice {
+        archetype.entities()
     }
 
-    unsafe fn from_raw_parts<'s>(ptr: Self::Ptr, length: usize) -> Self::Slice<'s> {
-        std::slice::from_raw_parts(ptr, length)
-    }
-
-    #[inline(always)]
-    unsafe fn read_mut_unchecked(ptr: Self::Ptr, index: usize) -> Self {
-        &*ptr.add(index)
+    #[inline]
+    fn read_mut(slice: Self::Slice, index: usize) -> Self {
+        &slice[index]
     }
 }
-*/
+
+
+impl<'s> QueryItemMut<'s> for &'s () {
+    type Slice = &'s [()];
+
+    fn access() -> LayoutAccess {
+        LayoutAccess {
+            archetype_search: Mask::zero(),
+            validation_shared: Mask::zero(),
+            validation_unique: Mask::zero(),
+        }
+    }
+
+    #[inline]
+    fn from_mut_archetype(archetype: &'s mut Archetype) -> Self::Slice {
+        &[]
+    }
+
+    #[inline]
+    fn read_mut(slice: Self::Slice, index: usize) -> Self {
+        &()
+    }
+}
