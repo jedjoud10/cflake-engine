@@ -1,13 +1,10 @@
-use crate::{
-    ActiveComputeDispatcher, ActiveRenderPipeline, ColorLayout, DepthStencilLayout, Graphics,
-    ModuleVisibility, PushConstantBytesError, PushConstantLayout, ReflectedShader,
-    SetPushConstantsError,
-};
 use arrayvec::ArrayVec;
 use itertools::Itertools;
 use std::{marker::PhantomData, ops::RangeBounds, sync::Arc};
 
-use super::pipeline::ActivePipeline;
+use crate::{shader::{PushConstantLayout, ModuleVisibility}, pass::{DepthStencilLayout, ColorLayout}};
+
+use super::{pipeline::ActivePipeline, PushConstantBytesError, ActiveRenderPipeline, ActiveComputeDispatcher};
 
 // Push constants are tiny bits of memory that are going to get stored directly in a command encoder
 // They are mostly used to upload bits of data very rapidly to use within shaders
@@ -17,6 +14,7 @@ pub struct PushConstants<'a, AP: ActivePipeline> {
     pub(crate) _phantom: PhantomData<AP>,
 }
 
+/*
 // Create some push constants that the user can set
 pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
     reflected: Arc<ReflectedShader>,
@@ -55,6 +53,7 @@ pub(super) fn handle_push_constants<'b, AP: ActivePipeline>(
     *push_constant_global_offset += size as usize;
     return Some(layout);
 }
+*/
 
 // For graphics pipelines only
 impl<C: ColorLayout, DS: DepthStencilLayout>
@@ -64,17 +63,18 @@ impl<C: ColorLayout, DS: DepthStencilLayout>
     // This method variant is specifically used for graphics pipelines (since we can set both vertex AND fragment shaders)
     pub fn push(
         &mut self,
-        bytes: &[u8],
-        mut offset: u32,
-        visibility: ModuleVisibility,
+        stages: ModuleVisibility,
+        offset: u32,
+        data: &[u8],
     ) -> Result<(), PushConstantBytesError> {
+        /*
         // Make sure we have bytes to write with
-        if bytes.is_empty() {
+        if data.is_empty() {
             return Err(PushConstantBytesError::NoBytes);
         }
 
         // Make sure we won't overwrite the buffer
-        if (bytes.len() + offset as usize) > self.data.len() {
+        if (data.len() + offset as usize) > self.data.len() {
             return Err(PushConstantBytesError::OffsetOrSizeIsTooLarge);
         }
 
@@ -99,6 +99,8 @@ impl<C: ColorLayout, DS: DepthStencilLayout>
         let end = start + bytes.len();
         self.data[start..end].copy_from_slice(bytes);
         Ok(())
+        */
+        todo!()
     }
 }
 
@@ -106,7 +108,8 @@ impl<C: ColorLayout, DS: DepthStencilLayout>
 impl PushConstants<'_, ActiveComputeDispatcher<'_, '_>> {
     // Push a sub-region of push constant data to be stored afterwards
     // This method variant is specifically used for compute dispatchers
-    pub fn push(&mut self, bytes: &[u8], mut offset: u32) -> Result<(), PushConstantBytesError> {
+    pub fn push(&mut self, offset: u32, data: &[u8]) -> Result<(), PushConstantBytesError> {
+        /*
         // Make sure we have bytes to write with
         if bytes.is_empty() {
             return Err(PushConstantBytesError::NoBytes);
@@ -124,5 +127,7 @@ impl PushConstants<'_, ActiveComputeDispatcher<'_, '_>> {
         let end = start + bytes.len();
         self.data[start..end].copy_from_slice(bytes);
         Ok(())
+        */
+        todo!()
     }
 }

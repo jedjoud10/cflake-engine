@@ -1,10 +1,9 @@
 use wgpu::CommandEncoder;
+use std::{marker::PhantomData, f32::consts::E};
 
-use crate::{
-    ActiveRenderPass, ColorAttachments, ColorLayout, ColorOperations, DepthStencilAttachment,
-    DepthStencilLayout, DepthStencilOperations, Graphics, RenderPipeline, Vertex, VertexBuffer,
-};
-use std::marker::PhantomData;
+use crate::active::ActiveRenderPass;
+
+use super::{ColorLayout, DepthStencilLayout, ColorOperations, DepthStencilOperations, ColorAttachments, DepthStencilAttachment};
 
 // Wrapper around a WGPU render pass
 // This render pass must be instantiated with the specific attachment layouts before we actually use it
@@ -17,13 +16,11 @@ pub struct RenderPass<C: ColorLayout, DS: DepthStencilLayout> {
     stencil_operations: Option<wgpu::Operations<u32>>,
     _phantom_color: PhantomData<C>,
     _phantom_depth_stencil: PhantomData<DS>,
-    graphics: Graphics,
 }
 
 impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
     // Create a new render pass for use with a specific color layout and depth stencil layout
     pub fn new(
-        graphics: &Graphics,
         color_operations: impl ColorOperations<C>,
         depth_stencil_operations: impl DepthStencilOperations<DS>,
     ) -> Self {
@@ -33,14 +30,14 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
             stencil_operations: depth_stencil_operations.stencil_operations(),
             _phantom_color: PhantomData,
             _phantom_depth_stencil: PhantomData,
-            graphics: graphics.clone(),
         }
     }
 
     // Begin the render pass and return an active render pass that we can use to bind multiple
     // graphical pipelines to so we can render specific types of objects
-    pub fn begin<'r>(
-        &'r self,
+    pub fn begin<'a: 'r, 'r>(
+        &'r mut self,
+        encoder: &'a mut wgpu::CommandEncoder,
         color_attachments: impl ColorAttachments<'r, C>,
         depth_stencil_attachment: impl DepthStencilAttachment<'r, DS>,
     ) -> ActiveRenderPass<C, DS> {
@@ -74,15 +71,19 @@ impl<C: ColorLayout, DS: DepthStencilLayout> RenderPass<C, DS> {
                 stencil_ops,
             });
 
+        let inner = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &color_attachments,
+            depth_stencil_attachment,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
         ActiveRenderPass {
             _phantom: PhantomData,
             _phantom2: PhantomData,
-            graphics: &self.graphics,
-            commands: Vec::new(),
-            color_attachments,
-            depth_stencil_attachment,
-            push_constants: Vec::new(),
             last_set_pipeline_id: None,
+            inner,
         }
     }
 }

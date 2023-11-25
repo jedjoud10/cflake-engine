@@ -4,9 +4,11 @@ use ahash::AHashMap;
 use itertools::Itertools;
 use wgpu::{BlendState, PrimitiveState, VertexStepMode};
 
-use crate::{
-    BlendConfig, ColorLayout, DepthConfig, DepthStencilLayout, Graphics,
-    PipelineInitializationError, PrimitiveConfig, Shader, StencilConfig, VertexConfig, VertexInfo,
+use crate::{shader::Shader, pass::{ColorLayout, DepthStencilLayout}, context::Graphics};
+
+use super::{
+    BlendConfig, DepthConfig,
+    PipelineInitializationError, PrimitiveConfig, StencilConfig, VertexConfig,
     VertexInputInfo,
 };
 

@@ -1,8 +1,9 @@
-use crate::{
-    AnyElement, ColorTexel, CompressionType, Depth, DepthElement, ElementType, GpuPod, Normalized,
+use crate::format::{
+    AnyElement, ColorTexel, CompressionType, Depth, DepthElement, ElementType, Normalized,
     Stencil, TexelChannels, VertexChannels, BGRA, R, RG, RGBA, SBC4, SBC5, SBGRA, SRGBA, UBC1,
     UBC2, UBC3, UBC4, UBC5, UBC7,
 };
+use crate::pod::GpuPod;
 use half::f16;
 use std::{any::Any, mem::size_of, ops::Add};
 use vek::{
@@ -123,7 +124,7 @@ macro_rules! internal_impl_texel {
             }
 
             fn format() -> TextureFormat {
-                crate::pick_texture_format(Self::element(), Self::channels()).unwrap()
+                crate::format::pick_texture_format(Self::element(), Self::channels()).unwrap()
             }
         }
     };

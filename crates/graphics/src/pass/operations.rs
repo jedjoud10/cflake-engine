@@ -1,7 +1,6 @@
-use crate::{
-    ColorLayout, ColorTexel, Conversion, Depth, DepthElement, DepthStencilLayout, Stencil,
-    StencilElement, Texel,
-};
+pub use wgpu::StoreOp;
+use crate::format::{Texel, Conversion, ColorTexel, DepthElement, Depth, StencilElement, Stencil};
+use super::{ColorLayout, DepthStencilLayout};
 
 // What we should do when loading in data from the render target
 // Even though WGPU has a LoadOp type, I still decided to implement one myself simply
@@ -11,11 +10,6 @@ pub enum LoadOp<T: Texel> {
     Clear(T::Storage),
 }
 
-// What we should do when writing data to the render target
-pub enum StoreOp {
-    Ignore,
-    Store,
-}
 
 // Operation applied to all types of render targets
 pub struct Operation<T: Texel> {
@@ -30,12 +24,7 @@ fn convert<C: Conversion>(input: &Operation<C>) -> wgpu::Operations<C::Target> {
         LoadOp::Clear(storage) => wgpu::LoadOp::Clear(C::into_target(storage)),
     };
 
-    let store = match input.store {
-        StoreOp::Ignore => true,
-        StoreOp::Store => true,
-    };
-
-    wgpu::Operations { load, store }
+    wgpu::Operations { load, store: input.store }
 }
 
 // Implemented for tuples of color attachment operators
@@ -57,12 +46,7 @@ impl<T: ColorTexel> ColorOperations<T> for Operation<T> {
             LoadOp::Clear(color) => wgpu::LoadOp::Clear(T::try_into_color(color).unwrap()),
         };
 
-        let store = match self.store {
-            StoreOp::Ignore => true,
-            StoreOp::Store => true,
-        };
-
-        vec![wgpu::Operations { load, store }]
+        vec![wgpu::Operations { load, store: self.store }]
     }
 }
 

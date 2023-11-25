@@ -1,4 +1,4 @@
-use crate::{ColorTexel, Normalized, Texel, R, RG, RGBA, SRGBA, UBC1, UBC2, UBC3, UBC7};
+use crate::format::{ColorTexel, Normalized, Texel, R, RG, RGBA, SRGBA, UBC1, UBC2, UBC3, UBC7};
 
 // Image texels are texels that can be loaded from a file, like when loading a Texture2D<RGBA<Normalized<u8>>
 pub trait ImageTexel: Texel + ColorTexel {

@@ -1,4 +1,5 @@
-use crate::{ColorLayout, Texel, Vertex, VertexInfo};
+use crate::format::{Texel, Vertex, VertexInfo};
+use crate::pass::ColorLayout;
 use std::marker::PhantomData;
 use wgpu::{ShaderLocation, VertexFormat, VertexStepMode};
 

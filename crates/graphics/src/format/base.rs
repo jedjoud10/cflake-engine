@@ -1,5 +1,5 @@
-use crate::ElementType;
-use crate::GpuPod;
+use super::ElementType;
+use crate::pod::GpuPod;
 use half::f16;
 use paste::paste;
 

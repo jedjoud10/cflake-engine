@@ -425,3 +425,60 @@ impl<'a, T: Texture> TextureViewMut<'a, T> {
         })
     }
 }
+
+
+// Trait implemented for textures and their immutable views
+pub trait AsRefTextureView<'a, T: Texture>: 'a {
+    fn as_ref_view(self) -> TextureViewRef<'a, T>;
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a T {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view(0).unwrap()
+    }
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for &'a mut T {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view(0).unwrap()
+    }
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewRef<'a, T> {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        self
+    }
+}
+
+impl<'a, T: Texture> AsRefTextureView<'a, T> for TextureViewMut<'a, T> {
+    fn as_ref_view(self) -> TextureViewRef<'a, T> {
+        TextureViewRef {
+            texture: self.texture,
+            view: self.view,
+            settings: self.settings,
+        }
+    }
+}
+
+// Trait implemented for textures and their mutable views
+pub trait AsMutTextureView<'a, T: Texture>: 'a {
+    fn as_mut_view(self) -> TextureViewMut<'a, T>;
+}
+
+impl<'a, T: Texture> AsMutTextureView<'a, T> for &'a mut T {
+    fn as_mut_view(self) -> TextureViewMut<'a, T> {
+        // We can assume that the view at index = 0 is the whole texture view
+        // since the user is *forced* to set the first view as a whole texture view on init
+        self.view_mut(0).unwrap()
+    }
+}
+
+impl<'a, T: Texture> AsMutTextureView<'a, T> for TextureViewMut<'a, T> {
+    fn as_mut_view(self) -> TextureViewMut<'a, T> {
+        self
+    }
+}

@@ -1,4 +1,5 @@
-use crate::{AnyElement, GpuPod, Normalized};
+use crate::format::{AnyElement, Normalized};
+use crate::pod::GpuPod;
 
 // The channels that represent the vertices
 pub struct X<T: AnyElement>(T);

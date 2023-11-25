@@ -2,12 +2,7 @@ use ahash::AHashMap;
 use utils::enable_in_range;
 use wgpu::CommandEncoder;
 
-use crate::{
-    active::pipeline::ActivePipeline, visibility_to_wgpu_stage, BindGroup, Buffer, BufferInfo,
-    BufferMode, BufferUsage, ColorLayout, ComputeCommand, ComputeShader, DepthStencilLayout,
-    DispatchError, GpuPod, Graphics, ModuleVisibility, PushConstantLayout, PushConstants,
-    SetBindGroupError, SetPushConstantsError,
-};
+
 use std::{
     collections::hash_map::Entry,
     marker::PhantomData,
@@ -15,8 +10,12 @@ use std::{
     sync::Arc,
 };
 
+use crate::{shader::ComputeShader, active::{DispatchError, ActivePipeline, SetPushConstantsError, PushConstants, SetBindGroupError, BindGroup}};
+
 // An active compute pipeline that is bound to a compute pass
 pub struct ActiveComputeDispatcher<'a, 'r> {
+    pub(crate) shader: &'r ComputeShader,
+    pub(crate) _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a, 'r> ActiveComputeDispatcher<'a, 'r> {
@@ -43,7 +42,7 @@ impl<'a, 'r> ActivePipeline for ActiveComputeDispatcher<'a, 'r> {
     fn set_bind_group<'b>(
         &mut self,
         binding: u32,
-        group: BindGroup<'b>
+        bind_group: BindGroup,
     ) -> Result<(), SetBindGroupError> {
         todo!()
     }

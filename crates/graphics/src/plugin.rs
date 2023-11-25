@@ -1,4 +1,4 @@
-use crate::{Graphics, GraphicsStats, Window, WindowSettings};
+use crate::context::{Graphics, GraphicsStats, Window, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
 use world::{post_user, pre_user, State, System, World, Registries, Update, Init};
 
@@ -10,6 +10,7 @@ fn init(world: &mut World, _: &Init) {
 
     // Initialize the WGPU context and create a winit Window
     let (graphics, window) = unsafe { crate::context::init_context_and_window(init, &el) };
+    drop(el);
 
     // Add the resources to the world
     world.insert(window);

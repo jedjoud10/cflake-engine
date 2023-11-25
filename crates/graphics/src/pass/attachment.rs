@@ -3,10 +3,9 @@ use std::marker::PhantomData;
 use thiserror::Error;
 use vek::Slerp;
 
-use crate::{
-    ColorLayout, ColorTexel, Depth, DepthElement, DepthStencilLayout, LoadOp, Stencil,
-    StencilElement, StoreOp, Texel, Texture, Texture2D,
-};
+use crate::format::{Texel, Depth, DepthElement, ColorTexel, Stencil, StencilElement};
+
+use super::{ColorLayout, DepthStencilLayout};
 
 // A color attachment that is passed to the render pass when starting it
 pub trait ColorAttachments<'a, C: ColorLayout>: 'a {

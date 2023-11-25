@@ -30,8 +30,8 @@ pub enum BufferValidationError {
 
     #[error("The compiler defined buffer storage access {compiler:?} does not match up with the shader defined access {shader:?}")]
     MismatchAccess {
-        compiler: spirq::AccessType,
-        shader: spirq::AccessType,
+        compiler: wgpu::naga::StorageAccess,
+        shader: wgpu::naga::StorageAccess,
     },
 }
 
@@ -57,8 +57,8 @@ pub enum TextureValidationError {
 
     #[error("The compiler defined texture storage access {compiler:?} does not match up with the shader defined access {shader:?}")]
     MismatchAccess {
-        compiler: spirq::AccessType,
-        shader: spirq::AccessType,
+        compiler: wgpu::naga::StorageAccess,
+        shader: wgpu::naga::StorageAccess,
     },
 
     #[error("The compielr defined texture sample type {compiler:?} does not match up wiuth the shader defined sample type {shader:?}")]

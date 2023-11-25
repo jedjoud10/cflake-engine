@@ -11,12 +11,14 @@ use std::{
 use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt, CommandEncoder, Maintain};
 
-use crate::{
+use super::{
     BufferAsyncReadError, BufferClearError, BufferCopyError, BufferExtendError, BufferInfo,
     BufferInitializationError, BufferMode, BufferNotMappableError, BufferReadError,
-    BufferSplatError, BufferUsage, BufferView, BufferViewMut, BufferWriteError, DispatchIndirect,
-    DrawIndexedIndirect, DrawIndirect, GpuPod, Graphics, Vertex, R,
+    BufferSplatError, BufferUsage, BufferView, BufferViewMut, BufferWriteError, 
 };
+
+
+use crate::{pod::{DispatchIndirect, DrawIndexedIndirect, DrawIndirect, GpuPod}, format::Vertex, context::Graphics};
 
 // Bitmask from Vulkan BufferUsages
 const VERTEX: u32 = wgpu::BufferUsages::VERTEX.bits();
@@ -37,6 +39,16 @@ pub enum BufferVariant {
 
 // Special vertex buffer (for vertices only)
 pub type VertexBuffer<V> = Buffer<<V as Vertex>::Storage, VERTEX>;
+
+pub trait IndexFormat {
+    const FORMAT: wgpu::IndexFormat;
+}
+impl IndexFormat for u16 {
+    const FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint16;
+}
+impl IndexFormat for u32 {
+    const FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
+}
 
 // Special triangle (index) buffer (for triangles only)
 pub type Triangle<T> = [T; 3];

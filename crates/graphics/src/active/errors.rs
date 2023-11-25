@@ -1,4 +1,4 @@
-use crate::ModuleVisibility;
+use crate::shader::ModuleVisibility;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

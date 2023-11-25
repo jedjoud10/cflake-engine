@@ -1,6 +1,6 @@
 use std::any::TypeId;
-
-use crate::{Base, CompressionType, GpuPod};
+use crate::format::{Base, CompressionType};
+use crate::pod::GpuPod;
 
 // Elements are just values that can be stored within channels, like u32, Normalized<i8> or i8
 pub trait AnyElement: 'static {

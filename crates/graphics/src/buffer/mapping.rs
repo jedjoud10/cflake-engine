@@ -1,4 +1,5 @@
-use crate::{Buffer, GpuPod};
+use super::Buffer;
+use crate::pod::GpuPod;
 use std::marker::PhantomData;
 use wgpu::CommandEncoder;
 

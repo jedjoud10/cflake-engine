@@ -1,4 +1,4 @@
-use crate::{
+use crate::format::{
     AnyElement, Depth, DepthElement, Normalized, Stencil, StencilElement, Texel, BGRA, R, RG, RGBA,
     SBC4, SBC5, SBGRA, SRGBA, UBC1, UBC2, UBC3, UBC4, UBC5, UBC7,
 };

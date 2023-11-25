@@ -1,4 +1,4 @@
-use rendering::prelude::FrameRateLimit;
+use graphics::prelude::FrameRateLimit;
 use fern::colors::ColoredLevelConfig;
 use log::LevelFilter;
 use std::{str::FromStr, sync::mpsc};

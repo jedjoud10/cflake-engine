@@ -1,4 +1,5 @@
-use crate::{Buffer, GpuPod};
+use super::Buffer;
+use crate::pod::GpuPod;
 
 // An immutable buffer slice is a region of an immutable buffer
 pub struct BufferSlice<'a> {

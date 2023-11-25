@@ -1,7 +1,10 @@
-use crate::{
-    BlendState, ColorAttachments, ColorLayout, ColorOperations, ColorTexel, LoadOp, Operation,
-    RenderTarget, StoreOp, Texel, TexelInfo,
+use crate::pass::{
+    ColorAttachments, ColorLayout, ColorOperations, LoadOp, Operation,
+    RenderTarget, StoreOp,
 };
+use crate::prelude::BlendState;
+use crate::format::{ColorTexel, Texel, TexelInfo};
+
 use seq_macro::seq;
 
 macro_rules! impl_color_layout {
@@ -32,11 +35,7 @@ macro_rules! impl_color_layout {
                         LoadOp::Clear(color) => wgpu::LoadOp::Clear(<C~N as ColorTexel>::try_into_color(color).unwrap()),
                     };
 
-                    let store = match op.store {
-                        StoreOp::Ignore => true,
-                        StoreOp::Store => true,
-                    };
-
+                    let store = op.store;
                     vec.push(wgpu::Operations { load, store });
                 });
 

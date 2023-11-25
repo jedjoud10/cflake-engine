@@ -1,4 +1,4 @@
-use crate::{CompressionType, ElementType, TexelChannels, VertexChannels};
+use crate::format::{CompressionType, ElementType, TexelChannels, VertexChannels};
 use paste::paste;
 use wgpu::{TextureFormat, VertexFormat};
 

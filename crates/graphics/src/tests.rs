@@ -346,7 +346,7 @@ mod vertex {
 
 #[cfg(test)]
 mod region {
-    use crate::Region;
+    use crate::texture::Region;
 
     #[test]
     fn levels() {

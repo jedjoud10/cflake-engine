@@ -1,6 +1,4 @@
-use crate::{
-    FrameRateLimit, Graphics, InternalGraphics, Window, WindowSettings,
-};
+use super::{FrameRateLimit, Graphics, InternalGraphics, Window, WindowSettings};
 
 use dashmap::DashMap;
 use nohash_hasher::NoHashHasher;
@@ -143,6 +141,7 @@ pub(crate) unsafe fn init_context_and_window(
         device,
         adapter,
         queue,
+        encoders: Default::default(),
     }));
 
     // Create the Window wrapper

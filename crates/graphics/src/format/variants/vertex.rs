@@ -1,7 +1,8 @@
-use crate::{
-    AnyElement, Depth, DepthElement, ElementType, GpuPod, Normalized, Stencil, TexelChannels,
+use crate::format::{
+    AnyElement, Depth, DepthElement, ElementType, Normalized, Stencil, TexelChannels,
     VertexChannels, X, XY, XYZ, XYZW,
 };
+use crate::pod::GpuPod;
 use half::f16;
 use std::mem::size_of;
 use vek::{
@@ -101,7 +102,7 @@ macro_rules! internal_impl_vertex {
             }
 
             fn format() -> VertexFormat {
-                crate::pick_vertex_format(Self::element(), Self::channels()).unwrap()
+                crate::format::pick_vertex_format(Self::element(), Self::channels()).unwrap()
             }
         }
     };

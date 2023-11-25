@@ -1,4 +1,4 @@
-use crate::{AnyElement, Conversion, Normalized, Texel, BGRA, R, RG, RGBA};
+use crate::format::{AnyElement, Conversion, Normalized, Texel, BGRA, R, RG, RGBA};
 
 // Color texels are texels used for color attachments
 // TODO: Maybe add saturation / hue control (since this is strictly color after all)

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{AnyElement, Base, Normalizable, Normalized, SupportsSrgba};
+use crate::format::{AnyElement, Base, Normalizable, Normalized, SupportsSrgba};
 use paste::paste;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -58,7 +58,7 @@ macro_rules! impl_compressed_any_element {
     ($t:ty, $storage:ty, $variant:expr) => {
         impl AnyElement for $t {
             type Storage = $storage;
-            const ELEMENT_TYPE: crate::ElementType = crate::ElementType::Compressed($variant);
+            const ELEMENT_TYPE: crate::format::ElementType = crate::format::ElementType::Compressed($variant);
         }
 
         impl Normalizable for $t {}

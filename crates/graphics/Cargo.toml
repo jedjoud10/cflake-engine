@@ -12,7 +12,6 @@ assets = { path = "../assets" }
 
 # Phobos and Window creation
 wgpu = { version = "0.18.0", features = ["naga", "expose-ids"] }
-naga = "0.14.1"
 winit = "0.29.1-beta"
 pollster = "0.2.5"
 
@@ -39,5 +38,6 @@ image = "0.24.5"
 # Common utils
 log = { workspace = true }
 thiserror = { workspace = true }
+parking_lot = { workspace = true }
 ahash = { workspace = true } 
 vek = { workspace = true, features = ["bytemuck"] }

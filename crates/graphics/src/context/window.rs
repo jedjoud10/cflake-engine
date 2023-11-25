@@ -1,8 +1,6 @@
 use std::sync::Arc;
-
 use wgpu::{Surface, SurfaceCapabilities, SurfaceConfiguration, SurfaceTexture, TextureView};
-
-use crate::{Normalized, RenderTarget, BGRA, RGBA};
+use crate::{format::{Normalized, BGRA, RGBA}, pass::RenderTarget};
 
 // Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
