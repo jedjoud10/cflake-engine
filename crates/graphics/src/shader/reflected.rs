@@ -1,5 +1,5 @@
 use std::{hash::Hash, num::NonZeroU32, sync::Arc};
-use crate::ModuleVisibility;
+use super::ModuleVisibility;
 
 // Visiblity for the set push constants bitset
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

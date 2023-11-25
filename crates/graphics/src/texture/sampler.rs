@@ -1,4 +1,4 @@
-use crate::{ColorTexel, Graphics, Texel, Texture};
+use crate::{context::Graphics, format::{Texel, ColorTexel}, texture::Texture};
 use dashmap::mapref::entry::Entry;
 use std::{
     collections::hash_map::DefaultHasher,

@@ -1,10 +1,12 @@
 use std::{cell::RefCell, marker::PhantomData, ops::RangeBounds};
 use utils::BitSet;
 
-use crate::{
-    Extent, Region, RenderTarget, Texel, Texture, TextureUsage, TextureViewDimension,
+use super::{
+    Extent, Region, Texture, TextureUsage, TextureViewDimension,
     ViewAsTargetError, ViewClearError, ViewCopyError, ViewReadError, ViewWriteError,
 };
+use crate::format::Texel;
+use crate::pass::RenderTarget;
 
 // The view settings that we should create for the texture
 // These will be given to the texture as an array to allow many views to be created
@@ -119,7 +121,7 @@ pub fn write<T: Texture>(
     };
 
     // Write to the view and into the specified subregion
-    crate::write_to_level::<T::T, T::Region>(
+    super::write_to_level::<T::T, T::Region>(
         subregion.origin(),
         subregion.extent(),
         src,

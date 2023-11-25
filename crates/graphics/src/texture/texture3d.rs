@@ -3,9 +3,10 @@ use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 use assets::Asset;
 use smallvec::SmallVec;
 
-use crate::{
-    Extent, Graphics, ImageTexel, Sampler, SamplerSettings, Texel, Texture, TextureAssetLoadError,
-    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings,
+use crate::{format::{Texel, ImageTexel}, context::Graphics};
+use super::{
+    Extent, Sampler, SamplerSettings, Texture, TextureAssetLoadError,
+    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings, TextureScale, RawTexels,
 };
 
 // A #D texture that contains multiple texels that have their own channels
@@ -30,7 +31,7 @@ impl<T: Texel> Texture for Texture3D<T> {
     type Region = (vek::Vec3<u32>, vek::Extent3<u32>);
     type T = T;
 
-    fn dimensions(&self) -> <Self::Region as crate::Region>::E {
+    fn dimensions(&self) -> <Self::Region as super::Region>::E {
         self.dimensions
     }
 

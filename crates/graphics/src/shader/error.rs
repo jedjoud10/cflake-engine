@@ -1,6 +1,6 @@
 use assets::AssetLoadError;
 use thiserror::Error;
-use crate::ModuleVisibility;
+use super::ModuleVisibility;
 
 #[derive(Error, Debug)]
 pub enum ShaderError {

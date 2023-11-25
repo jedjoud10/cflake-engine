@@ -1,9 +1,3 @@
-use crate::{
-    Buffer, Extent, FunctionModule, GpuPod, GpuPodInfo, Graphics, ModuleKind,
-    ModuleVisibility, PushConstantLayout, Region, ShaderCompilationError,
-    ShaderError, ShaderModule, ShaderReflectionError, SpecConstant, Texel,
-    TexelInfo, Texture, TextureViewDimension, VertexModule,
-};
 use ahash::{AHashMap, AHashSet};
 use assets::Assets;
 use itertools::Itertools;
@@ -21,6 +15,9 @@ use std::{
     time::Instant,
 };
 use thiserror::Error;
+
+use crate::{context::Graphics, prelude::{GpuPod, Texture}, format::Texel};
+use super::{ShaderError, ShaderModule, PushConstantLayout, ModuleVisibility};
 
 // This is a compiler that will take GLSL code and create a WGPU module
 // This compiler also allows us to define constants and snippets before compilation

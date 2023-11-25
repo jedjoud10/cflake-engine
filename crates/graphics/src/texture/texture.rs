@@ -11,12 +11,16 @@ use itertools::Itertools;
 use smallvec::SmallVec;
 use wgpu::{SamplerDescriptor, TextureDescriptor, TextureViewDescriptor};
 
-use crate::{
-    Extent, GpuPod, Graphics, LayeredOrigin, Origin, Region, RenderTarget, Sampler,
-    SamplerSettings, SamplerWrap, Texel, TexelSize, TextureInitializationError,
+use super::{
+    Extent, LayeredOrigin, Origin, Region, Sampler,
+    SamplerSettings, SamplerWrap, TextureInitializationError,
     TextureMipLevelError, TextureMipMaps, TextureSamplerError, TextureUsage, TextureViewDimension,
     TextureViewMut, TextureViewRef, TextureViewSettings, ViewAsTargetError,
 };
+use crate::pod::GpuPod;
+use crate::context::Graphics;
+use crate::format::{Texel, TexelSize};
+use crate::pass::RenderTarget;
 
 // A texture is an abstraction over Vulkan images to allow us to access/modify them with ease
 // A texture is a container of multiple texels (like pixels, but for textures) that are stored on the GPU
@@ -502,8 +506,8 @@ pub(crate) fn texture_usages(usage: TextureUsage) -> wgpu::TextureUsages {
 // Get the texture aspect based on the texel type
 pub(crate) fn texture_aspect<T: Texel>() -> wgpu::TextureAspect {
     match T::channels() {
-        crate::TexelChannels::Depth => wgpu::TextureAspect::DepthOnly,
-        crate::TexelChannels::Stencil => wgpu::TextureAspect::StencilOnly,
+        crate::format::TexelChannels::Depth => wgpu::TextureAspect::DepthOnly,
+        crate::format::TexelChannels::Stencil => wgpu::TextureAspect::StencilOnly,
         _ => wgpu::TextureAspect::All,
     }
 }

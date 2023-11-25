@@ -1,6 +1,6 @@
 use std::{num::NonZeroU8, ops::Add};
 
-use crate::Graphics;
+use crate::context::Graphics;
 
 pub use wgpu::TextureDimension;
 pub use wgpu::TextureViewDimension;

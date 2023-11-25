@@ -1,4 +1,4 @@
-use rendering::context::{FrameRateLimit, WindowSettings};
+use graphics::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
 use mimalloc::MiMalloc;
 use utils::plugin::UtilsSettings;
@@ -133,7 +133,8 @@ impl App {
         });
         
         // Register main plugins
-        rendering::plugin::plugin(&mut self.registries);
+        graphics::plugin::plugin(&mut self.registries);
+        //rendering::plugin::plugin(&mut self.registries);
         input::plugin::plugin(&mut self.registries);
         assets::plugin::plugin(&mut self.registries);
         utils::plugin::plugin(&mut self.registries);

@@ -4,7 +4,7 @@ use image::ImageError;
 use thiserror::Error;
 use wgpu::TextureFormat;
 
-use crate::RawTexelsError;
+use super::RawTexelsError;
 
 #[derive(Error, Debug)]
 pub enum TextureInitializationError {

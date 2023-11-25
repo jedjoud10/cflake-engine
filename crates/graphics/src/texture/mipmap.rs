@@ -3,12 +3,12 @@ use std::{cell::Cell, marker::PhantomData, num::NonZeroU8, ops::DerefMut};
 use bytemuck::Zeroable;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-use super::{Region, Texture};
-use crate::{
-    ColorTexel, Conversion, Extent, LayeredOrigin, Origin, RenderTarget, Texel,
+use super::{
+    Extent, LayeredOrigin, Origin, Region, Texture,
     TextureMipLevelError, TextureSamplerError, TextureUsage, ViewAsTargetError, ViewClearError,
     ViewCopyError, ViewReadError, ViewWriteError,
 };
+use crate::format::{ColorTexel, Conversion, Texel};
 
 // This enum tells the texture how exactly it should create it's mipmaps
 #[derive(PartialEq, Eq, Hash, Debug)]

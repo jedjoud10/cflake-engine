@@ -1,5 +1,7 @@
-use crate::{
-    Compiled, Compiler, ComputeModule, FragmentModule, Graphics,
+use crate::context::Graphics;
+
+use super::{
+    Compiled, Compiler, ComputeModule, FragmentModule,
     ShaderCompilationError, ShaderError, VertexModule,
 };
 use std::sync::Arc;

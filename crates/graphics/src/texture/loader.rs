@@ -1,4 +1,4 @@
-use crate::{Extent, Graphics, ImageTexel, Texel};
+use crate::{texture::Extent, context::Graphics, format::{ImageTexel, Texel}};
 use assets::Asset;
 pub use image::imageops::FilterType;
 use image::ImageFormat;

@@ -3,10 +3,10 @@ use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 use assets::Asset;
 use smallvec::SmallVec;
 
-use crate::{
-    Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture, Texture2D,
-    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureUsage,
-    TextureViewSettings,
+use crate::{format::{Texel, ImageTexel}, context::Graphics};
+use super::{
+    Extent, Sampler, SamplerSettings, Texture, TextureAssetLoadError,
+    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings, RawTexels,
 };
 
 // A layered 2D texture that contains multiple texels that are stored in multiple layers
@@ -31,7 +31,7 @@ impl<T: Texel> Texture for LayeredTexture2D<T> {
     type Region = ((vek::Vec2<u32>, u32), (vek::Extent2<u32>, u32));
     type T = T;
 
-    fn dimensions(&self) -> <Self::Region as crate::Region>::E {
+    fn dimensions(&self) -> <Self::Region as super::Region>::E {
         self.dimensions
     }
 

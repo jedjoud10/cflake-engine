@@ -2,11 +2,12 @@ use std::{marker::PhantomData, mem::ManuallyDrop, sync::Arc, time::Instant};
 
 use assets::Asset;
 use smallvec::SmallVec;
+use wgpu::TextureViewDimension;
 
-use crate::{
-    Extent, Graphics, ImageTexel, RawTexels, Sampler, SamplerSettings, Texel, Texture,
-    TextureAssetLoadError, TextureInitializationError, TextureMipMaps, TextureScale, TextureUsage,
-    TextureViewDimension, TextureViewSettings,
+use crate::{format::{Texel, ImageTexel}, context::Graphics};
+use super::{
+    Extent, Sampler, SamplerSettings, Texture, TextureAssetLoadError,
+    TextureInitializationError, TextureMipMaps, TextureUsage, TextureViewSettings, TextureScale, RawTexels,
 };
 
 // A 2D texture that contains multiple texels that have their own channels
@@ -31,7 +32,7 @@ impl<T: Texel> Texture for Texture2D<T> {
     type Region = (vek::Vec2<u32>, vek::Extent2<u32>);
     type T = T;
 
-    fn dimensions(&self) -> <Self::Region as crate::Region>::E {
+    fn dimensions(&self) -> <Self::Region as super::Region>::E {
         self.dimensions
     }
 
