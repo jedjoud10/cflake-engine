@@ -12,7 +12,7 @@ use wgpu::{
 
 use crate::{
     BindGroupLayout, BindResourceLayout, CachedShaderKey, CachedSpirvKey, Defines, Id,
-    ReflectedShader, SamplerSettings, SamplerWrap, Snippets, UniformBuffer,
+    ReflectedShader, SamplerSettings, SamplerWrap, Snippets, StagingPool, UniformBuffer,
 };
 
 // Cached graphics data that can be reused
@@ -37,6 +37,7 @@ pub(crate) struct InternalGraphics {
     pub(crate) encoders: ThreadLocal<Mutex<Vec<CommandEncoder>>>,
 
     // Helpers and cachers
+    pub(crate) staging: StagingPool,
     pub(crate) shaderc: shaderc::Compiler,
     pub(crate) cached: Cached,
 
@@ -52,6 +53,7 @@ pub struct GraphicsStats {
     pub acquires: usize,
     pub submissions: usize,
     pub stalls: usize,
+    pub staging_buffers: usize,
 
     pub cached_shaders: usize,
     pub cached_samplers: usize,
@@ -98,6 +100,11 @@ impl Graphics {
     // Get the GPU we are using
     pub fn adapter(&self) -> &Adapter {
         &self.0.adapter
+    }
+
+    // Get the global staging buffer allocator
+    pub fn staging_pool(&self) -> &StagingPool {
+        &self.0.staging
     }
 
     // Create a new command encoder to record commands

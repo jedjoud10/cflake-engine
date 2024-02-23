@@ -1,4 +1,4 @@
-use crate::{Buffer, GpuPod};
+use crate::{Buffer, GpuPod, StagingPool, StagingView, StagingViewWrite};
 use parking_lot::MappedMutexGuard;
 use std::marker::PhantomData;
 use wgpu::CommandEncoder;
@@ -6,13 +6,13 @@ use wgpu::CommandEncoder;
 // Allows  us to read the buffer as if it were an immutably slice
 pub struct BufferView<'a, T: GpuPod, const TYPE: u32> {
     pub(crate) buffer: &'a Buffer<T, TYPE>,
-    pub(crate) buffer_view: wgpu::BufferView<'a>,
+    pub(crate) data: StagingView<'a>,
 }
 
 impl<'a, T: GpuPod, const TYPE: u32> BufferView<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
-        let bytes = self.buffer_view.as_ref();
+        let bytes = self.data.as_ref();
         T::bytes_into_slice(bytes)
     }
 }
@@ -37,7 +37,7 @@ pub enum BufferViewMut<'a, T: GpuPod, const TYPE: u32> {
     // Only used when WRITING ONLY
     Mapped {
         buffer: PhantomData<&'a Buffer<T, TYPE>>,
-        buffer_view: wgpu::BufferViewMut<'a>,
+        data: StagingViewWrite<'a>,
     },
 
     // Copy the buffer's data to the CPU for reading/writing
@@ -53,7 +53,7 @@ impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     // Get an immutable slice that we can read from
     pub fn as_slice(&self) -> &[T] {
         match self {
-            BufferViewMut::Mapped { .. } => {
+            BufferViewMut::Mapped { data, .. } => {
                 // This should never be called because it would return invalid data
                 panic!();
             }
@@ -64,8 +64,8 @@ impl<'a, T: GpuPod, const TYPE: u32> BufferViewMut<'a, T, TYPE> {
     // Get a mutable slice that we can read/write from
     pub fn as_slice_mut(&mut self) -> &mut [T] {
         match self {
-            BufferViewMut::Mapped { buffer_view, .. } => {
-                let bytes = buffer_view.as_mut();
+            BufferViewMut::Mapped { data, .. } => {
+                let bytes = data.as_mut();
                 bytemuck::cast_slice_mut(bytes)
             }
             BufferViewMut::Cloned { data, .. } => data,

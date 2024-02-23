@@ -1,12 +1,15 @@
-# 🚧🚧🚧 **UNDER HEAVY DEVELOPMENT** 🚧🚧🚧
+# 🚧🚧🚧 **NO LONGER IN DEVELOPMENT** 🚧🚧🚧
 
 # cFlake Engine
+cFlake Engine is a free and open-source Rust game engine that I was working on for the past 2 years as a personal project (2021-2023).
 
-[![Rust](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml/badge.svg)](https://github.com/jedjoud10/cflake-engine/actions/workflows/rust.yml)
 
+I eventually stopped working on this project since the codebase became too bloated and due to an internal bug in wgpu which would have to force me to rewrite my whole rendering API as it is right now.
+(more specifically it's due to me being dumb and trying to get away and using shaderc to compile my glsl shaders to shove into wgpu instead of using naga)
 
-cFlake Engine is a free and open-source Rust game engine that I have been working on for the past 2 years as a personal project.
-Currently, cFlake engine is under heavy development (***very*** WIP) and is still in it's early stages, but pull requests are heavily appreciated (pls help me I am becoming insane)
+I've learned a ton of stuff about rust, graphics, and engine development whilst writing and working on this engine.
+Will keep this repository open just to showcase it as a semi working project but I don't intend to fix the current codebase
+In the near future if I decide to pick this up again it will most likely be a completely different engine. 
 
 # Main features of cFlake:
 * 7 World Event Variants, Systems, and Resources all accessible within the **World** struct
@@ -19,6 +22,7 @@ Currently, cFlake engine is under heavy development (***very*** WIP) and is stil
 * Custom sound support through CPAL
 
 # State of each crate:
+
 ## Legend
 * ❌ = TODO
 * 🚧 = WIP, not complete
@@ -144,6 +148,8 @@ Input is currently being handled using a custom wrapper around ``gilrs`` and ``W
 * Lionel Stanway (MoldyToeMan)
 * Logan McLennan (PigSteel)
 * Dimev (Skythedragon)
+* The whole Graphics Programming and Rust Language discord servers for their helpful tips and help when it comes to graphics and engine programming!
+* The "examples/assets/user/scenes/untitled2.glb" file comes from the Graphics Programming server itself! Thanks Deccer! [deccer cubes!!](https://github.com/GraphicsProgramming/deccer-cubes)
 * Poly Haven for their awesome textures and models (used in examples folder)
 
 # LICENSE

@@ -117,14 +117,7 @@ impl ChunkManager {
             .unwrap();
 
         // Convert the newly created meshes to multiple sub-surfaces
-        let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface {
-            mesh: mesh.clone(),
-            material: material.clone(),
-            culled: todo!(),
-            visible: todo!(),
-            shadow_culled: todo!(),
-            shadow_caster: todo!(),
-        });
+        let subsurfaces = memory.allocation_meshes.iter().map(|mesh| SubSurface::new(mesh.clone(), material.clone(), id));
 
         // Create one whole "terrain" surface
         let surface = Surface::from_iter(subsurfaces, id);

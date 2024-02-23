@@ -20,6 +20,20 @@ pub struct SubSurface<M: Material> {
     pub shadow_caster: bool,
 }
 
+impl<M: Material> SubSurface<M> {
+    // Create a new visible subsurface from a mesh handle, material handle, and material ID
+    pub fn new(mesh: Handle<Mesh<M::RenderPath>>, material: Handle<M>, id: MaterialId<M>) -> Self {
+        Self {
+            mesh,
+            material,
+            culled: CullResult::Visible,
+            visible: true,
+            shadow_culled: 0,
+            shadow_caster: true
+        }
+    }
+}
+
 impl<M: Material> Clone for SubSurface<M> {
     fn clone(&self) -> Self {
         Self {
@@ -57,14 +71,7 @@ impl<M: Material> Surface<M> {
     // Create a new visible surface from a mesh handle, material handle, and material ID
     pub fn new(mesh: Handle<Mesh<M::RenderPath>>, material: Handle<M>, id: MaterialId<M>) -> Self {
         Self {
-            subsurfaces: SmallVec::from_buf([SubSurface {
-                mesh,
-                material,
-                culled: CullResult::Visible,
-                visible: true,
-                shadow_culled: 0,
-                shadow_caster: true
-            }]),
+            subsurfaces: SmallVec::from_buf([SubSurface::new(mesh, material, id)]),
             id,
         }
     }

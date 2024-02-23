@@ -73,6 +73,7 @@ fn update(world: &mut World) {
         texture_views,
         samplers,
         cached_shaders,
+        ..
     } = *stats;
 
     // Get the GPU stats

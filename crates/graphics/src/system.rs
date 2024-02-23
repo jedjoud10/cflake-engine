@@ -33,6 +33,7 @@ fn update(world: &mut World) {
         cached_bind_group_layouts: cached.bind_group_layouts.len(),
         cached_pipeline_layouts: cached.pipeline_layouts.len(),
         cached_bind_groups: cached.bind_groups.len(),
+        staging_buffers: graphics.0.staging.allocations.len(),
 
         adapters: vulkan.adapters.num_occupied,
         devices: vulkan.adapters.num_occupied,

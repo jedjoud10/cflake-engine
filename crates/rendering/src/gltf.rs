@@ -8,6 +8,7 @@ use base64::{
     engine::{GeneralPurpose, GeneralPurposeConfig},
     Engine,
 };
+use bytemuck::Contiguous;
 use coords::HierarchyManager;
 use dashmap::DashMap;
 use ecs::{Entity, Scene};
@@ -195,13 +196,13 @@ impl Asset for GltfScene {
                 } else {
                     // Load the binary data oui oui
                     let bin = bin.as_ref().unwrap();
-                    let bytes = bin[offset..(offset + buffer.byte_length as usize)].to_vec();
-                    offset += buffer.byte_length as usize;
+                    let bytes = bin[offset..(offset + buffer.byte_length.0 as usize)].to_vec();
+                    offset += buffer.byte_length.0 as usize;
                     bytes
                 };
 
                 // Make sure we loaded the right amount of bytes
-                assert_eq!(bytes.len(), buffer.byte_length as usize);
+                assert_eq!(bytes.len(), buffer.byte_length.0 as usize);
                 bytes
             })
             .collect::<Vec<_>>();
@@ -212,8 +213,8 @@ impl Asset for GltfScene {
             .iter()
             .map(|view| {
                 let buffer = &mapped_contents[view.buffer.value()];
-                let len = view.byte_length as usize;
-                let offset = view.byte_offset.unwrap_or_default() as usize;
+                let len = view.byte_length.0 as usize;
+                let offset = view.byte_offset.unwrap_or_default().0 as usize;
                 assert!(view.byte_stride.is_none());
                 &buffer[offset..(offset + len)]
             })
@@ -238,7 +239,7 @@ impl Asset for GltfScene {
             .map(|accessor| {
                 let view = &mapped_views[accessor.buffer_view.unwrap().value()];
                 assert!(accessor.sparse.is_none());
-                let offset = accessor.byte_offset as usize;
+                let offset = accessor.byte_offset.unwrap_or_default().0 as usize;
                 let _type = accessor.type_.as_ref().unwrap();
                 let min = accessor.min.as_ref();
                 let max = accessor.max.as_ref();

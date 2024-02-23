@@ -15,6 +15,8 @@ fn init(world: &mut World) {
     let assets = world.get::<Assets>().unwrap();
 
     // Setup the assets that will be loaded
+    // THIS FILE WAS TAKEN FROM THE GRAPHICS PROGRAMMING DISCORD SERVER 
+    // ALL CREDITS GO TO THEM
     asset!(assets, "user/scenes/untitled2.glb", "/examples/assets/");
 
     // Load the glTF scene into the world LMAO!!
