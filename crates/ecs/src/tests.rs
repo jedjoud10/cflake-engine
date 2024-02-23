@@ -15,7 +15,7 @@ struct Placeholder();
 fn cleanup(ecs: &mut Scene) {
     for (_, archetype) in ecs.archetypes_mut() {
         for (_, column) in archetype.table_mut().iter_mut() {
-            column.delta_frame_states_mut().reset();
+            column.states_mut().reset();
         }
     }
 

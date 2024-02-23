@@ -1,14 +1,17 @@
+pub mod gltf;
+pub mod material;
+pub mod mesh;
+pub mod pipeline;
+pub mod scene;
+pub mod util;
+
 /*
-mod gltf;
-mod material;
-mod mesh;
-mod pipeline;
-mod scene;
-mod util;
-pub use crate::gltf::*;
-pub use material::*;
-pub use mesh::*;
-pub use pipeline::*;
-pub use scene::*;
-pub use util::*;
+pub mod prelude {
+    pub use crate::gltf::*;
+    pub use crate::material::*;
+    pub use crate::mesh::*;
+    pub use crate::pipeline::*;
+    pub use crate::scene::*;
+    pub use crate::util::*;
+}
 */

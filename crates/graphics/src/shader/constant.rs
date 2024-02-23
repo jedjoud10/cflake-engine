@@ -5,9 +5,16 @@ use paste::paste;
 // TODO: Implement 64 bit types
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecConstant {
+    // i32 value as specialization constant
     I32(i32),
+
+    // u32 value as specialization constant
     U32(u32),
+
+    // f32 value as specialization constant
     F32(f32),
+
+    // boolean value as specialization constant
     BOOL(bool),
 }
 

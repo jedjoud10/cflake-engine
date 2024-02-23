@@ -8,8 +8,8 @@ use std::marker::PhantomData;
 use std::ops::RangeBounds;
 use utils::Handle;
 
-use crate::{AttributeError, DefaultMaterialResources, RenderPath, VerticesMut, VerticesRef};
-
+use super::{AttributeError, VerticesMut, VerticesRef};
+use crate::material::{DefaultMaterialResources, RenderPath};
 bitflags::bitflags! {
     // This specifies the buffers that the mesh uses internally
     pub struct MeshAttributes: u8 {

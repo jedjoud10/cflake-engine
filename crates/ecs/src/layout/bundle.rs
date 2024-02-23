@@ -72,7 +72,7 @@ impl<T: Component> Bundle for T {
         moved: bool,
         iter: impl IntoIterator<Item = Self>,
     ) -> Option<usize> {
-        let (components, delta_frame_states, delta_tick_states) = archetype.column_mut::<T>()?;
+        let (components, states) = archetype.column_mut::<T>()?;
 
         let mut additional = 0;
         for bundle in iter {
@@ -80,15 +80,7 @@ impl<T: Component> Bundle for T {
             additional += 1;
         }
 
-        delta_frame_states.extend_with_flags(
-            additional,
-            StateFlags {
-                added: !moved,
-                modified: !moved,
-            },
-        );
-
-        delta_tick_states.extend_with_flags(
+        states.extend_with_flags(
             additional,
             StateFlags {
                 added: !moved,

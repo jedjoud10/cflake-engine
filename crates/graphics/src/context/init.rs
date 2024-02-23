@@ -72,7 +72,6 @@ pub(crate) unsafe fn init_context_and_window(
         log::debug!("Limits supported: {limits_supported}, features supported: {features_supported}, surface supported: {surface_supported}");
         limits_supported && features_supported
     }).map(|adapter| {
-        let limits = adapter.limits();
         let info = adapter.get_info();
         let mut score = 0i32;
 
@@ -119,8 +118,7 @@ pub(crate) unsafe fn init_context_and_window(
     // Pick the appropriate present mode
     let present_mode = match settings.limit {
         FrameRateLimit::VSync => wgpu::PresentMode::AutoVsync,
-        FrameRateLimit::Limited(_) => wgpu::PresentMode::Immediate,
-        FrameRateLimit::Unlimited => wgpu::PresentMode::Immediate,
+        FrameRateLimit::Limited(_) | FrameRateLimit::Unlimited => wgpu::PresentMode::Immediate
     };
 
     // Create the surface configuration
@@ -141,7 +139,6 @@ pub(crate) unsafe fn init_context_and_window(
         device,
         adapter,
         queue,
-        encoders: Default::default(),
     }));
 
     // Create the Window wrapper

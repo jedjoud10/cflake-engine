@@ -71,9 +71,7 @@ impl<'a> EntryMut<'a> {
     /// Get a mutable reference to a linked component.
     pub fn get_mut<T: Component>(&mut self) -> Option<&mut T> {
         let index = self.linkings.index;
-        let states = self.archetype_mut().delta_frame_states_mut::<T>()?;
-        states.update(index, |flags| flags.modified = true);
-        let states = self.archetype_mut().delta_tick_states_mut::<T>()?;
+        let states = self.archetype_mut().states_mut::<T>()?;
         states.update(index, |flags| flags.modified = true);
         self.get_mut_silent::<T>()
     }
@@ -153,9 +151,7 @@ impl<'a> EntryMut<'a> {
         // Update the states based on the layout mask
         for unit in mutability.units() {
             let table = archetype.table_mut();
-            let states = table.get_mut(&unit).unwrap().delta_frame_states_mut();
-            states.update(index, |flags| flags.modified = true);
-            let states = table.get_mut(&unit).unwrap().delta_tick_states_mut();
+            let states = table.get_mut(&unit).unwrap().states_mut();
             states.update(index, |flags| flags.modified = true);
         }
 

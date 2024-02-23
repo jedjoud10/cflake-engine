@@ -1,6 +1,10 @@
 use std::{path::Path, sync::Arc};
 
-use crate::{AlbedoMap, MaskMap, Mesh, NormalMap, PbrMaterial, Pipelines, SubSurface, Surface, CullResult};
+use crate::material::{AlbedoMap, MaskMap, NormalMap, PbrMaterial};
+use crate::mesh::Mesh;
+use crate::pipeline::CullResult;
+use crate::scene::{SubSurface, Surface, Pipelines, Renderer};
+
 use ahash::AHashMap;
 use assets::{Asset, Data};
 use base64::{
@@ -19,36 +23,37 @@ use graphics::{
 };
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use utils::{Handle, Storage};
-use world::{Read, World, Write};
+use world::world::World;
+use std::cell::{Ref, RefMut};
 
 // These are the context values that must be given to the GltfScene to load it
 pub struct GtlfContext<'a> {
     // Needed resources
-    pub graphics: Read<'a, Graphics>,
-    pub scene: Write<'a, Scene>,
-    pub pipelines: Write<'a, Pipelines>,
+    pub graphics: Ref<'a, Graphics>,
+    pub scene: RefMut<'a, Scene>,
+    pub pipelines: RefMut<'a, Pipelines>,
 
     // Storages that will contain the newly loaded GTLF data
-    pub meshes: Write<'a, Storage<Mesh>>,
-    pub albedo_maps: Write<'a, Storage<AlbedoMap>>,
-    pub normal_maps: Write<'a, Storage<NormalMap>>,
-    pub mask_maps: Write<'a, Storage<MaskMap>>,
-    pub pbr_materials: Write<'a, Storage<PbrMaterial>>,
+    pub meshes: RefMut<'a, Storage<Mesh>>,
+    pub albedo_maps: RefMut<'a, Storage<AlbedoMap>>,
+    pub normal_maps: RefMut<'a, Storage<NormalMap>>,
+    pub mask_maps: RefMut<'a, Storage<MaskMap>>,
+    pub pbr_materials: RefMut<'a, Storage<PbrMaterial>>,
 }
 
 impl<'a> GtlfContext<'a> {
     // Load all the necessary resources from the world LMFAO
-    pub fn from_world(world: &'a World) -> Result<Self, world::WorldBorrowMutError> {
+    pub fn from_world(world: &'a World) -> Self {
         let graphics = world.get::<Graphics>().unwrap();
-        let scene = world.get_mut::<Scene>()?;
-        let pipelines = world.get_mut::<Pipelines>()?;
-        let meshes = world.get_mut::<Storage<Mesh>>()?;
-        let albedo_maps = world.get_mut::<Storage<AlbedoMap>>()?;
-        let normal_maps = world.get_mut::<Storage<NormalMap>>()?;
-        let mask_maps = world.get_mut::<Storage<MaskMap>>()?;
-        let pbr_materials = world.get_mut::<Storage<PbrMaterial>>()?;
+        let scene = world.get_mut::<Scene>().unwrap();
+        let pipelines = world.get_mut::<Pipelines>().unwrap();
+        let meshes = world.get_mut::<Storage<Mesh>>().unwrap();
+        let albedo_maps = world.get_mut::<Storage<AlbedoMap>>().unwrap();
+        let normal_maps = world.get_mut::<Storage<NormalMap>>().unwrap();
+        let mask_maps = world.get_mut::<Storage<MaskMap>>().unwrap();
+        let pbr_materials = world.get_mut::<Storage<PbrMaterial>>().unwrap();
 
-        Ok(Self {
+        Self {
             graphics,
             scene,
             pipelines,
@@ -57,7 +62,7 @@ impl<'a> GtlfContext<'a> {
             normal_maps,
             mask_maps,
             pbr_materials,
-        })
+        }
     }
 }
 
@@ -115,20 +120,20 @@ impl Asset for GltfScene {
     ) -> Result<Self, Self::Err> {
         // Loads the GTLF file from the loaded up bytes
         let bytes = data.bytes();
-        let reader = std::io::Cursor::new(bytes);
+        let Refer = std::io::Cursor::new(bytes);
 
         // Second variable is the binary data in case we load from a GLB
         let (json, bin) = match data.extension() {
             // Load the scene from a GLTF file
             "gltf" => {
-                let gltf = gltf::Gltf::from_reader(reader)?;
+                let gltf = gltf::Gltf::from_reader(Refer)?;
                 let doc = gltf.document;
                 (doc.into_json(), None)
             }
 
             // Load the scene from a GLB file
             "glb" => {
-                let glb = gltf::Glb::from_reader(reader)?;
+                let glb = gltf::Glb::from_reader(Refer)?;
                 let cursor = std::io::Cursor::new(&glb.json);
                 let gltf = gltf::Gltf::from_reader(cursor)?;
                 let doc = gltf.document;
@@ -173,7 +178,7 @@ impl Asset for GltfScene {
         let mapped_contents = buffers
             .iter()
             .map(|buffer| {
-                // Handle reading buffers from URI or raw bytes directly
+                // Handle Refing buffers from URI or raw bytes directly
                 let bytes = if let Some(uri) = buffer.uri.as_ref() {
                     const PREFIX: &str = "data:application/octet-stream;base64,";
 
@@ -238,7 +243,7 @@ impl Asset for GltfScene {
             .map(|accessor| {
                 let view = &mapped_views[accessor.buffer_view.unwrap().value()];
                 assert!(accessor.sparse.is_none());
-                let offset = accessor.byte_offset as usize;
+                let offset = accessor.byte_offset.unwrap() as usize;
                 let _type = accessor.type_.as_ref().unwrap();
                 let min = accessor.min.as_ref();
                 let max = accessor.max.as_ref();
@@ -256,13 +261,13 @@ impl Asset for GltfScene {
         // Convert the textures to hashmaps w the settings they should be created with
         // Create rayon scope that will take those hashmaps and convert their inner settings to act textures
 
-        // Map PBR textures first in other threads
+        // Map PBR textures first in other thRefs
         let cached_albedo_maps = Arc::new(DashMap::<usize, AlbedoMap>::new());
         let cached_normal_maps = Arc::new(DashMap::<usize, NormalMap>::new());
         let cached_mask_maps = Arc::new(DashMap::<(Option<usize>, Option<usize>), MaskMap>::new());
         let graphics = context.graphics.clone();
 
-        // Load the assets in other threads
+        // Load the assets in other thRefs
         rayon::scope(|s| {
             for material in materials.iter() {
                 // Decompose into Optional indices
@@ -446,7 +451,7 @@ impl Asset for GltfScene {
                             (normals.as_ref(), tex_coords.as_ref())
                         {
                             tangents = Some(
-                                super::compute_tangents(
+                                crate::mesh::compute_tangents(
                                     &positions, normals, tex_coords, &triangles,
                                 )
                                 .unwrap(),
@@ -459,7 +464,7 @@ impl Asset for GltfScene {
                         let mut temp_tex_coords = tex_coords.as_deref_mut();
 
                         // Optimize the mesh after we load it
-                        super::optimize(
+                        crate::mesh::optimize(
                             true,
                             true,
                             true,
@@ -613,8 +618,8 @@ impl Asset for GltfScene {
                             coords::Rotation::default(),
                             coords::Scale::default(),
                             surface,
-                            crate::Renderer::default(),
-                            ecs::Named(name.to_string()),
+                            Renderer::default(),
+                            //ecs::Named(name.to_string()),
                         ))
                     }
 
@@ -626,8 +631,8 @@ impl Asset for GltfScene {
                             coords::Rotation::from(rotation),
                             coords::Scale::from(scale),
                             surface,
-                            crate::Renderer::default(),
-                            ecs::Named(name.to_string()),
+                            Renderer::default(),
+                            //ecs::Named(name.to_string()),
                         ))
                     }
                 }
@@ -643,7 +648,7 @@ impl Asset for GltfScene {
                             coords::Position::default(),
                             coords::Rotation::default(),
                             coords::Scale::default(),
-                            ecs::Named(name.to_string()),
+                            //ecs::Named(name.to_string()),
                         ))
                     }
 
@@ -654,7 +659,7 @@ impl Asset for GltfScene {
                             coords::Position::from(position),
                             coords::Rotation::from(rotation),
                             coords::Scale::from(scale),
-                            ecs::Named(name.to_string()),
+                            //ecs::Named(name.to_string()),
                         ))
                     }
                 }
@@ -859,7 +864,7 @@ fn map_wrapping_mode(wrap: gltf::json::texture::WrappingMode) -> SamplerWrap {
 }
 
 // Create a texture used for a material used in the glTF scene
-// This should be executed in multiple threads for maximum efficency
+// This should be executed in multiple thRefs for maximum efficency
 fn create_material_texture<T: Texel + ImageTexel>(
     graphics: Graphics,
     texture: &gltf::json::Texture,

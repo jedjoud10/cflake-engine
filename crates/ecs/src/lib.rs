@@ -23,6 +23,7 @@ pub mod registry;
 /// Main module that contains the Scene resource
 pub mod scene;
 mod tests;
+pub mod plugin;
 
 /// UntypedVec utilitities
 pub mod vec;

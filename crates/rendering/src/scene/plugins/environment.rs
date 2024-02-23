@@ -2,12 +2,12 @@ use assets::Assets;
 use ecs::Scene;
 use graphics::{ActivePipeline, ComputePass, GpuPod, Graphics, Texture};
 use utils::Time;
-use world::{user, System, World};
+use world::{system::{pre_user, post_user, Registries}, world::World, events::{Init, Update}};
 
-use crate::{DeferredRenderer, DirectionalLight, Environment};
+use crate::scene::{Environment, DeferredRenderer, DirectionalLight};
 
 // Add the envinronment resource into the world and the sky entity
-fn init(world: &mut World) {
+fn init(world: &mut World, _: &Init) {
     // Add the sky entity
     let graphics = world.get::<Graphics>().unwrap();
     let assets = world.get::<Assets>().unwrap();
@@ -25,7 +25,7 @@ fn init(world: &mut World) {
 
 // Render a single face of the environment map each frame
 // Swap the envmap index when done
-fn render(world: &mut World) {
+fn render(world: &mut World, _: &Update) {
     let mut _environment = world.get_mut::<Environment>().unwrap();
     let environment = &mut *_environment;
     let graphics = world.get::<Graphics>().unwrap();
@@ -59,19 +59,22 @@ fn render(world: &mut World) {
     // Generate the base environment map
     let resolution = environment.resolution;
     let mut active = pass.bind_shader(&environment.environment_shader);
+    /*
     active
         .set_bind_group(0, |group| {
             group.set_storage_texture_mut("enviro", view).unwrap();
         })
         .unwrap();
+    */
+
     active
         .set_push_constants(|pc| {
             // Set the sun direction
             let bytes = rotation.into_bytes();
-            pc.push(bytes, 0).unwrap();
+            pc.push(0, bytes).unwrap();
 
             // Set the proj/view matrix
-            pc.push(matrix, 64).unwrap();
+            pc.push(64, matrix).unwrap();
         })
         .unwrap();
     active
@@ -86,6 +89,7 @@ fn render(world: &mut World) {
         let dst_cubemap = &mut environment.diffuse_ibl_map;
         let view = dst_cubemap.view_mut(1 + index).unwrap();
         let mut active = pass.bind_shader(&environment.ibl_diffuse_convolution_shader);
+        /*
         active
             .set_bind_group(0, |group| {
                 group.set_sampled_texture("enviro", src_cubemap).unwrap();
@@ -100,6 +104,7 @@ fn render(world: &mut World) {
                 pc.push(matrix, 0).unwrap();
             })
             .unwrap();
+        */
         active
             .dispatch(vek::Vec3::new(resolution / 16, resolution / 16, 1))
             .unwrap();
@@ -109,16 +114,16 @@ fn render(world: &mut World) {
 }
 
 // The environment system is responsible for creatin the HDRi environment map to use for specular and diffuse IBL
-pub fn system(system: &mut System) {
-    system
-        .insert_init(init)
-        .before(user)
-        .after(assets::system)
-        .after(graphics::common)
-        .after(crate::systems::rendering::system);
+pub fn plugin(registries: &mut Registries) {
+    registries.init
+        .insert(init)
+        .before(pre_user)
+        .after(assets::init)
+        .after(graphics::init)
+        .after(crate::scene::plugins::rendering::init);
 
-    system
-        .insert_update(render)
-        .before(user)
-        .before(crate::systems::rendering::system);
+    registries.update
+        .insert(render)
+        .before(pre_user)
+        .before(crate::scene::plugins::rendering::update);
 }

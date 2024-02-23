@@ -3,7 +3,7 @@ use std::mem::size_of;
 use assets::Assets;
 use graphics::{
     Compiler, ComputeModule, ComputeShader, CubeMap, Graphics, ImageTexel, ModuleVisibility,
-    SamplerSettings, SamplerWrap, StorageAccess, Texel, Texture, Texture2D, TextureMipMaps,
+    SamplerSettings, SamplerWrap, Texel, Texture, Texture2D, TextureMipMaps,
     TextureUsage, TextureViewDimension, TextureViewSettings, RGBA,
 };
 
@@ -42,12 +42,6 @@ fn create_cubemap<T: Texel + ImageTexel>(graphics: &Graphics, resolution: u32) -
                 dimension: TextureViewDimension::D2Array,
             },
         ],
-        Some(SamplerSettings {
-            wrap_u: SamplerWrap::ClampToEdge,
-            wrap_v: SamplerWrap::ClampToEdge,
-            wrap_w: SamplerWrap::ClampToEdge,
-            ..Default::default()
-        }),
         TextureMipMaps::Disabled,
     )
     .unwrap()
@@ -75,7 +69,7 @@ impl Environment {
         // Create the bind layout for the compute shader
         let mut compiler = Compiler::new(assets, graphics);
         compiler.use_constant(0, resolution);
-        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("enviro", StorageAccess::WriteOnly);
+        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("enviro", false, true);
         compiler.use_push_constant_layout(
             graphics::PushConstantLayout::single(
                 size_of::<f32>() * 4 * 4 + size_of::<f32>() * 4 * 4,
@@ -92,8 +86,8 @@ impl Environment {
 
         // Create the bind layout for the compute shader
         let mut compiler = Compiler::new(assets, graphics);
-        compiler.use_constant(0, resolution / 16);
-        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("diffuse", StorageAccess::WriteOnly);
+        //compiler.use_constant(0, resolution / 16);
+        compiler.use_storage_texture::<Texture2D<RGBA<f32>>>("diffuse", false, true);
         compiler.use_sampled_texture::<EnvironmentMap>("enviro", false);
         compiler.use_sampler::<RGBA<f32>>("enviro_sampler", false);
         compiler.use_push_constant_layout(

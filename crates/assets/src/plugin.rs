@@ -1,4 +1,4 @@
-use world::{prelude::Init, world::World, system::Registries};
+use world::prelude::{Init, World, Registries, pre_user};
 use crate::prelude::{Assets, asset};
 
 
@@ -78,5 +78,5 @@ pub fn init(world: &mut World, _: &Init) {
 
 /// This plugin will add the asset loader resource into the world and automatically pre-load the default assets as well
 pub fn plugin(registries: &mut Registries) {
-    registries.init.insert(init);
+    registries.init.insert(init).before(pre_user);
 }

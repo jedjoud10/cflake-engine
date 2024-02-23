@@ -26,7 +26,7 @@ const INDEX: u32 = wgpu::BufferUsages::INDEX.bits();
 const UNIFORM: u32 = wgpu::BufferUsages::UNIFORM.bits();
 const INDIRECT: u32 = wgpu::BufferUsages::INDIRECT.bits();
 
-// Type of buffer stored as an enum (WGPU BufferUsage)
+/// Type of buffer stored as an enum (WGPU BufferUsage)
 #[repr(u32)]
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum BufferVariant {
@@ -37,9 +37,10 @@ pub enum BufferVariant {
     None,
 }
 
-// Special vertex buffer (for vertices only)
+/// Special vertex buffer (for vertices only)
 pub type VertexBuffer<V> = Buffer<<V as Vertex>::Storage, VERTEX>;
 
+/// Index format implement for u16 and u32
 pub trait IndexFormat {
     const FORMAT: wgpu::IndexFormat;
 }
@@ -50,21 +51,29 @@ impl IndexFormat for u32 {
     const FORMAT: wgpu::IndexFormat = wgpu::IndexFormat::Uint32;
 }
 
-// Special triangle (index) buffer (for triangles only)
+/// Triangle type (just an array with size of 3)
 pub type Triangle<T> = [T; 3];
+
+/// Special triangle (index) buffer (for triangles only)
 pub type TriangleBuffer<T> = Buffer<Triangle<T>, INDEX>;
 
-// TODO: Implemenent std430 + std130 for these types of buffers
+/// TODO: Implemenent std430 + std130 for these types of buffers
 pub type UniformBuffer<T> = Buffer<T, UNIFORM>;
 
-// Indirect buffers for GPU rendering
+/// Draw indirect buffer
 pub type DrawIndirectBuffer = Buffer<DrawIndirect, INDIRECT>;
+
+/// Draw indexed indirect buffer
 pub type DrawIndexedIndirectBuffer = Buffer<DrawIndexedIndirect, INDIRECT>;
+
+/// Dispatch indirect buffer
 pub type DispatchIndirectBuffer = Buffer<DispatchIndirect, INDIRECT>;
+
+/// Draw count indirect indirect buffer
 pub type DrawCountIndirectBuffer = Buffer<u32, INDIRECT>;
 
-// A buffer abstraction over a valid WGPU buffer
-// This also takes a constant that represents it's Wgpu target at compile time
+/// A buffer abstraction over a valid WGPU buffer
+/// This also takes a constant that represents it's Wgpu target at compile time
 pub struct Buffer<T: GpuPod, const TYPE: u32 = 0> {
     // Raw WGPU buffer
     buffer: wgpu::Buffer,
@@ -228,37 +237,37 @@ fn buffer_usages(
 
 // Implementation of util methods
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
-    // Get the inner raw WGPU buffer immutably
+    /// Get the inner raw WGPU buffer immutably
     pub fn raw(&self) -> &wgpu::Buffer {
         &self.buffer
     }
 
-    // Get the current length of the buffer
+    /// Get the current length of the buffer
     pub fn len(&self) -> usize {
         self.length.try_into().unwrap()
     }
 
-    // Check if the buffer is empty
+    /// Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
         self.length == 0
     }
 
-    // Get the current capacity of the buffer
+    /// Get the current capacity of the buffer
     pub fn capacity(&self) -> usize {
         self.capacity.try_into().unwrap()
     }
 
-    // Get the buffer usage
+    /// Get the buffer usage
     pub fn usage(&self) -> BufferUsage {
         self.usage
     }
 
-    // Get the buffer mode
+    /// Get the buffer mode
     pub fn mode(&self) -> BufferMode {
         self.mode
     }
 
-    // Get the buffer variant (TYPE wrapper)
+    /// Get the buffer variant (TYPE wrapper)
     pub fn variant(&self) -> BufferVariant {
         match TYPE {
             VERTEX => BufferVariant::Vertex,
@@ -269,12 +278,12 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
     }
 
-    // Get the buffer's stride (size of each element)
+    /// Get the buffer's stride (size of each element)
     pub fn stride(&self) -> usize {
         size_of::<T>()
     }
 
-    // Get the untyped buffer from this typed buffer
+    /// Get the untyped buffer from this typed buffer
     pub fn as_untyped(&self) -> BufferInfo {
         BufferInfo {
             buffer: &self.buffer,
@@ -287,7 +296,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         }
     }
 
-    // Validate the bounds of the RangeBounds trait into (start, end)
+    /// Validate the bounds of the RangeBounds trait into (start, end)
     pub fn convert_bounds_to_indices(
         &self,
         range: impl RangeBounds<usize>,
@@ -318,7 +327,7 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Some((start, end))
     }
 
-    // Convert the bounds of the RangeBounds trait into a wgpu BufferBinding
+    /// Convert the bounds of the RangeBounds trait into a wgpu BufferBinding
     pub(crate) fn convert_bounds_to_binding(
         &self,
         range: impl RangeBounds<usize>,
@@ -350,8 +359,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
 // Owning buffer methods (they don't take a range)
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
-    // Clear the buffer and reset it's length
-    // This doesn't enqueue a GPU command
+    /// Clear the buffer and reset it's length
+    /// This doesn't enqueue a GPU command
     pub fn clear(&mut self) -> Result<(), BufferClearError> {
         if matches!(self.mode, BufferMode::Dynamic) {
             return Err(BufferClearError::IllegalLengthModify);
@@ -361,17 +370,17 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Extend this buffer using the given iterator
-    pub fn extend(&mut self, iter: impl IntoIterator<Item = T>) -> Result<(), BufferExtendError> {
+    /// Extend this buffer using the given iterator
+    pub fn extend(&mut self, encoder: &mut wgpu::CommandEncoder, iter: impl IntoIterator<Item = T>) -> Result<(), BufferExtendError> {
         // Shitty but works
         let vec = iter.into_iter().collect::<Vec<_>>();
-        self.extend_from_slice(&vec)
+        self.extend_from_slice(encoder, &vec)
     }
 
-    // Extend this buffer using the given slice instantly
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple extend_from_slice calls and expect them to be batched together
-    pub fn extend_from_slice(&mut self, slice: &[T]) -> Result<(), BufferExtendError> {
+    /// Extend this buffer using the given slice instantly
+    /// This is a "fire and forget" command that does not stall the CPU
+    /// The user can do multiple extend_from_slice calls and expect them to be batched together
+    pub fn extend_from_slice(&mut self, encoder: &mut wgpu::CommandEncoder, slice: &[T]) -> Result<(), BufferExtendError> {
         if slice.is_empty() {
             return Ok(());
         }
@@ -413,7 +422,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
                 });
 
             // Copy the current buffer to the new one
-            let mut encoder = self.graphics.acquire();
             encoder.copy_buffer_to_buffer(
                 &self.buffer,
                 0,
@@ -446,9 +454,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
 
 // Implementation of safe methods
 impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
-    // Read from "src" and write to the buffer instantly
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple write calls and expect them to be batched together
+    /// Read from "src" and write to the buffer instantly
+    /// This is a "fire and forget" command that does not stall the CPU
+    /// The user can do multiple write calls and expect them to be batched together
     pub fn write(&mut self, src: &[T], offset: usize) -> Result<(), BufferWriteError> {
         // Nothing to read from
         if src.is_empty() {
@@ -474,8 +482,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Read buffer and write to "dst" instantly
-    // Will stall the CPU, since this is waiting for GPU data
+    /// Read buffer and write to "dst" instantly
+    /// Will stall the CPU, since this is waiting for GPU data
     pub fn read<'a>(&'a self, dst: &mut [T], offset: usize) -> Result<(), BufferReadError> {
         // Nothing to write to
         if dst.is_empty() {
@@ -497,9 +505,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Read the buffer ASYNCHRONOUSLY without stalling
-    // The read will be completed at the end of the frame when WGPU polls the device
-    // Only works on dynamic buffers since they have a constant length throuhgout their lifetime
+    /// Read the buffer ASYNCHRONOUSLY without stalling
+    /// The read will be completed at the end of the frame when WGPU polls the device
+    /// Only works on dynamic buffers since they have a constant length throuhgout their lifetime
     pub fn async_read<'a>(
         &'a self,
         range: impl RangeBounds<usize>,
@@ -521,9 +529,9 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Fill a buffer region with a repeating value specified by "val"
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple splat calls and expect them to be batched together
+    /// Fill a buffer region with a repeating value specified by "val"
+    /// This is a "fire and forget" command that does not stall the CPU
+    /// The user can do multiple splat calls and expect them to be batched together
     pub fn splat(
         &mut self,
         range: impl RangeBounds<usize>,
@@ -543,11 +551,12 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Copy the data from another buffer into this buffer instantly
-    // This is a "fire and forget" command that does not stall the CPU
-    // The user can do multiple copy_from calls and expect them to be batched together
+    /// Copy the data from another buffer into this buffer instantly
+    /// This is a "fire and forget" command that does not stall the CPU
+    /// The user can do multiple copy_from calls and expect them to be batched together
     pub fn copy_from<const TYPE2: u32>(
         &mut self,
+        encoder: &mut wgpu::CommandEncoder,
         src: &Buffer<T, TYPE2>,
         dst_offset: usize,
         src_offset: usize,
@@ -586,7 +595,6 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         let destination_offset = (dst_offset * self.stride()) as u64;
         let copy_size = (length * self.stride()) as u64;
 
-        let mut encoder = self.graphics.acquire();
         encoder.copy_buffer_to_buffer(
             src.raw(),
             source_offset,
@@ -599,8 +607,8 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         Ok(())
     }
 
-    // Try to view the buffer immutably immediately
-    // Will stall the CPU, since this is synchronous
+    /// Try to view the buffer immutably immediately
+    /// Will stall the CPU, since this is synchronous
     pub fn as_view(
         &self,
         bounds: impl RangeBounds<usize>,
@@ -631,10 +639,10 @@ impl<T: GpuPod, const TYPE: u32> Buffer<T, TYPE> {
         */
     }
 
-    // Try to view the buffer mutably (for writing AND reading) immediately
-    // Will stall the CPU, since this is synchronous
-    // If the BufferUsage is Write only, then reading from BufferViewMut might be slow / might not return buffer contents
-    // If the user tries to read an immutable slice from the BufferView then the program will panic
+    /// Try to view the buffer mutably (for writing AND reading) immediately
+    /// Will stall the CPU, since this is synchronous
+    /// If the BufferUsage is Write only, then reading from BufferViewMut might be slow / might not return buffer contents
+    /// If the user tries to read an immutable slice from the BufferView then the program will panic
     pub fn as_view_mut(
         &mut self,
         bounds: impl RangeBounds<usize>,

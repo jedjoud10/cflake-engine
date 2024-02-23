@@ -6,10 +6,7 @@ use graphics::{
 use math::Frustum;
 use utils::Storage;
 
-use crate::{
-    attributes, AttributeBuffer, EnvironmentMap, IndirectMesh, Mesh, MultiDrawIndirectCountMesh,
-    MultiDrawIndirectMesh,
-};
+use crate::{mesh::{Mesh, MultiDrawIndirectMesh, MultiDrawIndirectCountMesh, AttributeBuffer, attributes, IndirectMesh}, scene::{EnvironmentMap, DirectionalLight, Camera}};
 
 // These are the default settings that we pass to each material
 pub struct DefaultMaterialResources<'a> {
@@ -20,13 +17,13 @@ pub struct DefaultMaterialResources<'a> {
     pub scene_buffer: &'a SceneBuffer,
 
     // Main camera values
-    pub camera: crate::Camera,
+    pub camera: Camera,
     pub camera_frustum: Frustum<f32>,
     pub camera_position: coords::Position,
     pub camera_rotation: coords::Rotation,
 
     // Main directional light values
-    pub directional_light: crate::DirectionalLight,
+    pub directional_light: DirectionalLight,
     pub directional_light_rotation: coords::Rotation,
 
     // Main scene textures

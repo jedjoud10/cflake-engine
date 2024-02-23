@@ -1,22 +1,18 @@
-use crate::{
-    create_gbuffer_texture, AlbedoMap, AttributeBuffer, Camera, DefaultMaterialResources,
-    DeferredRenderer, DirectionalLight, DynPipeline, Environment, Indirect, IndirectMesh, MaskMap,
-    Mesh, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh, NormalMap, PassStats, PbrMaterial,
-    Pipelines, SceneUniform, ShadowMapping, TimingUniform, WindowUniform,
-};
 use assets::Assets;
 
 use ecs::Scene;
 use graphics::{
     Depth, DrawCountIndirectBuffer, DrawIndexedIndirectBuffer, GpuPod, Graphics, Normalized,
-    Texture, TriangleBuffer, Window, RGBA,
+    Texture, TriangleBuffer, Window, RGBA, CommandEncoder,
 };
 
 use utils::{Storage, Time};
-use world::{post_user, user, System, WindowEvent, World};
+use world::{system::{post_user, pre_user, Registries}, events::{WindowEvent, Update, Init}, world::World};
+
+use crate::{material::{AlbedoMap, NormalMap, MaskMap, PbrMaterial, WindowUniform, Indirect, SceneUniform, TimingUniform, DefaultMaterialResources, PassStats}, mesh::{Mesh, AttributeBuffer, attributes, MultiDrawIndirectCountMesh, MultiDrawIndirectMesh, IndirectMesh}, scene::{DeferredRenderer, Pipelines, ShadowMapping, create_gbuffer_texture, Environment, DirectionalLight, Camera}, pipeline::DynPipeline};
 
 // Add the scene resources and setup for rendering
-fn init(world: &mut World) {
+pub fn init(world: &mut World, _: &Init) {
     let graphics = world.get::<Graphics>().unwrap();
     let window = world.get::<Window>().unwrap();
     let assets = world.get_mut::<Assets>().unwrap();
@@ -62,10 +58,10 @@ fn init(world: &mut World) {
     world.insert(Storage::<MultiDrawIndirectCountMesh>::default());
 
     // Add common indirect attributes
-    world.insert(Storage::<AttributeBuffer<crate::attributes::Position>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::Normal>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::Tangent>>::default());
-    world.insert(Storage::<AttributeBuffer<crate::attributes::TexCoord>>::default());
+    world.insert(Storage::<AttributeBuffer<attributes::Position>>::default());
+    world.insert(Storage::<AttributeBuffer<attributes::Normal>>::default());
+    world.insert(Storage::<AttributeBuffer<attributes::Tangent>>::default());
+    world.insert(Storage::<AttributeBuffer<attributes::TexCoord>>::default());
     world.insert(Storage::<TriangleBuffer<u32>>::default());
 
     // Add draw indexed indirect buffers
@@ -80,7 +76,7 @@ fn init(world: &mut World) {
 }
 
 // Handle window resizing the depth texture
-fn event(world: &mut World, event: &mut WindowEvent) {
+pub fn event(world: &mut World, event: &mut WindowEvent) {
     match event {
         // Window has been resized
         WindowEvent::Resized(size) => {
@@ -135,7 +131,7 @@ fn event(world: &mut World, event: &mut WindowEvent) {
 }
 
 // Clear the window and render the entities to the texture
-fn render(world: &mut World) {
+pub fn update(world: &mut World, _: &Update) {
     // Fetch the resources that we will use for rendering the scene
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let mut _shadowmap = world.get_mut::<ShadowMapping>().unwrap();
@@ -143,7 +139,8 @@ fn render(world: &mut World) {
     let scene = world.get::<Scene>().unwrap();
     let pipelines = world.get::<Pipelines>().unwrap();
     let time = world.get::<Time>().unwrap();
-    let _graphics = world.get::<Graphics>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
+    let mut encoder = graphics.acquire();
     let environment = world.get::<Environment>().unwrap();
 
     // Reset the stats
@@ -156,16 +153,16 @@ fn render(world: &mut World) {
     // Needed for indirect rendering
     let indirect_meshes = world.get::<Storage<Mesh<Indirect>>>().unwrap();
     let indirect_position_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::Position>>>()
+        .get::<Storage<AttributeBuffer<attributes::Position>>>()
         .unwrap();
     let indirect_normal_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::Normal>>>()
+        .get::<Storage<AttributeBuffer<attributes::Normal>>>()
         .unwrap();
     let indirect_tangents_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::Tangent>>>()
+        .get::<Storage<AttributeBuffer<attributes::Tangent>>>()
         .unwrap();
     let indirect_tex_coords_attribute = world
-        .get::<Storage<AttributeBuffer<crate::attributes::TexCoord>>>()
+        .get::<Storage<AttributeBuffer<attributes::TexCoord>>>()
         .unwrap();
     let indexed_indirect_buffers = world.get::<Storage<DrawIndexedIndirectBuffer>>().unwrap();
     let indirect_triangles = world.get::<Storage<TriangleBuffer<u32>>>().unwrap();
@@ -268,6 +265,7 @@ fn render(world: &mut World) {
 
     // Render into a single cascade of the shadow map
     fn render_shadows_pipelines(
+        encoder: &mut CommandEncoder,
         shadowmap: &mut ShadowMapping,
         default: &mut DefaultMaterialResources,
         directional_light_rotation: coords::Rotation,
@@ -292,7 +290,7 @@ fn render(world: &mut World) {
         let target = view.as_render_target().unwrap();
 
         // Create a new active shadowmap render pass
-        let mut render_pass = shadowmap.render_pass.begin((), target);
+        let mut render_pass = shadowmap.render_pass.begin(encoder, (), target);
 
         // Render the shadows first (fuck you)
         for stored in pipelines.iter() {
@@ -311,6 +309,7 @@ fn render(world: &mut World) {
             dynamic.copy_from(_static).unwrap();
 
             render_shadows_pipelines(
+                &mut encoder,
                 &mut _shadowmap,
                 &mut default,
                 directional_light_rotation,
@@ -325,6 +324,7 @@ fn render(world: &mut World) {
 
         let i = time.frame_count() as usize % 4;
         render_shadows_pipelines(
+            &mut encoder,
             &mut _shadowmap,
             &mut default,
             directional_light_rotation,
@@ -346,7 +346,7 @@ fn render(world: &mut World) {
     let gbuffer_mask = renderer.gbuffer_mask_texture.as_render_target().unwrap();
     let gbuffer = (gbuffer_albedo, gbuffer_normal, gbuffer_mask);
     let depth = renderer.depth_texture.as_render_target().unwrap();
-    let mut render_pass = renderer.deferred_render_pass.begin(gbuffer, depth);
+    let mut render_pass = renderer.deferred_render_pass.begin(&mut encoder, gbuffer, depth);
 
     // This will iterate over each material pipeline and draw the scene
     default.lightspace = None;
@@ -363,8 +363,9 @@ fn render(world: &mut World) {
     drop(render_pass);
 }
 
-// The rendering system will be resposible for iterating through the entities and rendering them to the backbuffer texture
-pub fn system(system: &mut System) {
+// The rendering plugin will be resposible for iterating through the entities and rendering them to the backbuffer texture
+pub fn plugin(registries: &mut Registries) {
+    /*
     system
         .insert_init(init)
         .before(user)
@@ -379,4 +380,5 @@ pub fn system(system: &mut System) {
         .insert_window(event)
         .after(graphics::common)
         .before(user);
+    */
 }

@@ -12,16 +12,15 @@ use super::QueryFilter;
 
 
 // Update the mutability state column of a specific archetype based on a masks' compound unit masks
-fn apply_mutability_states(
+pub(crate) fn apply_mutability_states(
     archetype: &mut Archetype,
     mutability: Mask,
     bitset: Option<&BitSet<u64>>,
-    ticked: bool,
 ) {
     let table = archetype.table_mut();
     for unit in mutability.units() {
         let column = table.get_mut(&unit).unwrap();
-        let states = crate::query::get_either_states_mut(column, ticked);
+        let states = column.states_mut();
 
         if let Some(bitset) = bitset {
             for (out_states, in_states) in
@@ -85,11 +84,10 @@ pub(super) fn len<'a, A: Deref<Target = Archetype>>(archetypes: &[A]) -> usize {
 pub(super) fn generate_bitset_chunks<'a, F: QueryFilter>(
     archetypes: impl Iterator<Item = &'a Archetype>,
     cached: F::Cached,
-    ticked: bool,
 ) -> Vec<BitSet<u64>> {
     // Filter the entries by chunks of 64 entries at a time
     let iterator = archetypes.map(|archetype| {
-        let columns = F::cache_columns(cached, archetype, ticked);
+        let columns = F::cache_columns(cached, archetype);
         let chunks = archetype.entities().len() as f32 / usize::BITS as f32;
         let chunks = chunks.ceil() as usize;
         BitSet::<u64>::from_chunks_iter(

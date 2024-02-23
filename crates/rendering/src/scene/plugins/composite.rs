@@ -1,13 +1,14 @@
-use crate::{Compositor, DeferredRenderer, Environment, PostProcessUniform, ShadowMapping};
 use assets::Assets;
 
 use graphics::{ActivePipeline, Graphics, Texture, Window};
 
 use utils::Time;
-use world::{user, System, World};
+use world::{world::World, events::{Init, Update}, system::{Registries, pre_user}};
+
+use crate::scene::{Compositor, PostProcessUniform, DeferredRenderer, Environment, ShadowMapping};
 
 // Inserts the compositor render pass
-fn init(world: &mut World) {
+fn init(world: &mut World, _: &Init) {
     let graphics = world.get::<Graphics>().unwrap();
     let mut assets = world.get_mut::<Assets>().unwrap();
     let pp = Compositor::new(&graphics, &mut assets);
@@ -18,13 +19,14 @@ fn init(world: &mut World) {
 }
 
 // Displays the rendered scene texture to the actual window texture (post-processing pass)
-fn update(world: &mut World) {
+fn update(world: &mut World, _: &Update) {
     let renderer = world.get::<DeferredRenderer>().unwrap();
     let mut compositor = world.get_mut::<Compositor>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
     let environment = world.get::<Environment>().unwrap();
     let shadow = world.get::<ShadowMapping>().unwrap();
     let _time = world.get::<Time>().unwrap();
+    let graphics = world.get::<Graphics>().unwrap();
 
     // Write the post process settings to the buffer
     let value = compositor.post_process;
@@ -41,9 +43,11 @@ fn update(world: &mut World) {
     };
 
     // Begin the render pass and bind the composite shader
-    let mut render_pass = compositor.lighting_render_pass.begin(dst, ());
+    let mut encoder = graphics.acquire();
+    let mut render_pass = compositor.lighting_render_pass.begin(&mut encoder, dst, ());
     let mut active = render_pass.bind_pipeline(&compositor.lighting_pipeline);
 
+    /*
     // Set the shared UBOs first (bind group 0)
     active
         .set_bind_group(0, |group| {
@@ -107,21 +111,22 @@ fn update(world: &mut World) {
             group.set_sampled_texture("depth_map", depth_map).unwrap();
         })
         .unwrap();
+    */
 
     // Draw 6 vertices (2 tris)
     active.draw(0..6, 0..1).unwrap();
 }
 
-// The display system will be responsible for displaying the renderered scene textures to the scene
-pub fn system(system: &mut System) {
-    system
-        .insert_init(init)
-        .before(user)
-        .after(assets::system)
-        .after(graphics::common);
-    system
-        .insert_update(update)
-        .after(super::rendering::system)
+// The display plugin will be responsible for displaying the renderered scene textures to the scene
+pub fn plugin(registries: &mut Registries) {
+    registries.init
+        .insert(init)
+        .before(pre_user)
+        .after(assets::init)
+        .after(graphics::init);
+    registries.update
+        .insert(update)
+        .after(super::rendering::update)
         .after(graphics::acquire)
         .before(graphics::present);
 }

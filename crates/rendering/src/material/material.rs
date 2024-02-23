@@ -1,11 +1,9 @@
-use crate::{DefaultMaterialResources, MeshAttributes, Pass, RenderPath, Renderer};
 use assets::Assets;
+use graphics::{context::Graphics, shader::Shader, pipeline::{PrimitiveConfig, WindingOrder, Face}, active::{PushConstants, ActiveRenderPipeline, BindGroup}};
+use world::world::World;
 
-use graphics::{
-    ActiveRenderPipeline, BindGroup, Graphics, PrimitiveConfig, PushConstants, Shader, WindingOrder,
-};
-
-use world::World;
+use crate::{mesh::MeshAttributes, scene::Renderer};
+use super::{RenderPath, Pass, DefaultMaterialResources};
 
 // A material is what defines the physical properties of surfaces whenever we draw them onto the screen
 // Materials correspond to a specific WGPU render pipeline based on it's config parameters
@@ -13,7 +11,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     type Resources<'w>: 'w;
     type RenderPath: RenderPath;
     type Settings<'s>;
-    type Query<'a>: ecs::QueryLayoutRef;
+    type Query<'a>: ecs::QueryLayoutRef<'a>;
 
     // Checks if a material can be rendered with the given render path
     // If not, this will return a warning when trying to render a mesh
@@ -45,7 +43,7 @@ pub trait Material: 'static + Sized + Sync + Send {
     fn primitive_config<P: Pass>() -> PrimitiveConfig {
         PrimitiveConfig::Triangles {
             winding_order: WindingOrder::Cw,
-            cull_face: Some(graphics::Face::Front),
+            cull_face: Some(Face::Front),
             wireframe: false,
         }
     }
@@ -57,6 +55,15 @@ pub trait Material: 'static + Sized + Sync + Send {
 
     // Fetch the required resources from the world
     fn fetch<P: Pass>(world: &World) -> Self::Resources<'_>;
+
+    /*
+    // Create a static bind group (or fetch one that is cached) for a specific set of material properties
+    fn fetch_global_bind_group<'r, P: Pass>(
+        _cache: MaterialBindGroupCache,
+        _resources: &'r mut Self::Resources<'_>,
+        _default: &DefaultMaterialResources<'r>,
+    ) -> Option<BindGroup> {
+    }
 
     // Set the static bindings
     fn set_global_bindings<'r, P: Pass>(
@@ -84,6 +91,7 @@ pub trait Material: 'static + Sized + Sync + Send {
         _group: &mut BindGroup<'r>,
     ) {
     }
+    */
 
     // Set the required push constants
     fn set_push_constants<'r, 'w, P: Pass>(

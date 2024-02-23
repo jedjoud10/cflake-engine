@@ -1,13 +1,15 @@
-use crate::{Camera, CameraUniform, DeferredRenderer};
+use crate::scene::{Camera, DeferredRenderer};
+use crate::material::CameraUniform;
 
 use coords::{Position, Rotation};
 use ecs::Scene;
 use graphics::Window;
 
-use world::{post_user, System, World};
+use world::events::Update;
+use world::{system::{post_user, Registries}, world::World};
 
-// Update event that will set/update the main perspective camera
-fn update(world: &mut World) {
+/// Update event that will set/update the main perspective camera
+pub fn update_camera(world: &mut World, _: &Update) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
     let window = world.get::<Window>().unwrap();
@@ -53,17 +55,17 @@ fn update(world: &mut World) {
         renderer.camera_buffer.write(&[data], 0).unwrap();
     } else {
         // Set the main camera if we find one
-        let next = ecs.find::<(&Camera, &Position, &Rotation, &ecs::Entity)>();
+        let next = ecs.query::<(&Camera, &Position, &Rotation, &ecs::Entity)>().into_iter().next();
         if let Some((_, _, _, entity)) = next {
             renderer.main_camera = Some(*entity);
         }
     }
 }
 
-// The camera system will be responsible for updating the camera UBO and matrices
-pub fn system(system: &mut System) {
-    system
-        .insert_update(update)
-        .before(super::rendering::system)
+// The camera plugin will be responsible for updating the camera UBO and matrices
+pub fn plugin(registries: &mut Registries) {
+    registries.update
+        .insert(update_camera)
+        .before(super::rendering::update)
         .after(post_user);
 }

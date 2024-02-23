@@ -16,19 +16,19 @@ use std::{
 };
 use thiserror::Error;
 
-use crate::{context::Graphics, prelude::{GpuPod, Texture}, format::Texel};
+use crate::{context::Graphics, prelude::{GpuPod, Texture}, format::Texel, SpecConstant};
 use super::{ShaderError, ShaderModule, PushConstantLayout, ModuleVisibility};
 
-// This is a compiler that will take GLSL code and create a WGPU module
-// This compiler also allows us to define constants and snippets before compilation
-// This compiler will be used within the Shader and ComputeShader to compile the modules in batch
+/// This is a compiler that will take GLSL code and create a WGPU module
+/// This compiler also allows us to define constants and snippets before compilation
+/// This compiler will be used within the Shader and ComputeShader to compile the modules in batch
 pub struct Compiler<'a> {
     pub(crate) assets: &'a Assets,
     pub(crate) graphics: &'a Graphics,
 }
 
 impl<'a> Compiler<'a> {
-    // Create a new default compiler with the asset loader
+    /// Create a new default compiler with the asset loader
     pub fn new(assets: &'a Assets, graphics: &'a Graphics) -> Self {
         Self {
             assets,
@@ -44,33 +44,37 @@ impl<'a> Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
-    // Define a uniform buffer type's inner struct type
+    /// Define a uniform buffer type's inner struct type
     pub fn use_uniform_buffer<T: GpuPod>(&mut self, name: impl ToString) {
     }
 
-    // Define a storage buffer type's inner struct type
+    /// Define a storage buffer type's inner struct type
     pub fn use_storage_buffer<T: GpuPod>(&mut self, name: impl ToString, read: bool, write: bool) {
     }
 
-    // Define a uniform sampled texture's type and texel
+    /// Define a uniform sampled texture's type and texel
     pub fn use_sampled_texture<T: Texture>(&mut self, name: impl ToString, comparison: bool) {
     }
 
-    // Define a uniform sampler's type and texel
+    /// Define a uniform sampler's type and texel
     pub fn use_sampler<T: Texel>(&mut self, name: impl ToString, comparison: bool) {
     }
 
-    // Define a storage texture that we can read / write to
+    /// Define a storage texture that we can read / write to
     pub fn use_storage_texture<T: Texture>(&mut self, name: impl ToString, read: bool, write: bool) {
     }
 
-    // Define a push constant range to be pushed
+    /// Define a push constant range to be pushed
     pub fn use_push_constant_layout(&mut self, layout: PushConstantLayout) {
+    }
+
+    /// Define a specialization constant to set
+    pub fn use_constant(&mut self, const_id: u32, constant: impl Into<SpecConstant>) {
     }
 }
 
-// This is a compiled shader module that we can use in multiple pipelines
-// We can clone this shader module since we should be able to share them
+/// This is a compiled shader module that we can use in multiple pipelines
+/// We can clone this shader module since we should be able to share them
 pub struct Compiled<M: ShaderModule> {
     // Wgpu module and spirv reflected module
     raw: Arc<wgpu::ShaderModule>,
@@ -97,22 +101,22 @@ impl<M: ShaderModule> Clone for Compiled<M> {
 }
 
 impl<M: ShaderModule> Compiled<M> {
-    // Get the raw wgpu hidden module
+    /// Get the raw wgpu hidden module
     pub fn module(&self) -> &wgpu::ShaderModule {
         &self.raw
     }
 
-    // Get the visibility of this module
+    /// Get the visibility of this module
     pub fn visibility(&self) -> ModuleVisibility {
         M::visibility()
     }
 
-    // Get the shader module path for this module
+    /// Get the shader module path for this module
     pub fn path(&self) -> &Path {
         &self.path
     }
 
-    // Get the shader module name for this module
+    /// Get the shader module name for this module
     pub fn name(&self) -> &str {
         self.path.file_name().unwrap().to_str().unwrap()
     }

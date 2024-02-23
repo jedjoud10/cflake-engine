@@ -88,8 +88,19 @@ pub(crate) fn init_logger(mut logging_level: LevelFilter, sender: mpsc::Sender<S
         .warn(Color::Yellow)
         .error(Color::Red);
 
+    let wgpu_filter = match logging_level {
+        log::LevelFilter::Off => log::LevelFilter::Off,
+        log::LevelFilter::Debug => log::LevelFilter::Warn,
+        log::LevelFilter::Trace => log::LevelFilter::Trace,
+        _ => log::LevelFilter::Warn,
+    };
+
     fern::Dispatch::new()
         .level(logging_level)
+        .level_for("wgpu", wgpu_filter)
+        .level_for("wgpu_core", wgpu_filter)
+        .level_for("wgpu_hal", wgpu_filter)
+        .level_for("wgpu_core", wgpu_filter)
         .chain(console_logger(colors_level, colors_line))
         .chain(file_logger(sender))
         .apply()

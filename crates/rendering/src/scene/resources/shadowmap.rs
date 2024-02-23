@@ -7,7 +7,7 @@ use graphics::{
 
 use vek::FrustumPlanes;
 
-use crate::create_uniform_buffer;
+use crate::util::create_uniform_buffer;
 
 // This is what will write to the depth texture
 pub type ShadowDepthLayout = Depth<f32>;
@@ -40,15 +40,19 @@ fn create_depth_texture(
             create_view_settings(2),
             create_view_settings(3),
         ],
-        Some(SamplerSettings {
+        TextureMipMaps::Disabled,
+    )
+    .unwrap()
+
+    /*
+    Some(SamplerSettings {
             comparison: Some(CompareFunction::GreaterEqual),
             wrap_u: SamplerWrap::ClampToEdge,
             wrap_v: SamplerWrap::ClampToEdge,
             ..Default::default()
         }),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
+    
+     */
 }
 
 // Directional shadow mapping for the main sun light
@@ -105,7 +109,6 @@ impl ShadowMapping {
     ) -> Self {
         // Create the shadow map render pass
         let render_pass = RenderPass::<(), ShadowDepthLayout>::new(
-            graphics,
             (),
             Operation {
                 load: LoadOp::Clear(f32::MAX),

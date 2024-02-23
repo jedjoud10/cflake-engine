@@ -1,12 +1,11 @@
-use crate::{DeferredRenderer, DirectionalLight};
-
+use crate::scene::{DeferredRenderer, DirectionalLight};
 use ecs::Scene;
 use graphics::{Graphics, Window};
 
-use world::{post_user, System, World};
+use world::{system::{post_user, Registries}, world::World, events::Update};
 
 // Update event that will set/update the main directional light
-fn update(world: &mut World) {
+pub fn update(world: &mut World, _: &Update) {
     let mut ecs = world.get_mut::<Scene>().unwrap();
     let _graphics = world.get::<Graphics>().unwrap();
     let mut renderer = world.get_mut::<DeferredRenderer>().unwrap();
@@ -23,17 +22,17 @@ fn update(world: &mut World) {
         };
     } else {
         // Set the main directioanl light if we find one
-        let next = ecs.find::<(&DirectionalLight, &coords::Rotation, &ecs::Entity)>();
-        if let Some((_, _, entity)) = next {
+        let next = ecs.query::<(&DirectionalLight, &coords::Rotation, &ecs::Entity)>();
+        if let Some((_, _, entity)) = next.into_iter().next() {
             renderer.main_directional_light = Some(*entity);
         }
     }
 }
 
-// The camera system will be responsible for updating the camera UBO and matrices
-pub fn system(system: &mut System) {
-    system
-        .insert_update(update)
-        .before(super::rendering::system)
+// The environment system is responsible for creatin the HDRi environment map to use for specular and diffuse IBL
+pub fn plugin(registries: &mut Registries) {
+    registries.update
+        .insert(update)
+        .before(super::rendering::update)
         .after(post_user);
 }

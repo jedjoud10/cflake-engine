@@ -1,7 +1,4 @@
-use graphics::{
-    BufferMode, BufferUsage, GpuPod, Graphics, SamplerSettings, Texel, Texture, Texture2D,
-    TextureMipMaps, TextureUsage, TextureViewSettings, UniformBuffer,
-};
+use graphics::{pod::GpuPod, context::Graphics, buffer::{BufferUsage, UniformBuffer, BufferMode}, format::Texel, texture::{Texture2D, TextureUsage, TextureViewSettings, Texture, SamplerSettings, TextureMipMaps}};
 
 // Create a new uniform buffer with default contents
 pub(crate) fn create_uniform_buffer<T: GpuPod + Default, const COUNT: usize>(
@@ -27,8 +24,7 @@ pub(crate) fn create_texture2d<T: Texel>(graphics: &Graphics, value: T::Storage)
         &[TextureViewSettings::whole::<
             <Texture2D<T> as Texture>::Region,
         >()],
-        Some(SamplerSettings::default()),
-        TextureMipMaps::Disabled,
+        Some(TextureMipMaps::Disabled)
     )
     .unwrap()
 }

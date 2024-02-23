@@ -439,7 +439,7 @@ pub fn copy_subregion_from<'a, T: Texture, O: Texture<T = T::T>>(
     let write = write.into();
     let read = read.into();
 
-    let mut encoder = graphics.acquire();
+    //let mut encoder = graphics.acquire();
 }
 
 // Check if the given extent is valid within device limits

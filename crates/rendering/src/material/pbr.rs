@@ -1,8 +1,3 @@
-use crate::{
-    AlbedoMap, CameraUniform, DefaultMaterialResources, Direct, MaskMap, Material, NormalMap, Pass,
-    Renderer,
-};
-
 use assets::Assets;
 
 use graphics::{
@@ -10,6 +5,11 @@ use graphics::{
     PushConstantLayout, PushConstants, Shader, Texture, VertexModule,
 };
 use utils::{Handle, Storage};
+use world::world::World;
+
+use crate::scene::Renderer;
+
+use super::{Pass, AlbedoMap, NormalMap, MaskMap, CameraUniform, Direct, Material, PassType, DefaultMaterialResources};
 
 // A PBR shader that will try to fake how real light works in the real world
 pub struct PbrMaterial {
@@ -29,9 +29,9 @@ pub struct PbrMaterial {
 
 impl Material for PbrMaterial {
     type Resources<'w> = (
-        world::Read<'w, Storage<AlbedoMap>>,
-        world::Read<'w, Storage<NormalMap>>,
-        world::Read<'w, Storage<MaskMap>>,
+        std::cell::Ref<'w, Storage<AlbedoMap>>,
+        std::cell::Ref<'w, Storage<NormalMap>>,
+        std::cell::Ref<'w, Storage<MaskMap>>,
     );
 
     type RenderPath = Direct;
@@ -45,7 +45,7 @@ impl Material for PbrMaterial {
         assets: &Assets,
     ) -> Option<Shader> {
         match P::pass_type() {
-            crate::PassType::Deferred => {
+            PassType::Deferred => {
                 // Load the vertex module from the assets
                 let vert = assets
                     .load::<VertexModule>("engine/shaders/scene/pbr/pbr.vert")
@@ -85,7 +85,7 @@ impl Material for PbrMaterial {
                 // Compile the modules into a shader
                 Some(Shader::new(vert, frag, &compiler).unwrap())
             }
-            crate::PassType::Shadow => {
+            PassType::Shadow => {
                 let vert = assets
                     .load::<VertexModule>("engine/shaders/scene/pbr/shadow.vert")
                     .unwrap();
@@ -106,13 +106,14 @@ impl Material for PbrMaterial {
     }
 
     // Fetch the texture storages
-    fn fetch<P: Pass>(world: &world::World) -> Self::Resources<'_> {
+    fn fetch<P: Pass>(world: &World) -> Self::Resources<'_> {
         let albedo_maps = world.get::<Storage<AlbedoMap>>().unwrap();
         let normal_maps = world.get::<Storage<NormalMap>>().unwrap();
         let mask_maps = world.get::<Storage<MaskMap>>().unwrap();
         (albedo_maps, normal_maps, mask_maps)
     }
 
+    /*
     // Set the static bindings that will never change
     fn set_global_bindings<'r, P: Pass>(
         _resources: &'r mut Self::Resources<'_>,
@@ -172,6 +173,7 @@ impl Material for PbrMaterial {
             .set_sampler("mask_map_sampler", mask_map.sampler().unwrap())
             .unwrap();
     }
+    */
 
     // Set the surface push constants
     fn set_push_constants<'r, 'w, P: Pass>(
@@ -186,7 +188,7 @@ impl Material for PbrMaterial {
         let matrix = renderer.matrix;
         let cols = matrix.cols;
         let bytes = GpuPod::into_bytes(&cols);
-        constants.push(bytes, 0, ModuleVisibility::Vertex).unwrap();
+        constants.push(ModuleVisibility::Vertex, 0, bytes).unwrap();
 
         // Set the shadow lightspace matrix
         if P::is_shadow_pass() {
@@ -194,7 +196,7 @@ impl Material for PbrMaterial {
             let offset = bytes.len();
             let bytes = GpuPod::into_bytes(&lightspace.cols);
             constants
-                .push(bytes, offset as u32, ModuleVisibility::Vertex)
+                .push( ModuleVisibility::Vertex, offset as u32, bytes)
                 .unwrap();
         }
 
@@ -214,7 +216,7 @@ impl Material for PbrMaterial {
         // Send the raw fragment bytes to the GPU
         let bytes = GpuPod::into_bytes(&vector);
         constants
-            .push(bytes, 0, ModuleVisibility::Fragment)
+            .push(ModuleVisibility::Fragment, 0, bytes)
             .unwrap();
         let mut offset = bytes.len();
 
@@ -222,14 +224,14 @@ impl Material for PbrMaterial {
         let vector = vek::Rgba::<f32>::from(self.tint);
         let bytes = GpuPod::into_bytes(&vector);
         constants
-            .push(bytes, offset as u32, ModuleVisibility::Fragment)
+            .push(ModuleVisibility::Fragment, offset as u32, bytes)
             .unwrap();
         offset += bytes.len();
 
         // Send the bytes containing the UV scale of the textures to be sampled
         let bytes = GpuPod::into_bytes(&self.scale);
         constants
-            .push(bytes, offset as u32, ModuleVisibility::Fragment)
+            .push(ModuleVisibility::Fragment, offset as u32, bytes)
             .unwrap();
         offset += bytes.len();
     }

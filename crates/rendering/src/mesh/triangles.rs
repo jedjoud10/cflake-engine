@@ -1,4 +1,4 @@
-use crate::RenderPath;
+use crate::material::RenderPath;
 
 // Immutable access to the mesh indices
 pub struct TrianglesRef<'a, R: RenderPath>(pub(crate) &'a R::TriangleBuffer<u32>);

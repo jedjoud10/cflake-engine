@@ -1,11 +1,11 @@
 use super::attributes::*;
 use crate::mesh::attributes::{Normal, Position, Tangent, TexCoord};
-use crate::{
-    AttributeBuffer, Direct, Indirect, IndirectMeshArgs, MeshAttribute, MeshAttributes,
-    MeshImportError, MeshImportSettings, MeshInitializationError, MultiDrawIndirect,
-    MultiDrawIndirectArgs, MultiDrawIndirectCount, MultiDrawIndirectCountArgs, RenderPath,
+use super::{
+    AttributeBuffer, MeshAttribute, MeshAttributes,
+    MeshImportError, MeshImportSettings, MeshInitializationError,
     TrianglesMut, TrianglesRef, VerticesMut, VerticesRef,
 };
+use crate::material::{Direct, Indirect, IndirectMeshArgs, MultiDrawIndirect, MultiDrawIndirectArgs, RenderPath, MultiDrawIndirectCount, MultiDrawIndirectCountArgs};
 use assets::Asset;
 
 use graphics::{
@@ -587,7 +587,7 @@ impl Asset for Mesh {
         );
 
         // Create an AABB for this mesh
-        let aabb = crate::aabb_from_points(positions.as_ref().unwrap());
+        let aabb = super::aabb_from_points(positions.as_ref().unwrap());
 
         // Generate the mesh and it's corresponding data
         Mesh::from_slices(

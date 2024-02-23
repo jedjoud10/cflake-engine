@@ -1,9 +1,9 @@
 use crate::context::{Graphics, GraphicsStats, Window, WindowSettings};
 use winit::{event::WindowEvent, event_loop::EventLoop};
-use world::{post_user, pre_user, State, System, World, Registries, Update, Init};
+use world::prelude::{post_user, pre_user, State, System, World, Registries, Update, Init};
 
-// Insert the required graphics resources
-fn init(world: &mut World, _: &Init) {
+/// Insert the required graphics resources
+pub fn init(world: &mut World, _: &Init) {
     // Initialization resource
     let el = world.get::<EventLoop<()>>().unwrap();
     let init = world.get::<WindowSettings>().unwrap().clone();
@@ -20,7 +20,6 @@ fn init(world: &mut World, _: &Init) {
 
 /// Update the graphics stats based on the current frame data
 pub fn update(world: &mut World, _: &Update) {
-    let mut window = world.get_mut::<Window>().unwrap();
     let graphics = world.get::<Graphics>().unwrap();
     let mut stats = world.get_mut::<GraphicsStats>().unwrap();
     let report = graphics.instance().generate_report();
@@ -42,8 +41,8 @@ pub fn update(world: &mut World, _: &Update) {
     };
 }
 
-// Handle window quitting and resizing
-fn event(world: &mut World, event: &WindowEvent) {
+/// Handle window quitting and resizing
+pub fn event(world: &mut World, event: &WindowEvent) {
     match event {
         // Window has been resized
         WindowEvent::Resized(size) => {
@@ -75,9 +74,8 @@ fn event(world: &mut World, event: &WindowEvent) {
     }
 }
 
-// Acquire system will acquire a valid texture to draw to at the start of every frame
+/// Acquire system will acquire a valid texture to draw to at the start of every frame
 pub fn acquire(world: &mut World, _: &Update) {
-    let graphics = world.get::<Graphics>().unwrap();
     let mut window = world.get_mut::<Window>().unwrap();
 
     if let Ok(texture) = window.surface.get_current_texture() {
@@ -95,28 +93,31 @@ pub fn acquire(world: &mut World, _: &Update) {
     }
 }
 
-// Present system will present the currently acquired texture to the monitor
+/// Present system will present the currently acquired texture to the monitor
 pub fn present(world: &mut World, _: &Update) {
     let mut window = world.get_mut::<Window>().unwrap();
-    let graphics = world.get::<Graphics>().unwrap();
+    let graphics = world.get_mut::<Graphics>().unwrap();
+    graphics.submit(false);
     if let Some(texture) = window.presentable_texture.take() {
         texture.present();
-        //log::trace!("present acquired texture");
-    } else {
-        //log::trace!("could not present acquired texture")
     }
 }
 
 
-// Plugin that will add all required systems for common behavior, acquiring, and presenting to the window
+/// Plugin that will add all required systems for common behavior, acquiring, and presenting to the window
 pub fn plugin(registries: &mut Registries) {
+    registries.init.insert(init).before(pre_user).after(assets::init);
+    registries.window_event.insert(event).before(pre_user);
+    
+    
+    registries.update.insert(acquire).before(pre_user);
+    
     registries.update
         .insert(update)
         .after(post_user)
         .after(acquire)
         .before(present);
-    registries.init.insert(init).before(pre_user).after(assets::init);
-    registries.window_event.insert(event).before(pre_user);
-    registries.update.insert(acquire).before(pre_user);
+    
+    
     registries.update.insert(present).after(post_user);
 }

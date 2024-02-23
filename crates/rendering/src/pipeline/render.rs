@@ -1,15 +1,14 @@
 use crate::{
-    DefaultMaterialResources, Material, Mesh, MeshAttribute, MeshAttributes, Pass, PassStats,
-    RenderPath, Renderer, Surface,
+    mesh::{attributes::{Normal, self, Tangent, TexCoord, Position, MeshAttribute, MeshAttributes}, Mesh}, material::{RenderPath, DefaultMaterialResources, Material, Pass, PassStats}, scene::{Surface, Renderer},
 };
-use ecs::Scene;
+use ecs::{Scene, QueryLayoutRef};
 use graphics::{
     ActivePipeline, ActiveRenderPass, ActiveRenderPipeline, ColorLayout, DepthStencilLayout,
     RenderPipeline,
 };
 
 use utils::{Handle, Storage};
-use world::World;
+use world::world::World;
 
 // Set a mesh binding vertex buffer to the current render pass
 pub(crate) fn set_vertex_buffer_attribute<
@@ -80,6 +79,7 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
     stats: &mut PassStats,
     render_pass: &mut ActiveRenderPass<'r, '_, P::C, P::DS>,
 ) {
+    /*
     let _i = std::time::Instant::now();
     // Get a rasterizer for the current render pass by binding a pipeline
     let mut active = render_pass.bind_pipeline(pipeline);
@@ -91,8 +91,9 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Get all the entities that contain a visible surface
     let scene = world.get::<Scene>().unwrap();
-    let filter = ecs::contains::<M::Query<'r>>();
-    let query = scene.query_with::<(&Surface<M>, &Renderer)>(filter);
+    //let filter = ecs::contains::<M::Query<'r>>();
+    //let query = scene.query_with::<(&Surface<M>, &Renderer)>(filter);
+    let query = todo!();
 
     // Get custom user components
     let filter = ecs::contains::<(&Surface<M>, &Renderer)>();
@@ -109,16 +110,16 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
 
     // Keep track of the last attribute buffers
     let mut last_positions_buffer: Option<
-        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Position>,
+        &<M::RenderPath as RenderPath>::AttributeBuffer<attributes::Position>,
     > = None;
     let mut last_normals_buffer: Option<
-        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Normal>,
+        &<M::RenderPath as RenderPath>::AttributeBuffer<attributes::Normal>,
     > = None;
     let mut last_tangents_buffer: Option<
-        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::Tangent>,
+        &<M::RenderPath as RenderPath>::AttributeBuffer<attributes::Tangent>,
     > = None;
     let mut last_tex_coords_buffer: Option<
-        &<M::RenderPath as RenderPath>::AttributeBuffer<crate::attributes::TexCoord>,
+        &<M::RenderPath as RenderPath>::AttributeBuffer<attributes::TexCoord>,
     > = None;
     let mut last_index_buffer: Option<&<M::RenderPath as RenderPath>::TriangleBuffer<u32>> = None;
 
@@ -151,12 +152,14 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
         return;
     }
 
+    /*
     // Set the global material bindings
     active
         .set_bind_group(0, |group| {
             M::set_global_bindings::<P>(&mut resources, group, defaults);
         })
         .unwrap();
+    */
 
     // Sort and group material instances / meshes
     // instead of [(mt1, mh1), (mt2, mh2), (mt1, mh1), (mt1, mh2)]
@@ -184,12 +187,14 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
             last_material = Some(subsurface.material.clone());
             let material = materials.get(&subsurface.material);
 
+            /*
             // Set the instance group bindings
             active
                 .set_bind_group(1, |group| {
                     M::set_instance_bindings::<P>(material, &mut resources, defaults, group);
                 })
                 .unwrap();
+            */
             stats.material_instance_swap += 1;
         }
 
@@ -207,16 +212,17 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
             continue;
         }
 
+        /*
         // Set the surface group bindings
         active
             .set_bind_group(2, |group| {
                 M::set_surface_bindings::<P>(renderer, &mut resources, defaults, user, group);
             })
             .unwrap();
+        */
 
         // Set the vertex buffers and index buffers when we change meshes
         if last_mesh != Some(subsurface.mesh.clone()) {
-            use crate::attributes::*;
             let mut index = 0;
 
             // Set the position buffer attribute
@@ -299,4 +305,5 @@ pub(super) fn render_surfaces<'r, P: Pass, M: Material>(
             <<M as Material>::RenderPath as RenderPath>::vertex_count(mesh).unwrap_or_default()
                 as u64;
     }
+    */
 }

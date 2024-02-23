@@ -1,7 +1,9 @@
-use crate::{
-    create_texture2d, create_uniform_buffer, AlbedoMap, CameraBuffer, MaskMap, Mesh, NormalMap,
+use crate::material::{
+    AlbedoMap, CameraBuffer, MaskMap, NormalMap,
     PassStats, SceneBuffer, TimingBuffer, WindowBuffer,
 };
+use crate::util::{create_texture2d, create_uniform_buffer};
+use crate::mesh::Mesh;
 
 use assets::Assets;
 
@@ -34,7 +36,12 @@ pub(crate) fn create_gbuffer_texture<T: Texel>(
         &[TextureViewSettings::whole::<
             <Texture2D<T> as Texture>::Region,
         >()],
-        Some(SamplerSettings {
+        TextureMipMaps::Disabled,
+    )
+    .unwrap()
+
+    /*
+    Some(SamplerSettings {
             mipmaps: SamplerMipMaps::Auto,
             comparison: None,
             mag_filter: SamplerFilter::Linear,
@@ -45,9 +52,7 @@ pub(crate) fn create_gbuffer_texture<T: Texel>(
             wrap_w: SamplerWrap::Repeat,
             border: SamplerBorderColor::OpaqueBlack,
         }),
-        TextureMipMaps::Disabled,
-    )
-    .unwrap()
+     */
 }
 
 // Load a engine default mesh
@@ -146,7 +151,6 @@ impl DeferredRenderer {
 
         // Create the deferred scene pass that will write to the G-Buffer
         let render_pass = RenderPass::<SceneColorLayout, SceneDepthLayout>::new(
-            graphics,
             color_operations,
             depth_stencil_operations,
         );

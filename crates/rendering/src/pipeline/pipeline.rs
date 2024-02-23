@@ -1,8 +1,3 @@
-use crate::{
-    DefaultMaterialResources, DeferredPass, Material, Pass, PassStats, SceneColorLayout,
-    SceneDepthLayout, ShadowDepthLayout, ShadowPass,
-};
-
 use assets::Assets;
 use graphics::{
     ActiveRenderPass, CompareFunction, DepthConfig, Graphics, PipelineInitializationError,
@@ -10,7 +5,9 @@ use graphics::{
 };
 use std::marker::PhantomData;
 
-use world::World;
+use world::world::World;
+
+use crate::{scene::{ShadowDepthLayout, SceneDepthLayout, SceneColorLayout}, material::{Material, DeferredPass, ShadowPass, DefaultMaterialResources, PassStats, Pass}};
 
 // A material ID is used to make sure the user has initialized the proper material pipeline
 pub struct MaterialId<M: Material>(pub(crate) PhantomData<M>);
@@ -26,6 +23,8 @@ impl<M: Material> Copy for MaterialId<M> {}
 // A material pipeline will be responsible for rendering surface and
 // entities that correspond to a specific material type.
 pub struct Pipeline<M: Material> {
+    // TODO: Store bind groups cache in here
+
     // Base deferred render pass
     pipeline: RenderPipeline<SceneColorLayout, SceneDepthLayout>,
     shader: Shader,
@@ -56,7 +55,7 @@ pub(crate) fn create_pass_pipeline<M: Material, P: Pass>(
         Some(DEPTH_CONFIG),
         None,
         None,
-        crate::attributes::enabled_to_vertex_config(M::attributes::<P>()),
+        crate::mesh::attributes::enabled_to_vertex_config(M::attributes::<P>()),
         M::primitive_config::<P>(),
         shader,
     )

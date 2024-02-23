@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ecs::{contains, Entity, EntryMut, EntryRef, Scene};
-use world::{post_user, System, World, Plugin, Registries, Update};
+use world::prelude::{post_user, System, World, Plugin, Registries, Update};
 
 use crate::{Child, LocalPosition, LocalRotation, LocalScale, Parent, Position, Rotation, Scale};
 

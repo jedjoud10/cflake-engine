@@ -40,7 +40,6 @@ pub struct Scene {
 
     // These contain the boxed bundles that can be used for prefab generation
     pub(crate) prefabs: AHashMap<PrefabId, (Box<dyn PrefabBundle>, Mask)>,
-    pub(crate) ticked: bool,
 }
 
 impl Default for Scene {
@@ -52,7 +51,6 @@ impl Default for Scene {
             archetypes: ArchetypeSet::from_iter(once((Mask::zero(), empty))),
             removed: Default::default(),
             prefabs: AHashMap::default(),
-            ticked: false,
         }
     }
 }
@@ -227,7 +225,6 @@ impl Scene {
         QueryMut::new(self)
     }
 
-    /*
     /// Create a new mutable [query](QueryLayoutMut) from this scene using a [filter](QueryFilter).
     pub fn query_mut_with<'a, L: QueryLayoutMut<'a>>(
         &'a mut self,
@@ -237,98 +234,19 @@ impl Scene {
             L::is_valid(),
             "Query layout is not valid, check the layout for component collisions"
         );
-        QueryMut::new_with_filter(self, filter, self.ticked)
+        QueryMut::new_with_filter(self, filter)
     }
-    */
 
     /// Create a new immutable [query](QueryLayoutRef) from this scene (with no filter).
     pub fn query<'a, L: QueryLayoutRef<'a>>(&'a self) -> QueryRef<'a, L> {
         QueryRef::new(self)
     }
 
-    /*
     /// Create a new immutable [query](QueryLayoutRef) from this scene using a [filter](QueryFilter).
-    pub fn query_with<'a, L: QueryLayoutRef>(
+    pub fn query_with<'a, L: QueryLayoutRef<'a>>(
         &'a self,
         filter: Wrap<impl QueryFilter>,
-    ) -> QueryRef<'a, '_, '_, L> {
-        QueryRef::new_with_filter(self, filter, self.ticked)
-    }
-    */
-}
-
-/*
-// Init event that will insert the ECS resource
-fn init(world: &mut World) {
-    world.insert(Scene::default());
-}
-
-// At the end of each frame reset the delta states
-fn reset_delta_frame_states_end(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    for (_, archetype) in scene.archetypes_mut() {
-        for (_, column) in archetype.table_mut().iter_mut() {
-            column.delta_frame_states_mut().reset();
-        }
-    }
-
-    for (_, vec) in scene.removed.iter_mut() {
-        vec.clear();
+    ) -> QueryRef<'a, L> {
+        QueryRef::new_with_filter(self, filter)
     }
 }
-
-// At the end of each tick reset the tick states
-fn reset_delta_tick_states_end(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    for (_, archetype) in scene.archetypes_mut() {
-        for (_, column) in archetype.table_mut().iter_mut() {
-            column.delta_tick_states_mut().reset();
-        }
-    }
-}
-
-// Called at the start of every frame to set ticked to false
-fn set_ticked_true(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    scene.ticked = true;
-}
-
-// Called at the start of every tick to set ticked to true
-fn set_ticked_false(world: &mut World) {
-    let mut scene = world.get_mut::<Scene>().unwrap();
-    scene.ticked = false;
-}
-
-/// Only used for init
-pub fn common(system: &mut System) {
-    system.insert_init(init).before(user);
-}
-
-/// Executes shit at the start of every frame
-pub fn pre_frame_or_tick(system: &mut System) {
-    system
-        .insert_tick(set_ticked_true)
-        .before(user)
-        .after(utils::time)
-        .before(post_frame_or_tick);
-    system
-        .insert_update(set_ticked_false)
-        .before(user)
-        .after(utils::time)
-        .before(post_frame_or_tick);
-}
-
-/// Executes shit at the end of each frame
-pub fn post_frame_or_tick(system: &mut System) {
-    system
-        .insert_update(reset_delta_frame_states_end)
-        .after(post_user)
-        .after(utils::time)
-        .after(pre_frame_or_tick);
-    system
-        .insert_tick(reset_delta_tick_states_end)
-        .after(post_user)
-        .after(utils::time)
-        .after(pre_frame_or_tick);
-}
-*/

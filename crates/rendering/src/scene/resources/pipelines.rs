@@ -1,4 +1,5 @@
-use crate::{DynPipeline, Material, MaterialId, Pipeline};
+use crate::pipeline::{DynPipeline, MaterialId, Pipeline};
+use crate::material::Material;
 use ahash::AHashMap;
 use assets::Assets;
 
@@ -45,13 +46,13 @@ impl Pipelines {
         if !self.pipelines.contains_key(&key) {
             log::debug!(
                 "Creating pipeline for material {}...",
-                utils::pretty_type_name::<M>()
+                std::any::type_name::<M>()
             );
             let pipeline = Pipeline::<M>::new(settings, graphics, assets)?;
             self.pipelines.insert(key, Rc::new(pipeline));
             log::debug!(
                 "Registered pipeline for material {}",
-                utils::pretty_type_name::<M>()
+                std::any::type_name::<M>()
             );
         }
 

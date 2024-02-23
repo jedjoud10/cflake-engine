@@ -1,8 +1,8 @@
 use std::cell::{Cell, Ref, RefCell, RefMut};
 
 use super::attributes::*;
-use crate::{AttributeError, Direct, MeshAabbComputeError, RenderPath};
-
+use super::{AttributeError, MeshAabbComputeError};
+use crate::material::{Direct, RenderPath};
 // Immutable access to the mesh vertices
 pub struct VerticesRef<'a, R: RenderPath> {
     pub(super) enabled: MeshAttributes,

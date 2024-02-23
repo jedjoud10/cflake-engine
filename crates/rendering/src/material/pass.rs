@@ -1,9 +1,6 @@
-use crate::{
-    DefaultMaterialResources, Material, Renderer, SceneColorLayout, SceneDepthLayout,
-    ShadowDepthLayout, Surface, CullResult, SubSurface,
-};
-
-use graphics::{ColorLayout, DepthStencilLayout};
+use graphics::pass::{ColorLayout, DepthStencilLayout};
+use crate::{pipeline::CullResult, scene::{SceneDepthLayout, ShadowDepthLayout, SubSurface, Renderer, SceneColorLayout}};
+use super::{Material, DefaultMaterialResources};
 
 // Render pass that will render the scene
 pub struct DeferredPass;

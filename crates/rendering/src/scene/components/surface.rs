@@ -1,4 +1,4 @@
-use crate::{Material, MaterialId, Mesh, CullResult};
+use crate::{material::Material, mesh::Mesh, pipeline::{MaterialId, CullResult}};
 use ecs::Component;
 use smallvec::SmallVec;
 use utils::Handle;

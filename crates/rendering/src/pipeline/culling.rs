@@ -1,9 +1,10 @@
-use crate::{DefaultMaterialResources, Material, Pass, RenderPath, Renderer, SubSurface, Surface};
 use ecs::Scene;
 use math::ExplicitVertices;
 use rayon::prelude::ParallelIterator;
 use smallvec::SmallVec;
-use world::World;
+use world::world::World;
+
+use crate::{material::{DefaultMaterialResources, Pass, Material, RenderPath}, scene::{Surface, Renderer}};
 
 // Results of culling against frustum/lightspace
 #[derive(Debug, Clone, Copy)]
@@ -48,7 +49,7 @@ pub(crate) fn cull_against_frustum(
         matrix.mul_point(input).with_w(0.0)
     });
 
-    if let Some(aabb) = crate::aabb_from_points(&out) {
+    if let Some(aabb) = crate::mesh::aabb_from_points(&out) {
         let corners = [aabb.min, aabb.max];
 
         let bools = planes.planes().map(|plane| {

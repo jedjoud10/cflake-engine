@@ -15,6 +15,7 @@ use crate::{
 pub struct QueryMut<'s, L: QueryLayoutMut<'s>> {
     pub(super) archetypes: Vec<&'s mut Archetype>,
     pub(super) access: LayoutAccess,
+    pub(super) bitsets: Option<Vec<BitSet<u64>>>,
     _phantom: PhantomData<&'s L>,
 }
 
@@ -26,31 +27,28 @@ impl<'s, L: QueryLayoutMut<'s>> QueryMut<'s, L> {
         Self {
             archetypes,
             access,
+            bitsets: None,
             _phantom: PhantomData,
         }
     }
 
-    /*
     // Create a new mut query from the scene, but make it have a specific entry enable/disable masks
     pub(crate) fn new_with_filter<F: QueryFilter>(
         scene: &'s mut Scene,
         _: Wrap<F>,
-        ticked: bool,
     ) -> Self {
         // Filter out the archetypes then create the bitsets
         let (access, archetypes, cached) = super::archetypes_mut::<L, F>(scene.archetypes_mut());
         let bitsets =
-            super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached, ticked);
+            super::generate_bitset_chunks::<F>(archetypes.iter().map(|a| &**a), cached);
 
         Self {
             archetypes,
             access,
             bitsets: Some(bitsets),
-            _phantom1: PhantomData,
-            _phantom3: PhantomData,
+            _phantom: PhantomData,
         }
     }
-    */
 
     /// Get the access masks that we have calculated.
     pub fn layout_access(&self) -> LayoutAccess {

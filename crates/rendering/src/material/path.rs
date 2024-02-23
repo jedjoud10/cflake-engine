@@ -1,11 +1,10 @@
-use crate::{AttributeBuffer, DefaultMaterialResources, Mesh, MeshAttribute};
-use graphics::{
-    ActiveRenderPipeline, ColorLayout, DepthStencilLayout, DrawCountIndirectBuffer,
-    DrawIndexedError, DrawIndexedIndirectBuffer, GpuPod, SetIndexBufferError, SetVertexBufferError,
-    TriangleBuffer,
-};
 use std::ops::RangeBounds;
+use graphics::{GpuPod, ActiveRenderPipeline, SetVertexBufferError, ColorLayout, DepthStencilLayout, DrawIndexedError, SetIndexBufferError, TriangleBuffer, DrawIndexedIndirectBuffer, DrawCountIndirectBuffer};
 use utils::Handle;
+
+use crate::mesh::{MeshAttribute, Mesh, AttributeBuffer};
+
+use super::DefaultMaterialResources;
 
 // This is a render path that a material can use to render it's meshes and surfaces
 // There are two render paths currently available: Direct and Indirect
@@ -126,7 +125,7 @@ impl RenderPath for Direct {
         _defaults: &DefaultMaterialResources<'a>,
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
-        active.set_index_buffer(buffer, bounds)
+        active.set_index_buffer::<u32>(buffer, bounds)
     }
 
     #[inline(always)]
@@ -202,7 +201,7 @@ impl RenderPath for Indirect {
     ) -> Result<(), DrawIndexedError> {
         let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.draw_indexed_indirect(buffer, mesh.offset())
+        active.draw_indexed_indirect(buffer, mesh.offset() as u64)
     }
 
     #[inline(always)]
@@ -225,7 +224,7 @@ impl RenderPath for Indirect {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
-        active.set_index_buffer(buffer, bounds)
+        active.set_index_buffer::<u32>(buffer, bounds)
     }
 }
 
@@ -278,7 +277,7 @@ impl RenderPath for MultiDrawIndirect {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
-        active.set_index_buffer(buffer, bounds)
+        active.set_index_buffer::<u32>(buffer, bounds)
     }
 
     #[inline(always)]
@@ -289,7 +288,7 @@ impl RenderPath for MultiDrawIndirect {
     ) -> Result<(), DrawIndexedError> {
         let handle = mesh.indirect().clone();
         let buffer = defaults.draw_indexed_indirect_buffers.get(&handle);
-        active.multi_draw_indexed_indirect(buffer, mesh.offset(), mesh.count())
+        active.multi_draw_indexed_indirect(buffer, mesh.offset() as u64, mesh.count() as u32)
     }
 }
 
@@ -348,7 +347,7 @@ impl RenderPath for MultiDrawIndirectCount {
         active: &mut ActiveRenderPipeline<'_, 'a, '_, C, DS>,
     ) -> Result<(), SetIndexBufferError> {
         let buffer = defaults.indirect_triangles.get(buffer);
-        active.set_index_buffer(buffer, bounds)
+        active.set_index_buffer::<u32>(buffer, bounds)
     }
 
     #[inline(always)]
@@ -363,10 +362,10 @@ impl RenderPath for MultiDrawIndirectCount {
         let count = defaults.draw_count_indirect_buffer.get(&count);
         active.multi_draw_indexed_indirect_count(
             indirect,
-            mesh.indirect_offset(),
+            mesh.indirect_offset() as u64,
             count,
-            mesh.count_offset(),
-            mesh.max_count(),
+            mesh.count_offset() as u64,
+            mesh.max_count() as u32,
         )
     }
 }

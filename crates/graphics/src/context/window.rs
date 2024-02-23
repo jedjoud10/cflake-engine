@@ -2,32 +2,37 @@ use std::sync::Arc;
 use wgpu::{Surface, SurfaceCapabilities, SurfaceConfiguration, SurfaceTexture, TextureView};
 use crate::{format::{Normalized, BGRA, RGBA}, pass::RenderTarget};
 
-// Frame rate limit of the window (can be disabled by selecting Unlimited)
+/// Frame rate limit of the window (can be disabled by selecting Unlimited)
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum FrameRateLimit {
-    // Limit the FPS to the screen refresh rate and use VSync
+    /// Limit the FPS to the screen refresh rate and use VSync
     VSync,
 
-    // Limit the FPS to a specific value
+    /// Limit the FPS to a specific value
     Limited(u32),
 
-    // There is no FPS cap
+    /// There is no FPS cap
     #[default]
     Unlimited,
 }
 
-// Window setting that will tell Winit how to create the window
+/// Window setting that will tell Winit how to create the window
 #[derive(Clone)]
 pub struct WindowSettings {
+    /// Title of the window when it gets created
     pub title: String,
+
+    /// Initial fullscreen state of the window
     pub fullscreen: bool,
+
+    /// Frame-rate limits of the window
     pub limit: FrameRateLimit,
 }
 
-// Format of the swapchain / window presentable texture
+/// Format of the swapchain / window presentable texture
 pub type SwapchainFormat = BGRA<Normalized<u8>>;
 
-// A window is what we will draw to at the end of each frame
+/// A window is what we will draw to at the end of each frame
 pub struct Window {
     // Raw winit window and settings
     pub(crate) settings: WindowSettings,
@@ -45,17 +50,17 @@ pub struct Window {
 }
 
 impl Window {
-    // Get the internal window settings
+    /// Get the internal window settings
     pub fn settings(&self) -> &WindowSettings {
         &self.settings
     }
 
-    // Get the raw winit window
+    /// Get the raw winit window
     pub fn raw(&self) -> &winit::window::Window {
         &self.raw
     }
 
-    // Get the texture render that we can render to
+    /// Get the texture render that we can render to
     pub fn as_render_target(&mut self) -> Option<RenderTarget<SwapchainFormat>> {
         self.presentable_texture_view
             .as_ref()
@@ -65,7 +70,7 @@ impl Window {
             })
     }
 
-    // Get the current size of the window in pixels
+    /// Get the current size of the window in pixels
     pub fn size(&self) -> vek::Extent2<u32> {
         self.size
     }

@@ -14,6 +14,7 @@ use crate::{
 // Currently loaded chunk in the mutable query iterator
 struct Chunk<'s, L: QueryLayoutMut<'s>> {
     slices: L::SliceTuple,
+    bitset: Option<BitSet<u64>>,
     length: usize,
 }
 
@@ -32,9 +33,19 @@ impl<'s, L: QueryLayoutMut<'s>> IntoIterator for QueryMut<'s, L> {
 
     fn into_iter(mut self) -> Self::IntoIter {
         let length = len(&self.archetypes);
-        let mut slices = self.archetypes.into_iter().map(|x| Chunk {
-            length: x.len(),
-            slices: L::from_mut_archetype(x),
+        
+        for (index, archetype) in self.archetypes.iter_mut().enumerate() {
+            super::utils::apply_mutability_states(
+                archetype,
+                archetype.mask() & self.access.unique(),
+                self.bitsets.as_mut().map(|vec| &vec[index]),
+            );
+        }
+        
+        let mut slices = self.archetypes.into_iter().enumerate().map(|(index, archetype)| Chunk {
+            length: archetype.len(),
+            slices: L::from_mut_archetype(archetype),
+            bitset: self.bitsets.as_mut().map(|vec| std::mem::replace(&mut vec[index], BitSet::<u64>::default())),
         }).collect::<Vec<_>>();
         
         QueryMutIter {
@@ -55,10 +66,30 @@ impl<'s, L: QueryLayoutMut<'s>> Iterator for QueryMutIter<'s, L> {
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.chunk.as_ref()?.length {
-            let chunk = self.slices.pop()?;
-            self.chunk = Some(chunk);
-            self.index = 0;
+        loop {
+            if self.index >= self.chunk.as_ref()?.length {
+                let chunk = self.slices.pop()?;
+                self.chunk = Some(chunk);
+                self.index = 0;
+            }
+
+            if let Some(chunk) = &self.chunk {
+                if let Some(bitset) = &chunk.bitset {
+                    // Check the next entry that is valid (that passed the filter)
+                    if let Some(hop) = bitset.find_one_from(self.index) {
+                        self.index = hop;
+                        break;
+                    } else {
+                        // Hop to the next archetype if we could not find one
+                        // This will force the iterator to hop to the next archetype
+                        self.index = chunk.length;
+                        continue;
+                    }
+                } else {
+                    // If we do not have a bitset, don't do anything
+                    break;
+                }
+            }
         }
 
         let chunk = unsafe { self.chunk.as_mut().unwrap_unchecked() };

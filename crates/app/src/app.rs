@@ -1,6 +1,5 @@
 use graphics::context::{FrameRateLimit, WindowSettings};
 use log::LevelFilter;
-use mimalloc::MiMalloc;
 use utils::plugin::UtilsSettings;
 use world::{system::{Registries, System, pre_user, post_user}, prelude::{Event, Shutdown, Tick, Init, Update, Plugin}, world::World, resource::State};
 
@@ -9,9 +8,6 @@ use winit::{
     event::{DeviceEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop}, error::EventLoopError,
 };
-
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
 
 /// An Engine that can be built that will use cFlake engine.
 /// It uses the builder pattern to set settings and to register custom events
@@ -134,6 +130,7 @@ impl App {
         
         // Register main plugins
         graphics::plugin::plugin(&mut self.registries);
+        ecs::plugin::plugin(&mut self.registries);
         //rendering::plugin::plugin(&mut self.registries);
         input::plugin::plugin(&mut self.registries);
         assets::plugin::plugin(&mut self.registries);

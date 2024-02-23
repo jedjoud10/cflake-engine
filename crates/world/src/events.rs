@@ -35,7 +35,8 @@ pub struct Tick {
 impl Event for Tick {}
 */
 
-use winit::{event::{DeviceEvent, WindowEvent}, event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget}};
+use winit::{event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget}};
+pub use winit::event::{DeviceEvent, WindowEvent};
 /// An event is something that a system can "subscribe" to to execute specific code when something interesting happens
 /// Events are passed directly from winit to required systems
 pub trait Event: 'static + Sized {}
