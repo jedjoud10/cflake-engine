@@ -10,5 +10,5 @@ fn main() {
 
 // First function that gets executed when the engine starts
 fn init(_: &mut World) {
-    println!("Hello World!");
+    println!("Hello World1!");
 }

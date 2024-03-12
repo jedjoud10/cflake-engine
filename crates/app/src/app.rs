@@ -12,8 +12,8 @@ use world::{Event, Init, Shutdown, State, System, Systems, Tick, Update, World};
 
 use crate::systems::gui::EventStatsDurations;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+//#[global_allocator]
+//static GLOBAL: MiMalloc = MiMalloc;
 
 /// An app that can be built that will use cFlake engine.
 /// It uses the builder pattern to set settings and to register custom events

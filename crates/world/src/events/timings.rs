@@ -4,7 +4,7 @@ use crate::{Caller, StageId};
 
 // Persistent event timings for events that get called more than one time
 pub struct PersistentEventTimings<C: Caller> {
-    samples: [Duration; 8],
+    samples: [Duration; 32],
     min: Duration,
     max: Duration,
     _phantom: PhantomData<C>,
@@ -22,15 +22,10 @@ impl<C: Caller> Clone for PersistentEventTimings<C> {
 }
 
 impl<C: Caller> PersistentEventTimings<C> {
-    // Get the median time
-    pub fn median(&self) -> Duration {
-        todo!()
-    }
-
     // Get the average time
     pub fn average(&self) -> Duration {
         let nanos = self.samples.iter().map(|x| x.as_nanos()).sum::<u128>();
-        Duration::from_nanos(nanos as u64 / 8)
+        Duration::from_nanos(nanos as u64 / 32)
     }
 
     // Get the minimum time
@@ -70,7 +65,7 @@ impl<C: Caller> EventTimings<C> {
             id,
             elapsed: Duration::ZERO,
             persistent: persistent.then(|| PersistentEventTimings {
-                samples: [Duration::ZERO; 8],
+                samples: [Duration::ZERO; 32],
                 min: Duration::ZERO,
                 max: Duration::ZERO,
                 _phantom: Default::default(),

@@ -304,6 +304,7 @@ fn render(world: &mut World) {
 
     // Render to the shadow map cascades
     if _shadowmap.distance > 0.0 {
+        /*
         for i in 0..4 {
             let shadowmap = &mut *_shadowmap;
             let mut dynamic = shadowmap.dynamic_depth_tex.view_mut(i + 1).unwrap();
@@ -322,6 +323,7 @@ fn render(world: &mut World) {
                 true,
             );
         }
+        */
 
         let i = time.frame_count() as usize % 4;
         render_shadows_pipelines(
@@ -333,10 +335,9 @@ fn render(world: &mut World) {
             i,
             &pipelines,
             world,
-            false,
+            true,
         );
 
-        //graphics.submit(false);
         drop(_shadowmap);
     }
 

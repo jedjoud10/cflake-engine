@@ -7,9 +7,9 @@ use graphics::{
 use std::ops::RangeBounds;
 use utils::Handle;
 
-// This is a render path that a material can use to render it's meshes and surfaces
+// This is a render path that a material can use to render its meshes and surfaces
 // There are two render paths currently available: Direct and Indirect
-// The direct rendering path is for normal meshes that use normal buffers
+// The direct rendering path is for average meshes that use CPU created GPU buffers
 // The indirect rendering path is for meshes that share buffers and use a DrawIndexedIndirect buffer to draw their surfaces
 pub trait RenderPath: 'static + Send + Sync + Sized {
     // Attribute buffer types used by meshes that use this render path

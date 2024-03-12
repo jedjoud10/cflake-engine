@@ -44,4 +44,4 @@ thiserror = "1.0.37"
 incremental = true
 
 [profile.dev]
-opt-level = 3
+opt-level = 1
